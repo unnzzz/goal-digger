@@ -138,8 +138,8 @@ export default function Page() {
   return (
     <main className="container">
       <div className="card">
-        <h1>Roadmap Generator</h1>
-        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links — and now edit it before saving.</p>
+        <h1>Goal-Digger</h1>
+        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links</p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
           <label>Goal</label>
