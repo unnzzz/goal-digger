@@ -35,45 +35,18 @@ export default function Page() {
 
   // generation state
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<number>(0);   // 0–100
+  const [status, setStatus] = useState<string>("");
   const [data, setData] = useState<Roadmap | null>(null);
-  const [original, setOriginal] = useState<Roadmap | null>(null); // for "Revert"
+  const [original, setOriginal] = useState<Roadmap | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // editing state (before saving)
+  // editing state
   const [editMode, setEditMode] = useState(false);
 
   // save-to-account state
   const [saveTitle, setSaveTitle] = useState("");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setData(null);
-    setOriginal(null);
-    setEditMode(false);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal,
-          daily_minutes: Number(dailyMinutes),
-          total_days: targetDate ? undefined : Number(totalDays),
-          target_date: targetDate || undefined,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to generate");
-      setData(json as Roadmap);
-      setOriginal(json as Roadmap); // snapshot for "Revert"
-    } catch (err: any) {
-      setError(err.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ---- inline edit helpers (before saving) ----
   const setRoadmap = (updater: (prev: Roadmap) => Roadmap) => {
@@ -135,11 +108,84 @@ export default function Page() {
     setEditMode(false);
   };
 
+  // ---- generation submit (always streaming) ----
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setData(null);
+    setOriginal(null);
+    setEditMode(false);
+    setLoading(true);
+    setProgress(0);
+    setStatus("Starting…");
+
+    try {
+      const res = await fetch("/api/generate/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal,
+          daily_minutes: Number(dailyMinutes),
+          total_days: targetDate ? undefined : Number(totalDays),
+          target_date: targetDate || undefined,
+        }),
+      });
+
+      if (!res.body) throw new Error("No response stream");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        let idx;
+        while ((idx = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, idx).trim();
+          buf = buf.slice(idx + 1);
+          if (!line) continue;
+
+          try {
+            const evt = JSON.parse(line);
+
+            if (evt.type === "progress") {
+              const pct = typeof evt.percent === "number"
+                ? Math.max(0, Math.min(100, Math.round(evt.percent)))
+                : Math.round((evt.done / Math.max(1, evt.total)) * 100);
+              setProgress(pct);
+              if (evt.message) setStatus(evt.message);
+            }
+
+            if (evt.type === "result") {
+              const out = evt.data as Roadmap;
+              setData(out);
+              setOriginal(out);
+              setProgress(100);
+              setStatus("Done");
+            }
+
+            if (evt.type === "error") {
+              throw new Error(evt.message || "Generation error");
+            }
+          } catch {
+            // ignore malformed lines
+          }
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || "Unexpected error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="container">
       <div className="card">
         <h1>Roadmap Generator</h1>
-        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links — and now edit it before saving.</p>
+        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links — edit it before saving.</p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
           <label>Goal</label>
@@ -187,6 +233,16 @@ export default function Page() {
             {loading ? "Generating…" : "Generate roadmap"}
           </button>
         </form>
+
+        {loading && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <progress value={progress} max={100} style={{ width: 240 }} />
+              <span>{status || `${progress}%`}</span>
+            </div>
+            <small>Finding resources and building your plan…</small>
+          </div>
+        )}
 
         {error && <p style={{ color: "#ff8a8a", marginTop: 12 }}>Error: {error}</p>}
 
