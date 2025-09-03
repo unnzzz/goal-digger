@@ -27,18 +27,31 @@ type Roadmap = {
 };
 
 export default function Page() {
+  // form state
   const [goal, setGoal] = useState("");
   const [dailyMinutes, setDailyMinutes] = useState(60);
   const [totalDays, setTotalDays] = useState(10);
   const [targetDate, setTargetDate] = useState("");
+
+  // generation state
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<Roadmap | null>(null);
+  const [original, setOriginal] = useState<Roadmap | null>(null); // for "Revert"
   const [error, setError] = useState<string | null>(null);
+
+  // editing state (before saving)
+  const [editMode, setEditMode] = useState(false);
+
+  // save-to-account state
+  const [saveTitle, setSaveTitle] = useState("");
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setData(null);
+    setOriginal(null);
+    setEditMode(false);
     setLoading(true);
     try {
       const res = await fetch("/api/generate", {
@@ -54,6 +67,7 @@ export default function Page() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to generate");
       setData(json as Roadmap);
+      setOriginal(json as Roadmap); // snapshot for "Revert"
     } catch (err: any) {
       setError(err.message || "Unexpected error");
     } finally {
@@ -61,11 +75,71 @@ export default function Page() {
     }
   };
 
+  // ---- inline edit helpers (before saving) ----
+  const setRoadmap = (updater: (prev: Roadmap) => Roadmap) => {
+    setData((prev) => (prev ? updater(prev) : prev));
+  };
+
+  const addResource = (dayIdx: number, section: "learn" | "practice") => {
+    const title = prompt("Resource title"); if (!title) return;
+    const url = prompt("Resource URL"); if (!url) return;
+    const kind = (prompt('kind: "watch" | "listen" | "read"') || "read") as Resource["kind"];
+    setRoadmap((prev) => {
+      const next = structuredClone(prev);
+      next.days[dayIdx][section].push({ kind, title, url, source: null, duration_minutes: null, split: null });
+      return next;
+    });
+  };
+
+  const editResource = (dayIdx: number, section: "learn" | "practice", idx: number) => {
+    setRoadmap((prev) => {
+      const r = prev.days[dayIdx][section][idx];
+      const title = prompt("New title", r.title) ?? r.title;
+      const url = prompt("New URL", r.url) ?? r.url;
+      const next = structuredClone(prev);
+      next.days[dayIdx][section][idx] = { ...r, title, url };
+      return next;
+    });
+  };
+
+  const deleteResource = (dayIdx: number, section: "learn" | "practice", idx: number) => {
+    setRoadmap((prev) => {
+      const next = structuredClone(prev);
+      next.days[dayIdx][section].splice(idx, 1);
+      return next;
+    });
+  };
+
+  const editDayTitle = (dayIdx: number) => {
+    setRoadmap((prev) => {
+      const current = prev.days[dayIdx].title;
+      const title = prompt("New day title", current);
+      if (!title) return prev;
+      const next = structuredClone(prev);
+      next.days[dayIdx].title = title;
+      return next;
+    });
+  };
+
+  const onChangeReflect = (dayIdx: number, value: string) => {
+    setRoadmap((prev) => {
+      const next = structuredClone(prev);
+      next.days[dayIdx].reflect = value;
+      return next;
+    });
+  };
+
+  const revertEdits = () => {
+    if (!original) return;
+    setData(structuredClone(original));
+    setEditMode(false);
+  };
+
   return (
     <main className="container">
       <div className="card">
         <h1>Roadmap Generator</h1>
-        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links.</p>
+        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links — and now edit it before saving.</p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
           <label>Goal</label>
@@ -114,81 +188,143 @@ export default function Page() {
           </button>
         </form>
 
-        {error && (
-          <p style={{ color: "#ff8a8a", marginTop: 12 }}>Error: {error}</p>
-        )}
+        {error && <p style={{ color: "#ff8a8a", marginTop: 12 }}>Error: {error}</p>}
 
         {data && (
-          <section style={{ marginTop: 20 }}>
-            <header>
-              <h2>
-                {data.goal} <span className="kpill">{data.total_days} days</span>{" "}
-                <span className="kpill">≈ {data.daily_minutes} min/day</span>
-              </h2>
-            </header>
+          <>
+            {/* Edit controls */}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button className="btn" onClick={() => setEditMode((v) => !v)}>
+                {editMode ? "Stop editing" : "Edit roadmap"}
+              </button>
+              {editMode && original && (
+                <button className="btn" onClick={revertEdits}>Revert changes</button>
+              )}
+            </div>
 
-            {data.days.map((d) => (
-              <article key={d.day} className="day">
-                <h3>
-                  Day {d.day}: {d.title} <span className="badge">{d.minutes} min</span>
-                </h3>
+            <section style={{ marginTop: 20 }}>
+              <header>
+                <h2>
+                  {data.goal} <span className="kpill">{data.total_days} days</span>{" "}
+                  <span className="kpill">≈ {data.daily_minutes} min/day</span>
+                </h2>
+              </header>
 
-                <h4>Learn</h4>
-                <ul className="list">
-                  {d.learn.map((r, i) => (
-                    <li key={`L${d.day}-${i}`}>
-                      <strong>[{r.kind}]</strong>{" "}
-                      <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                      {r.source ? <span className="kpill">{r.source}</span> : null}
-                      {r.duration_minutes ? <span className="kpill">~{r.duration_minutes} min</span> : null}
-                      {r.split ? (
-                        <span className="kpill">Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}</span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+              {data.days.map((d, di) => (
+                <article key={d.day} className="day">
+                  <h3>
+                    Day {d.day}: {d.title} <span className="badge">{d.minutes} min</span>
+                    {editMode && (
+                      <button className="btn" style={{ marginLeft: 8 }} onClick={() => editDayTitle(di)}>
+                        Edit title
+                      </button>
+                    )}
+                  </h3>
 
-                <h4>Practice</h4>
-                <ul className="list">
-                  {d.practice.map((r, i) => (
-                    <li key={`P${d.day}-${i}`}>
-                      <strong>[{r.kind}]</strong>{" "}
-                      <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                      {r.source ? <span className="kpill">{r.source}</span> : null}
-                      {r.duration_minutes ? <span className="kpill">~{r.duration_minutes} min</span> : null}
-                      {r.split ? (
-                        <span className="kpill">Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}</span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+                  <h4>Learn</h4>
+                  <ul className="list">
+                    {d.learn.map((r, i) => (
+                      <li key={`L${d.day}-${i}`}>
+                        <strong>[{r.kind}]</strong>{" "}
+                        <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
+                        {r.split ? (
+                          <span className="kpill">
+                            Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}
+                          </span>
+                        ) : null}
+                        {editMode && (
+                          <>
+                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "learn", i)}>Edit</button>
+                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "learn", i)}>Delete</button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {editMode && (
+                    <button className="btn" onClick={() => addResource(di, "learn")}>Add Learn resource</button>
+                  )}
 
-                <h4>Reflect</h4>
-                <p style={{ marginTop: 6 }}>{d.reflect}</p>
-              </article>
-            ))}
+                  <h4>Practice</h4>
+                  <ul className="list">
+                    {d.practice.map((r, i) => (
+                      <li key={`P${d.day}-${i}`}>
+                        <strong>[{r.kind}]</strong>{" "}
+                        <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
+                        {r.split ? (
+                          <span className="kpill">
+                            Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}
+                          </span>
+                        ) : null}
+                        {editMode && (
+                          <>
+                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "practice", i)}>Edit</button>
+                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "practice", i)}>Delete</button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {editMode && (
+                    <button className="btn" onClick={() => addResource(di, "practice")}>Add Practice resource</button>
+                  )}
 
-            <footer>
+                  <h4>Reflect</h4>
+                  {!editMode ? (
+                    <p style={{ marginTop: 6 }}>{d.reflect}</p>
+                  ) : (
+                    <textarea
+                      style={{ width: "100%", minHeight: 90, marginTop: 6 }}
+                      value={d.reflect}
+                      onChange={(e) => onChangeReflect(di, e.target.value)}
+                    />
+                  )}
+                </article>
+              ))}
+            </section>
+
+            {/* Save to account (uses the possibly edited roadmap) */}
+            <section style={{ marginTop: 12 }}>
+              <h3>Save this roadmap</h3>
+              <label>Goal title</label>
+              <input
+                placeholder="e.g., Learn SQL for data analysis"
+                value={saveTitle}
+                onChange={(e) => setSaveTitle(e.target.value)}
+              />
               <button
                 className="btn"
-                onClick={() => {
-                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `${data.goal.replace(/\s+/g, "-").toLowerCase()}-roadmap.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
+                style={{ marginTop: 8 }}
+                onClick={async () => {
+                  if (!data) return;
+                  setSaveMsg(null);
+                  try {
+                    const res = await fetch("/api/goals", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        title: saveTitle || data.goal,
+                        dailyMinutes: data.daily_minutes,
+                        totalDays: data.total_days,
+                        roadmap: data,
+                      }),
+                    });
+                    setSaveMsg(res.ok ? "Saved! Open your Dashboard." : "Save failed (log in?)");
+                  } catch (e: any) {
+                    setSaveMsg(e.message || "Save failed");
+                  }
                 }}
               >
-                Download JSON
+                Save to my account
               </button>
-            </footer>
-          </section>
+              {saveMsg && <p>{saveMsg}</p>}
+            </section>
+          </>
         )}
       </div>
+
       <footer>
-        <p>Built with OpenAI Responses API and Structured Outputs.</p>
+        <p>Built with OpenAI Responses API (web_search tool) + Structured Outputs — generation logic unchanged.</p>
       </footer>
     </main>
   );
