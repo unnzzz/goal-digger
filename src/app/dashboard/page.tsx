@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Bento } from "@/components/ui/Bento";
+import { SplitBadge } from "@/components/ui/SplitBadge";
 
 const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
 
@@ -31,65 +33,108 @@ type GoalListItem = {
   startDate: string | null;
 };
 
-function SplitBadge({ r }: { r: { split?: SplitT; duration_minutes?: number | null } }) {
-  const s = r?.split;
-  if (!s) return null;
-  const part = Math.max(1, Number(s.part_number || 1));
-  const total = Math.max(part, Number(s.total_parts || part));
-  const range = s.range ? String(s.range) : "";
-  const approx =
-    typeof r.duration_minutes === "number" && r.duration_minutes > 0 && total > 0
-      ? `≈ ${Math.round(r.duration_minutes / total)} min`
-      : null;
+const CARD_COLORS = ["#FFD1A1", "#C6F1DA", "#9FD6FF", "#FFB3C7", "#C8B6FF", "#FFE6A7"];
+const SECTION_META: Record<
+  DailyItem["section"],
+  { label: string; icon: string; tint: string }
+> = {
+  learn: { label: "LEARN", icon: "📚", tint: "#EAF7FF" },
+  practice: { label: "PRACTICE", icon: "🛠️", tint: "#EFFFF1" },
+  reflect: { label: "REFLECT", icon: "💭", tint: "#FFF3F5" },
+};
+
+function colorFromKey(key: string) {
+  let h = 0;
+  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CARD_COLORS[h % CARD_COLORS.length];
+}
+
+function GoalCard({
+  g,
+  onView,
+  onStart,
+  onDelete,
+}: {
+  g: GoalListItem;
+  onView: (g: GoalListItem) => void;
+  onStart: (g: GoalListItem) => void;
+  onDelete: (g: GoalListItem) => void;
+}) {
+  const color = colorFromKey(g.title);
   return (
-    <span className="kpill">
-      Today: Part {part}/{total}
-      {range ? ` — ${range}` : ""}
-      {approx ? ` (${approx})` : ""}
-    </span>
+    <div className="goal-card" style={{ overflow: "hidden", background: "#fff" }}>
+      <div className="band" style={{ background: color }} />
+      <div style={{ padding: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span className="kpill" style={{ background: color, borderColor: "#00000022" }}>
+            🎯
+          </span>
+          <strong style={{ fontSize: 16 }}>{g.title}</strong>
+        </div>
+        <div className="meta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span className="kpill" title="Created">
+            🗓️ {new Date(g.createdAt).toISOString().slice(0, 10)}
+          </span>
+          {g.startDate ? (
+            <span className="kpill" title="Started">
+              ✅ Started: {new Date(g.startDate).toISOString().slice(0, 10)}
+            </span>
+          ) : (
+            <span className="kpill">⏳ Not started</span>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button className="btn" onClick={() => onView(g)}>
+            View
+          </button>
+          {!g.startDate && (
+            <button className="btn-ghost" onClick={() => onStart(g)}>
+              Start today
+            </button>
+          )}
+          <button className="btn-ghost" onClick={() => onDelete(g)}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function Dashboard() {
   const router = useRouter();
 
-  // Browser time zone (IANA)
-  const [tz, setTz] = useState<string>("America/Detroit");
+  // ---- Timezone (IANA) & tell server (for reminders, daily calc) ----
+  const [tz, setTz] = useState<string>("UTC");
   useEffect(() => {
     try {
       const guess = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (guess) setTz(guess);
+      if (guess) {
+        setTz(guess);
+        // also inform server; fire-and-forget
+        fetch("/api/me/tz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tz: guess }),
+        }).catch(() => {});
+      }
     } catch {}
   }, []);
-// after you setTz(guess)
-useEffect(() => {
-  try {
-    const guess = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (guess) {
-      setTz(guess);
-      // NEW: tell the server our TZ so reminders use it
-      fetch("/api/me/tz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tz: guess }),
-      });
-    }
-  } catch {}
-}, []);
 
-  // GOALS state
+  // ---- GOALS state ----
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [goalsErr, setGoalsErr] = useState<string | null>(null);
   const [goals, setGoals] = useState<GoalListItem[]>([]);
 
-  // DAILY state
+  // ---- DAILY state ----
   const [dailyLoading, setDailyLoading] = useState(true);
   const [dailyErr, setDailyErr] = useState<string | null>(null);
   const [daily, setDaily] = useState<DailyPayload | null>(null);
 
-  // Diary local state: drafts + “saved” flash
+  // ---- Diary drafts & "Saved!" flash ----
   const [diaryDrafts, setDiaryDrafts] = useState<Record<string, string>>({});
-  const [savedKeys, setSavedKeys] = useState<Record<string, number>>({}); // key -> timestamp
+  const [savedKeys, setSavedKeys] = useState<Record<string, number>>({});
 
   const startedCount = useMemo(() => goals.filter((g) => !!g.startDate).length, [goals]);
 
@@ -118,7 +163,6 @@ useEffect(() => {
     setDailyLoading(true);
     setDailyErr(null);
     try {
-      // No query param; server uses “today” in X-Timezone
       const res = await fetch(`/api/daily`, { cache: "no-store", headers: { "X-Timezone": tz } });
       if (res.status === 401) {
         router.push("/login");
@@ -195,11 +239,15 @@ useEffect(() => {
       return { ...prev, items: prev.items.map((x) => (x === it ? { ...x, completed: true } : x)) };
     });
     window.dispatchEvent(new Event("coins:refresh"));
+    // tiny toast
     alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins})`);
   };
 
   // ---- Diary helpers ----
   const diaryKeyFor = (it: DailyItem) => `${it.goalId}-${it.dayNumber}-${it.section}-${it.index}`;
+  const [openDiary, setOpenDiary] = useState<Record<string, boolean>>({});
+  const toggleDiary = (key: string) =>
+    setOpenDiary((p) => ({ ...p, [key]: !p[key] }));
 
   const onDiaryChange = (key: string, v: string) =>
     setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
@@ -252,52 +300,20 @@ useEffect(() => {
     }
   };
 
-  const renderDiaryBox = (it: DailyItem) => {
-    if (!(it.section === "practice" || it.section === "reflect")) return null;
-    const key = diaryKeyFor(it);
-    const placeholder =
-      it.section === "practice" ? "Diary: what did you practice/struggle with?" : "Diary: quick reflection…";
-    const val = diaryDrafts[key] ?? "";
-    const justSaved = key in savedKeys;
-
-    return (
-      <div style={{ marginTop: 6 }}>
-        <textarea
-          placeholder={placeholder}
-          style={{ width: "100%", minHeight: 80 }}
-          value={val}
-          onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
-          onKeyDown={(e) => onDiaryKeyDown(e, it)}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => saveDiary(it)}
-            disabled={!val.trim()}
-            title="Ctrl/Cmd+Enter to save"
-          >
-            Save diary
-          </button>
-          {justSaved ? <span className="kpill">Saved!</span> : <small>Tip: Ctrl/Cmd+Enter to save</small>}
-        </div>
-      </div>
-    );
+  const startGoal = async (g: GoalListItem) => {
+    const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = await fetch(`/api/goals/${g.id}/start`, {
+      method: "POST",
+      headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
+    });
+    if (!res.ok) {
+      alert("Could not start goal");
+      return;
+    }
+    const j = await res.json();
+    setGoals((prev) => prev.map((x) => (x.id === g.id ? { ...x, startDate: j.startDate } : x)));
+    await loadDaily();
   };
-
-const startGoal = async (g: GoalListItem) => {
-  const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const res = await fetch(`/api/goals/${g.id}/start`, {
-    method: "POST",
-    headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
-  });
-  if (!res.ok) { alert("Could not start goal"); return; }
-  const j = await res.json();
-  setGoals((prev) => prev.map((x) => (x.id === g.id ? { ...x, startDate: j.startDate } : x)));
-  await loadDaily();
-  // Optionally toast: “Reminders armed for today”
-};
-
 
   const viewGoal = (g: GoalListItem) => router.push(`/goal/${g.id}`);
 
@@ -317,133 +333,190 @@ const startGoal = async (g: GoalListItem) => {
     await loadDaily();
   };
 
-  return (
-    <main className="container">
-      <div className="card">
+  // ---- UI helpers ----
+  const niceDate = useMemo(() => {
+    try {
+      return daily?.date ? new Date(daily.date).toLocaleDateString(undefined, { dateStyle: "full" }) : "";
+    } catch {
+      return daily?.date || "";
+    }
+  }, [daily?.date]);
 
-        {/* ---- GOALS ---- */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h1 style={{ margin: 0 }}>Goals</h1>
+  const SectionCard = ({ it }: { it: DailyItem }) => {
+    const meta = SECTION_META[it.section];
+    const coins = COINS[it.section];
+    const key = diaryKeyFor(it);
+    const open = !!openDiary[key];
+
+    const goalColor = colorFromKey(it.goalTitle);
+    const bg = meta.tint;
+    return (
+      <div className="quest-card" style={{ background: bg, borderColor: "#00000022" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span className="kpill" style={{ background: goalColor, borderColor: "#00000022" }}>
+              {meta.icon}
+            </span>
+            <strong>
+              {it.goalTitle} — Day {it.dayNumber}
+            </strong>
+            <span className="kpill">{meta.label}</span>
+            <span className="kpill">+{coins} 💰</span>
+          </div>
+          <button
+            className={`btn ${it.completed ? "disabled" : ""}`}
+            onClick={(e) => completeQuest(it, e)}
+            disabled={!!it.completed}
+            title={it.completed ? "Already completed" : "Mark complete"}
+          >
+            {it.completed ? "Completed" : "Complete"}
+          </button>
         </div>
 
-        {goalsLoading && <p style={{ marginTop: 10 }}>Loading goals…</p>}
-        {goalsErr && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: "10px 12px",
-              border: "1px solid #5a1a1a",
-              background: "#2a0f0f",
-              color: "#ffb3b3",
-              borderRadius: 8,
-            }}
-          >
-            {goalsErr}
+        {it.section !== "reflect" && (it.title || it.url) ? (
+          <div style={{ marginTop: 10 }}>
+            <div className="res" style={{ alignItems: "center" }}>
+              <span className="dot" style={{ background: goalColor }} />
+              <div style={{ flex: 1 }}>
+                {it.url ? (
+                  <a href={it.url} target="_blank" rel="noreferrer">
+                    <strong>[{it.kind}]</strong> {it.title}
+                  </a>
+                ) : (
+                  <span>
+                    <strong>[{it.kind}]</strong> {it.title}
+                  </span>
+                )}
+                <div style={{ marginTop: 6 }}>
+                  <SplitBadge r={{ split: it.split, duration_minutes: it.duration_minutes ?? null }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: 8 }} className="meta">
+            {it.reflectText || "Reflect on what you learned today."}
           </div>
         )}
 
-        {!goalsLoading && !goalsErr && goals.length === 0 && (
-          <p style={{ marginTop: 10 }}>No goals yet. Generate a roadmap on the Generator page to get started.</p>
-        )}
-
-        <ul className="list" style={{ marginTop: 10 }}>
-          {goals.map((g) => (
-            <li key={g.id}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <strong>{g.title}</strong>
-                {g.startDate ? (
-                  <span className="kpill">Started: {new Date(g.startDate).toISOString().slice(0, 10)}</span>
-                ) : (
-                  <span className="kpill">Not started</span>
-                )}
-                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                  <button type="button" className="btn" onClick={() => viewGoal(g)}>View</button>
-                  {!g.startDate && (
-                    <button type="button" className="btn" onClick={() => startGoal(g)}>Start from today</button>
+        {/* Diary toggle + editor */}
+        {(it.section === "practice" || it.section === "reflect") && (
+          <div style={{ marginTop: 10 }}>
+            <button className="btn-ghost" onClick={() => toggleDiary(key)}>
+              {open ? "Hide diary" : "Add to diary"}
+            </button>
+            {open && (
+              <div className="card" style={{ marginTop: 8 }}>
+                <textarea
+                  placeholder={
+                    it.section === "practice"
+                      ? "Diary: what did you practice/struggle with?"
+                      : "Diary: quick reflection…"
+                  }
+                  style={{ width: "100%", minHeight: 90 }}
+                  value={diaryDrafts[key] ?? ""}
+                  onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
+                  onKeyDown={(e) => onDiaryKeyDown(e, it)}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => saveDiary(it)}
+                    disabled={!String(diaryDrafts[key] ?? "").trim()}
+                    title="Ctrl/Cmd+Enter to save"
+                  >
+                    Save diary
+                  </button>
+                  {key in savedKeys ? (
+                    <span className="kpill">Saved!</span>
+                  ) : (
+                    <small className="meta">Tip: Ctrl/Cmd+Enter</small>
                   )}
-                  <button type="button" className="btn" onClick={() => deleteGoal(g)}>Delete</button>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-
-        <hr style={{ margin: "16px 0", borderColor: "#333" }} />
-
-        {/* ---- DAILY QUESTS (Today in user TZ) ---- */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <h2 style={{ margin: 0 }}>
-            Daily quests {daily?.tz ? <span className="kpill">Today — {daily.tz}</span> : <span className="kpill">Today</span>}
-          </h2>
-        </div>
-
-        {startedCount === 0 ? (
-          <p style={{ marginTop: 10 }}>Start any goal to see its daily quests here.</p>
-        ) : (
-          <>
-            {dailyLoading && <p style={{ marginTop: 10 }}>Loading…</p>}
-            {dailyErr && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: "10px 12px",
-                  border: "1px solid #5a1a1a",
-                  background: "#2a0f0f",
-                  color: "#ffb3b3",
-                  borderRadius: 8,
-                  wordBreak: "break-word",
-                }}
-              >
-                {dailyErr}
-              </div>
             )}
-            {!dailyLoading && !dailyErr && (daily?.items?.length ?? 0) === 0 && (
-              <p style={{ marginTop: 10 }}>No quests for today.</p>
-            )}
-
-            <ul className="list" style={{ marginTop: 10 }}>
-              {daily?.items?.map((it, i) => {
-                const coins = COINS[it.section];
-                const key = `${it.goalId}-${it.dayNumber}-${it.section}-${it.index}-${i}`;
-                return (
-                  <li key={key}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <strong>
-                          {it.goalTitle} — Day {it.dayNumber} — {it.section.toUpperCase()}
-                        </strong>
-                        <span className="kpill">+{coins} coins</span>
-                        {it.section !== "reflect" && it.title && (
-                          <>
-                            <span>•</span>
-                            <strong>[{it.kind}]</strong>
-                            {it.url ? <a href={it.url} target="_blank" rel="noreferrer">{it.title}</a> : <span>{it.title}</span>}
-                            <SplitBadge r={{ split: it.split, duration_minutes: it.duration_minutes ?? null }} />
-                          </>
-                        )}
-                      </div>
-
-                      {it.section === "reflect" && (
-                        <div style={{ marginTop: 6 }}>
-                          <p style={{ margin: 0 }}>{it.reflectText || "Reflect on what you learned today."}</p>
-                        </div>
-                      )}
-
-                      <div style={{ marginTop: 6 }}>
-                        <button type="button" className="btn" onClick={(e) => completeQuest(it, e)} disabled={!!it.completed}>
-                          {it.completed ? "Completed" : "Complete"}
-                        </button>
-                      </div>
-
-                      {/* Diary box with Save button */}
-                      {renderDiaryBox(it)}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
+          </div>
         )}
+      </div>
+    );
+  };
+
+  // ---- Render ----
+  return (
+    <main className="container">
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <div className="logo" />
+        <h1 className="brand">Goal-Digger</h1>
+      </div>
+      <div className="subtitle">Your cozy dashboard — goals & today’s quests ✨</div>
+
+      <div className="bento-grid">
+        {/* GOALS */}
+        <Bento
+          title="Your goals"
+          color="var(--card)"
+          right={
+            <a className="btn" href="/">
+              + New roadmap
+            </a>
+          }
+        >
+          {goalsLoading && <div className="meta">Loading goals…</div>}
+          {goalsErr && (
+            <div className="card" style={{ borderColor: "#f99" }}>
+              {goalsErr}
+            </div>
+          )}
+          {!goalsLoading && !goalsErr && goals.length === 0 && (
+            <div className="meta">No goals yet. Generate a roadmap to get started.</div>
+          )}
+
+          <div
+            className="grid"
+            style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}
+          >
+            {goals.map((g) => (
+              <GoalCard key={g.id} g={g} onView={viewGoal} onStart={startGoal} onDelete={deleteGoal} />
+            ))}
+          </div>
+        </Bento>
+
+        {/* DAILY QUESTS */}
+        <Bento
+          title="Daily quests"
+          color="var(--card-2)"
+          right={
+            <span className="kpill">
+              {niceDate ? `Today • ${niceDate}` : "Today"} {daily?.tz ? `• ${daily.tz}` : ""}
+            </span>
+          }
+        >
+          {startedCount === 0 ? (
+            <div className="meta">Start any goal to see its daily quests here.</div>
+          ) : (
+            <>
+              {dailyLoading && <div className="meta">Loading today’s quests…</div>}
+              {dailyErr && (
+                <div className="card" style={{ borderColor: "#f99", wordBreak: "break-word" }}>
+                  {dailyErr}
+                </div>
+              )}
+              {!dailyLoading && !dailyErr && (items.length === 0) && (
+                <div className="meta">No quests for today. Great day to rest 🌤️</div>
+              )}
+
+              <div
+                className="grid"
+                style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 12 }}
+              >
+                {items.map((it, i) => (
+                  <SectionCard key={`${it.goalId}-${it.dayNumber}-${it.section}-${it.index}-${i}`} it={it} />
+                ))}
+              </div>
+            </>
+          )}
+        </Bento>
       </div>
     </main>
   );

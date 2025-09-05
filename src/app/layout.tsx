@@ -4,7 +4,7 @@ import Provider from "@/components/SessionProvider";
 import NavBar from "@/components/NavBar";
 
 export const metadata: Metadata = {
-  title: "Roadmap Generator",
+  title: "Goal-Digger",
   description: "Goal → daily roadmap with Learn / Practice / Reflect",
 };
 

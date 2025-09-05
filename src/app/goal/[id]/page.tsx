@@ -14,11 +14,32 @@ type Resource = {
   split: { total_parts: number; part_number: number; range?: string | null } | null;
 };
 
-type Day = { day: number; title: string; minutes: number; learn: Resource[]; practice: Resource[]; reflect: string; };
+type Day = {
+  day: number;
+  title: string;
+  minutes: number;
+  learn: Resource[];
+  practice: Resource[];
+  reflect: string;
+};
 
-type Roadmap = { goal: string; total_days: number; daily_minutes: number; days: Day[]; };
+type Roadmap = { goal: string; total_days: number; daily_minutes: number; days: Day[] };
 
-type Completion = { dayNumber: number; section: "learn" | "practice" | "reflect"; index: number; };
+type Completion = { dayNumber: number; section: "learn" | "practice" | "reflect"; index: number };
+
+const CARD_COLORS = ["#FFD1A1", "#C6F1DA", "#9FD6FF", "#FFB3C7", "#C8B6FF", "#FFE6A7"];
+const SECTION_META: Record<
+  "learn" | "practice" | "reflect",
+  { label: string; icon: string; tint: string }
+> = {
+  learn: { label: "LEARN", icon: "📚", tint: "#EAF7FF" },
+  practice: { label: "PRACTICE", icon: "🛠️", tint: "#EFFFF1" },
+  reflect: { label: "REFLECT", icon: "💭", tint: "#FFF3F5" },
+};
+
+function colorFromKey(n: number) {
+  return CARD_COLORS[n % CARD_COLORS.length];
+}
 
 function SplitBadge({
   r,
@@ -47,7 +68,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
   const router = useRouter();
 
   // Browser TZ for diary saves
-  const [tz, setTz] = useState<string>("America/Detroit");
+  const [tz, setTz] = useState<string>("UTC");
   useEffect(() => {
     try {
       const guess = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -76,7 +97,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     })();
   }, [params.id, router]);
 
-  // ---- helpers that don’t use hooks ----
+  // ---- helpers (no React hooks inside) ----
   const saveRoadmap = async () => {
     const res = await fetch(`/api/goals/${goal.id}`, {
       method: "PUT",
@@ -164,29 +185,31 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins})`);
   };
 
- const startToday = async (e?: React.MouseEvent) => {
-  e?.preventDefault(); e?.stopPropagation();
-  const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const res = await fetch(`/api/goals/${goal.id}/start`, {
-    method: "POST",
-    headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
-  });
-  if (!res.ok) { alert("Could not start"); return; }
-  const j = await res.json();
-  setGoal((g: any) => ({ ...g, startDate: j.startDate }));
-  alert("Starts today — reminders armed. Check Dashboard → Daily quests.");
-};
+  const startToday = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = await fetch(`/api/goals/${goal.id}/start`, {
+      method: "POST",
+      headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
+    });
+    if (!res.ok) {
+      alert("Could not start");
+      return;
+    }
+    const j = await res.json();
+    setGoal((g: any) => ({ ...g, startDate: j.startDate }));
+    alert("Starts today — reminders armed. Check Dashboard → Daily quests.");
+  };
 
-
-  // ----- Diary helpers (no hooks) -----
+  // ----- Diary helpers -----
   const [diaryDrafts, setDiaryDrafts] = useState<Record<string, string>>({});
   const [savedKeys, setSavedKeys] = useState<Record<string, number>>({});
 
   const diaryKeyFor = (day: number, section: "practice" | "reflect", index: number) =>
     `${goal?.id ?? "g"}-${day}-${section}-${index}`;
 
-  const onDiaryChange = (key: string, v: string) =>
-    setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
+  const onDiaryChange = (key: string, v: string) => setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
 
   const markSavedFlash = (key: string) => {
     setSavedKeys((prev) => ({ ...prev, [key]: Date.now() }));
@@ -207,12 +230,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     const res = await fetch("/api/diary", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Timezone": tz },
-      body: JSON.stringify({
-        goalId: goal.id,
-        type: section,
-        content,
-        dayNumber,
-      }),
+      body: JSON.stringify({ goalId: goal.id, type: section, content, dayNumber }),
     });
 
     if (!res.ok) {
@@ -249,12 +267,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       <div style={{ marginTop: 6 }}>
         <textarea
           placeholder="Diary: what did you practice/struggle with?"
-          style={{ width: "100%", minHeight: 80 }}
+          style={{ width: "100%", minHeight: 90 }}
           value={val}
           onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
           onKeyDown={(e) => onDiaryKeyDown(e, d.day, "practice", i)}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <button
             type="button"
             className="btn"
@@ -264,7 +282,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
           >
             Save diary
           </button>
-          {justSaved ? <span className="kpill">Saved!</span> : <small>Tip: Ctrl/Cmd+Enter to save</small>}
+          {justSaved ? <span className="kpill">Saved!</span> : <small className="meta">Tip: Ctrl/Cmd+Enter</small>}
         </div>
       </div>
     );
@@ -278,12 +296,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       <div style={{ marginTop: 6 }}>
         <textarea
           placeholder="Diary: quick reflection…"
-          style={{ width: "100%", minHeight: 80 }}
+          style={{ width: "100%", minHeight: 90 }}
           value={val}
           onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
           onKeyDown={(e) => onDiaryKeyDown(e, d.day, "reflect", 0)}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <button
             type="button"
             className="btn"
@@ -293,16 +311,15 @@ export default function GoalPage({ params }: { params: { id: string } }) {
           >
             Save diary
           </button>
-          {justSaved ? <span className="kpill">Saved!</span> : <small>Tip: Ctrl/Cmd+Enter to save</small>}
+          {justSaved ? <span className="kpill">Saved!</span> : <small className="meta">Tip: Ctrl/Cmd+Enter</small>}
         </div>
       </div>
     );
   };
 
-  // ✅ Plain const instead of useMemo (no conditional hooks issue)
+  // ✅ Plain const instead of useMemo (avoids “rendered more hooks” pitfalls)
   const dayOrder = (roadmap?.days ?? []).map((d) => d.day);
 
-  // Early returns are fine now — no hooks follow below
   if (loading) {
     return (
       <main className="container">
@@ -320,19 +337,21 @@ export default function GoalPage({ params }: { params: { id: string } }) {
 
   return (
     <main className="container">
-      <div className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      {/* Header card */}
+      <div className="card" style={{ background: "#FFF8E8" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 28 }}>🐾</span>
           <h1 style={{ margin: 0 }}>{goal.title}</h1>
           <span className="kpill">{roadmap.total_days} days</span>
           <span className="kpill">≈ {roadmap.daily_minutes} min/day</span>
           {!goal.startDate && (
-            <button type="button" className="btn" onClick={(e) => startToday(e)}>
+            <button type="button" className="btn" onClick={startToday} style={{ marginLeft: "auto" }}>
               Start from today
             </button>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button type="button" className="btn" onClick={() => setEditMode((v) => !v)}>
             {editMode ? "Stop editing" : "Edit roadmap"}
           </button>
@@ -341,159 +360,197 @@ export default function GoalPage({ params }: { params: { id: string } }) {
               Save changes
             </button>
           )}
+          <a className="btn-ghost" href="/dashboard" style={{ marginLeft: "auto" }}>
+            ← Back to dashboard
+          </a>
         </div>
+      </div>
 
-        {(roadmap.days ?? []).map((d, di) => (
-          <article key={di} className="day">
-            <h3>
-              Day {d.day}: {d.title} <span className="badge">{d.minutes} min</span>
-              {editMode && (
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8 }}
-                  onClick={() =>
-                    setRoadmap((prev) => {
-                      if (!prev) return prev;
-                      const t = prompt("New day title", prev.days[di].title);
-                      if (!t) return prev;
-                      const next = structuredClone(prev);
-                      next.days[di].title = t;
-                      return next;
-                    })
-                  }
-                >
-                  Edit title
-                </button>
-              )}
-            </h3>
-
-            <h4>Learn</h4>
-            <ul className="list">
-              {d.learn.map((r, i) => (
-                <li key={`L${di}-${i}`}>
-                  <strong>[{r.kind}]</strong>{" "}
-                  <a href={r.url} target="_blank" rel="noreferrer">
-                    {r.title}
-                  </a>
-                  <SplitBadge r={r} />
-                  <span className="kpill">+{COINS.learn} coins</span>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ marginLeft: 8 }}
-                    onClick={(e) => completeQuest(d.day, "learn", i, e)}
-                    disabled={isCompleted(d.day, "learn", i)}
-                  >
-                    {isCompleted(d.day, "learn", i) ? "Completed" : "Complete"}
-                  </button>
+      {/* Days grid */}
+      <div
+        className="grid"
+        style={{ marginTop: 12, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}
+      >
+        {(roadmap.days ?? []).map((d, di) => {
+          const band = colorFromKey(di);
+          return (
+            <article key={di} className="card" style={{ overflow: "hidden" }}>
+              <div className="band" style={{ height: 8, background: band }} />
+              <div style={{ padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="kpill" style={{ background: band, borderColor: "#00000022" }}>
+                    Day {d.day}
+                  </span>
+                  <strong style={{ fontSize: 16 }}>{d.title}</strong>
+                  <span className="kpill">{d.minutes} min</span>
                   {editMode && (
-                    <>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "learn", i)}>
-                        Edit
-                      </button>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "learn", i)}>
-                        Delete
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() =>
+                        setRoadmap((prev) => {
+                          if (!prev) return prev;
+                          const t = prompt("New day title", prev.days[di].title);
+                          if (!t) return prev;
+                          const next = structuredClone(prev);
+                          next.days[di].title = t;
+                          return next;
+                        })
+                      }
+                    >
+                      Edit title
+                    </button>
                   )}
-                </li>
-              ))}
-            </ul>
-            {editMode && (
-              <button type="button" className="btn" onClick={() => addResource(di, "learn")}>
-                Add Learn resource
-              </button>
-            )}
+                </div>
 
-            <h4>Practice</h4>
-            <ul className="list">
-              {d.practice.map((r, i) => (
-                <li key={`P${di}-${i}`} style={{ marginBottom: 10 }}>
-                  <strong>[{r.kind}]</strong>{" "}
-                  <a href={r.url} target="_blank" rel="noreferrer">
-                    {r.title}
-                  </a>
-                  <SplitBadge r={r} />
-                  <span className="kpill">+{COINS.practice} coins</span>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ marginLeft: 8 }}
-                    onClick={(e) => completeQuest(d.day, "practice", i, e)}
-                    disabled={isCompleted(d.day, "practice", i)}
-                  >
-                    {isCompleted(d.day, "practice", i) ? "Completed" : "Complete"}
-                  </button>
+                {/* LEARN */}
+                <section className="quest-card" style={{ background: SECTION_META.learn.tint, marginTop: 12 }}>
+                  <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="kpill">📚 {SECTION_META.learn.label}</span>
+                    <span className="kpill">+{COINS.learn} coins</span>
+                  </header>
+
+                  <ul className="list" style={{ marginTop: 8 }}>
+                    {d.learn.map((r, i) => (
+                      <li key={`L${di}-${i}`}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <strong>[{r.kind}]</strong>
+                          <a href={r.url} target="_blank" rel="noreferrer">
+                            {r.title}
+                          </a>
+                          <SplitBadge r={r} />
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={(e) => completeQuest(d.day, "learn", i, e)}
+                            disabled={isCompleted(d.day, "learn", i)}
+                            style={{ marginLeft: "auto" }}
+                          >
+                            {isCompleted(d.day, "learn", i) ? "Completed" : "Complete"}
+                          </button>
+                          {editMode && (
+                            <>
+                              <button className="btn-ghost" onClick={() => editResource(di, "learn", i)}>
+                                Edit
+                              </button>
+                              <button className="btn-ghost" onClick={() => deleteResource(di, "learn", i)}>
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                   {editMode && (
-                    <>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "practice", i)}>
-                        Edit
+                    <button type="button" className="btn-ghost" onClick={() => addResource(di, "learn")}>
+                      + Add Learn resource
+                    </button>
+                  )}
+                </section>
+
+                {/* PRACTICE */}
+                <section className="quest-card" style={{ background: SECTION_META.practice.tint, marginTop: 12 }}>
+                  <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="kpill">🛠️ {SECTION_META.practice.label}</span>
+                    <span className="kpill">+{COINS.practice} coins</span>
+                  </header>
+
+                  <ul className="list" style={{ marginTop: 8 }}>
+                    {d.practice.map((r, i) => (
+                      <li key={`P${di}-${i}`} style={{ marginBottom: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <strong>[{r.kind}]</strong>
+                          <a href={r.url} target="_blank" rel="noreferrer">
+                            {r.title}
+                          </a>
+                          <SplitBadge r={r} />
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={(e) => completeQuest(d.day, "practice", i, e)}
+                            disabled={isCompleted(d.day, "practice", i)}
+                            style={{ marginLeft: "auto" }}
+                          >
+                            {isCompleted(d.day, "practice", i) ? "Completed" : "Complete"}
+                          </button>
+                          {editMode && (
+                            <>
+                              <button className="btn-ghost" onClick={() => editResource(di, "practice", i)}>
+                                Edit
+                              </button>
+                              <button className="btn-ghost" onClick={() => deleteResource(di, "practice", i)}>
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Practice diary */}
+                        <div>{renderPracticeDiary(d, i)}</div>
+                      </li>
+                    ))}
+                  </ul>
+                  {editMode && (
+                    <button type="button" className="btn-ghost" onClick={() => addResource(di, "practice")}>
+                      + Add Practice resource
+                    </button>
+                  )}
+                </section>
+
+                {/* REFLECT */}
+                <section className="quest-card" style={{ background: SECTION_META.reflect.tint, marginTop: 12 }}>
+                  <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="kpill">💭 {SECTION_META.reflect.label}</span>
+                    <span className="kpill">+{COINS.reflect} coins</span>
+                  </header>
+
+                  {!editMode ? (
+                    <div style={{ marginTop: 8 }}>
+                      <p style={{ margin: 0 }}>{d.reflect}</p>
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ marginTop: 8 }}
+                        onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
+                        disabled={isCompleted(d.day, "reflect", 0)}
+                      >
+                        {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
                       </button>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "practice", i)}>
-                        Delete
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 8 }}>
+                      <textarea
+                        style={{ width: "100%", minHeight: 90 }}
+                        value={d.reflect}
+                        onChange={(e) =>
+                          setRoadmap((prev) => {
+                            if (!prev) return prev;
+                            const next = structuredClone(prev);
+                            next.days[di].reflect = e.target.value;
+                            return next;
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ marginTop: 8 }}
+                        onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
+                        disabled={isCompleted(d.day, "reflect", 0)}
+                      >
+                        {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
                       </button>
-                    </>
+                    </div>
                   )}
 
-                  {/* Practice diary box */}
-                  {renderPracticeDiary(d, i)}
-                </li>
-              ))}
-            </ul>
-            {editMode && (
-              <button type="button" className="btn" onClick={() => addResource(di, "practice")}>
-                Add Practice resource
-              </button>
-            )}
-
-            <h4>Reflect</h4>
-            {!editMode ? (
-              <div style={{ marginBottom: 6 }}>
-                <p style={{ margin: 0 }}>
-                  {d.reflect} <span className="kpill">+{COINS.reflect} coins</span>
-                </p>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8, marginTop: 6 }}
-                  onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
-                  disabled={isCompleted(d.day, "reflect", 0)}
-                >
-                  {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
-                </button>
+                  {/* Reflect diary */}
+                  <div style={{ marginTop: 8 }}>{renderReflectDiary(d)}</div>
+                </section>
               </div>
-            ) : (
-              <div style={{ marginBottom: 6 }}>
-                <textarea
-                  style={{ width: "100%", minHeight: 90 }}
-                  value={d.reflect}
-                  onChange={(e) =>
-                    setRoadmap((prev) => {
-                      if (!prev) return prev;
-                      const next = structuredClone(prev);
-                      next.days[di].reflect = e.target.value;
-                      return next;
-                    })
-                  }
-                />
-                <span className="kpill">+{COINS.reflect} coins</span>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8 }}
-                  onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
-                  disabled={isCompleted(d.day, "reflect", 0)}
-                >
-                  {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
-                </button>
-              </div>
-            )}
-
-            {/* Reflect diary box */}
-            {renderReflectDiary(d)}
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </main>
   );
