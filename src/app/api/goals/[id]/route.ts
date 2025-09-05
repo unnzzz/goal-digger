@@ -6,8 +6,17 @@ export async function GET(_: Request, { params }: { params: { id:string } }) {
   const s = await getServerSession(authOptions);
   if (!s?.user?.email) return new Response("Unauthorized", { status:401 });
   const u = await prisma.user.findUnique({ where: { email: s.user.email } });
-  const goal = await prisma.goal.findFirst({ where: { id: params.id, userId: u!.id } });
-  return goal ? new Response(JSON.stringify(goal)) : new Response("Not found", { status:404 });
+  if (!u) return new Response("Unauthorized", { status:401 });
+
+  const goal = await prisma.goal.findFirst({ where: { id: params.id, userId: u.id } });
+  if (!goal) return new Response("Not found", { status:404 });
+
+  const completions = await prisma.questCompletion.findMany({
+    where: { userId: u.id, goalId: goal.id },
+    select: { dayNumber: true, section: true, index: true },
+  });
+
+  return new Response(JSON.stringify({ goal, completions }), { headers: { "Content-Type":"application/json" } });
 }
 
 export async function PUT(req: Request, { params }: { params: { id:string } }) {

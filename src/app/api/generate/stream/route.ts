@@ -1,6 +1,8 @@
+// src/app/api/generate/stream/route.ts
 import { z } from "zod";
 import { generateRoadmap } from "@/lib/generateRoadmap";
 import type { RoadmapT } from "@/lib/schema";
+import { checkGoalSafety } from "@/lib/goalGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,30 @@ function enc(obj: any) {
 
 export async function POST(req: Request) {
   try {
+    // Parse once so we can run the safety check before heavy work
     const body = await req.json();
+
+    // ---- SAFETY GUARD: block illegal/explicit goals early (NDJSON error to match client) ----
+    {
+      const goal = String(body?.goal || "");
+      const guard = checkGoalSafety(goal);
+      if (!guard.ok) {
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(enc({ type: "error", message: guard.reason || "This goal is not allowed." }));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          status: 400,
+          headers: {
+            "Content-Type": "application/x-ndjson",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+    }
+
     const params = Input.parse(body);
 
     const stream = new ReadableStream({
@@ -96,7 +121,6 @@ export async function POST(req: Request) {
         let inFlight = 0;
         let nextIdx = 0;
         let completedWeight = 0;
-        let allStarted = false;
         let stitching = false;
         let tickTimer: ReturnType<typeof setInterval> | null = null;
 
