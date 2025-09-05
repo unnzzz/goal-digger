@@ -1,5 +1,8 @@
 "use client";
+
 import { useState } from "react";
+
+const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
 
 type Resource = {
   kind: "watch" | "listen" | "read";
@@ -26,6 +29,21 @@ type Roadmap = {
   days: Day[];
 };
 
+function SplitBadge({ r }: { r: Resource }) {
+  if (!r?.split) return null;
+  const { part_number, total_parts, range } = r.split;
+  const approx =
+    r.duration_minutes && total_parts
+      ? `≈ ${Math.round(r.duration_minutes / total_parts)} min`
+      : null;
+  return (
+    <span className="kpill">
+      Today: Part {part_number}/{total_parts}
+      {range ? ` — ${range}` : ""}{approx ? ` (${approx})` : ""}
+    </span>
+  );
+}
+
 export default function Page() {
   // form state
   const [goal, setGoal] = useState("");
@@ -35,7 +53,7 @@ export default function Page() {
 
   // generation state
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<number>(0);   // 0–100
+  const [progress, setProgress] = useState<number>(0); // 0–100
   const [status, setStatus] = useState<string>("");
   const [data, setData] = useState<Roadmap | null>(null);
   const [original, setOriginal] = useState<Roadmap | null>(null);
@@ -44,9 +62,14 @@ export default function Page() {
   // editing state
   const [editMode, setEditMode] = useState(false);
 
-  // save-to-account state
+  // save state (prevents double-create)
   const [saveTitle, setSaveTitle] = useState("");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // community suggestions
+  const [comm, setComm] = useState<{ highlights: string[]; resources: { title: string; url: string }[] } | null>(null);
+  const [commLoading, setCommLoading] = useState(false);
 
   // ---- inline edit helpers (before saving) ----
   const setRoadmap = (updater: (prev: Roadmap) => Roadmap) => {
@@ -54,12 +77,21 @@ export default function Page() {
   };
 
   const addResource = (dayIdx: number, section: "learn" | "practice") => {
-    const title = prompt("Resource title"); if (!title) return;
-    const url = prompt("Resource URL"); if (!url) return;
+    const title = prompt("Resource title");
+    if (!title) return;
+    const url = prompt("Resource URL");
+    if (!url) return;
     const kind = (prompt('kind: "watch" | "listen" | "read"') || "read") as Resource["kind"];
     setRoadmap((prev) => {
       const next = structuredClone(prev);
-      next.days[dayIdx][section].push({ kind, title, url, source: null, duration_minutes: null, split: null });
+      next.days[dayIdx][section].push({
+        kind,
+        title,
+        url,
+        source: null,
+        duration_minutes: null,
+        split: null,
+      });
       return next;
     });
   };
@@ -108,78 +140,126 @@ export default function Page() {
     setEditMode(false);
   };
 
-  // ---- generation submit (always streaming) ----
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setData(null);
-    setOriginal(null);
-    setEditMode(false);
-    setLoading(true);
-    setProgress(0);
-    setStatus("Starting…");
+  // ---- generation submit (NDJSON streaming) ----
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  setData(null);
+  setOriginal(null);
+  setEditMode(false);
+  setSaveMsg(null);
+  setSaving(false);
+  setComm(null);
+  setCommLoading(false);
+  setProgress(0);
+  setStatus("Starting…");
+  setLoading(true);
 
-    try {
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal,
-          daily_minutes: Number(dailyMinutes),
-          total_days: targetDate ? undefined : Number(totalDays),
-          target_date: targetDate || undefined,
-        }),
-      });
+  try {
+    const res = await fetch("/api/generate/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        goal,
+        daily_minutes: Number(dailyMinutes),
+        total_days: targetDate ? undefined : Number(totalDays),
+        target_date: targetDate || undefined,
+      }),
+    });
 
-      if (!res.body) throw new Error("No response stream");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
+    // If server rejects and doesn't provide a body (unlikely), show text
+    if (!res.body) {
+      const text = await res.text();
+      setError(text || "Generation failed.");
+      setLoading(false);
+      setStatus("");
+      setProgress(0);
+      return;
+    }
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let aborted = false;
 
-        let idx;
-        while ((idx = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, idx).trim();
-          buf = buf.slice(idx + 1);
-          if (!line) continue;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
 
+      let idx;
+      while ((idx = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, idx).trim();
+        buf = buf.slice(idx + 1);
+        if (!line) continue;
+
+        let evt: any = null;
+        try {
+          evt = JSON.parse(line);
+        } catch {
+          // ignore malformed line and continue
+          continue;
+        }
+
+        if (evt.type === "progress") {
+          const pct =
+            typeof evt.percent === "number"
+              ? Math.max(0, Math.min(100, Math.round(evt.percent)))
+              : Math.round((evt.done / Math.max(1, evt.total)) * 100);
+          setProgress(pct);
+          if (evt.message) setStatus(evt.message);
+          continue;
+        }
+
+        if (evt.type === "error") {
+          // <<< SHOW THE MESSAGE & STOP >>>
+          setError(evt.message || "This goal is not allowed.");
+          setLoading(false);
+          setStatus("");
+          setProgress(0);
+          aborted = true;
+          try { await reader.cancel(); } catch {}
+          break; // break inner while
+        }
+
+        if (evt.type === "result") {
+          const out = evt.data as Roadmap;
+          setData(out);
+          setOriginal(out);
+          setSaveTitle(out.goal);
+          setProgress(100);
+          setStatus("Done");
+
+          // Load community suggestions (Reddit)
+          setComm(null);
+          setCommLoading(true);
           try {
-            const evt = JSON.parse(line);
-
-            if (evt.type === "progress") {
-              const pct = typeof evt.percent === "number"
-                ? Math.max(0, Math.min(100, Math.round(evt.percent)))
-                : Math.round((evt.done / Math.max(1, evt.total)) * 100);
-              setProgress(pct);
-              if (evt.message) setStatus(evt.message);
-            }
-
-            if (evt.type === "result") {
-              const out = evt.data as Roadmap;
-              setData(out);
-              setOriginal(out);
-              setProgress(100);
-              setStatus("Done");
-            }
-
-            if (evt.type === "error") {
-              throw new Error(evt.message || "Generation error");
-            }
+            const r = await fetch("/api/community", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ goal: out.goal }),
+            });
+            const j = await r.json();
+            setComm(j.suggestions || null);
           } catch {
-            // ignore malformed lines
+            setComm(null);
+          } finally {
+            setCommLoading(false);
           }
+
+          continue;
         }
       }
-    } catch (err: any) {
-      setError(err?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
+
+      if (aborted) break; // stop outer read loop too
     }
-  };
+  } catch (err: any) {
+    setError(err?.message || "Unexpected error");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <main className="container">
@@ -261,7 +341,8 @@ export default function Page() {
             <section style={{ marginTop: 20 }}>
               <header>
                 <h2>
-                  {data.goal} <span className="kpill">{data.total_days} days</span>{" "}
+                  {data.goal}{" "}
+                  <span className="kpill">{data.total_days} days</span>{" "}
                   <span className="kpill">≈ {data.daily_minutes} min/day</span>
                 </h2>
               </header>
@@ -283,11 +364,8 @@ export default function Page() {
                       <li key={`L${d.day}-${i}`}>
                         <strong>[{r.kind}]</strong>{" "}
                         <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                        {r.split ? (
-                          <span className="kpill">
-                            Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}
-                          </span>
-                        ) : null}
+                        <SplitBadge r={r} />
+                        <span className="kpill">+{COINS.learn} coins</span>
                         {editMode && (
                           <>
                             <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "learn", i)}>Edit</button>
@@ -307,11 +385,8 @@ export default function Page() {
                       <li key={`P${d.day}-${i}`}>
                         <strong>[{r.kind}]</strong>{" "}
                         <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                        {r.split ? (
-                          <span className="kpill">
-                            Part {r.split.part_number}/{r.split.total_parts}: {r.split.range}
-                          </span>
-                        ) : null}
+                        <SplitBadge r={r} />
+                        <span className="kpill">+{COINS.practice} coins</span>
                         {editMode && (
                           <>
                             <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "practice", i)}>Edit</button>
@@ -327,13 +402,18 @@ export default function Page() {
 
                   <h4>Reflect</h4>
                   {!editMode ? (
-                    <p style={{ marginTop: 6 }}>{d.reflect}</p>
+                    <p style={{ marginTop: 6 }}>
+                      {d.reflect} <span className="kpill">+{COINS.reflect} coins</span>
+                    </p>
                   ) : (
-                    <textarea
-                      style={{ width: "100%", minHeight: 90, marginTop: 6 }}
-                      value={d.reflect}
-                      onChange={(e) => onChangeReflect(di, e.target.value)}
-                    />
+                    <div style={{ marginTop: 6 }}>
+                      <textarea
+                        style={{ width: "100%", minHeight: 90 }}
+                        value={d.reflect}
+                        onChange={(e) => onChangeReflect(di, e.target.value)}
+                      />
+                      <span className="kpill">+{COINS.reflect} coins</span>
+                    </div>
                   )}
                 </article>
               ))}
@@ -348,32 +428,115 @@ export default function Page() {
                 value={saveTitle}
                 onChange={(e) => setSaveTitle(e.target.value)}
               />
-              <button
-                className="btn"
-                style={{ marginTop: 8 }}
-                onClick={async () => {
-                  if (!data) return;
-                  setSaveMsg(null);
-                  try {
-                    const res = await fetch("/api/goals", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        title: saveTitle || data.goal,
-                        dailyMinutes: data.daily_minutes,
-                        totalDays: data.total_days,
-                        roadmap: data,
-                      }),
-                    });
-                    setSaveMsg(res.ok ? "Saved! Open your Dashboard." : "Save failed (log in?)");
-                  } catch (e: any) {
-                    setSaveMsg(e.message || "Save failed");
-                  }
-                }}
-              >
-                Save to my account
-              </button>
-              {saveMsg && <p>{saveMsg}</p>}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                <button
+                  className="btn"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!data) return;
+                    setSaving(true);
+                    setSaveMsg(null);
+                    try {
+                      const res = await fetch("/api/goals", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title: saveTitle || data.goal,
+                          dailyMinutes: data.daily_minutes,
+                          totalDays: data.total_days,
+                          roadmap: data,
+                          startNow: false,
+                        }),
+                      });
+                      const j = await res.json();
+                      setSaveMsg(
+                        res.ok
+                          ? j.existed
+                            ? "Already saved."
+                            : "Saved!"
+                          : "Save failed (log in?)"
+                      );
+                    } catch (e: any) {
+                      setSaveMsg(e.message || "Save failed");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  {saving ? "Saving…" : "Save to my account"}
+                </button>
+
+                <button
+                  className="btn"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!data) return;
+                    setSaving(true);
+                    setSaveMsg(null);
+                    try {
+                      const res = await fetch("/api/goals", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title: saveTitle || data.goal,
+                          dailyMinutes: data.daily_minutes,
+                          totalDays: data.total_days,
+                          roadmap: data,
+                          startNow: true, // idempotent server will only set once
+                        }),
+                      });
+                      const j = await res.json();
+                      setSaveMsg(
+                        res.ok
+                          ? j.existed
+                            ? "Already saved — started today if not already."
+                            : "Saved & started! Check Dashboard → Daily quests."
+                          : "Save failed (log in?)"
+                      );
+                    } catch (e: any) {
+                      setSaveMsg(e.message || "Save failed");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  {saving ? "Starting…" : "Save & start today"}
+                </button>
+              </div>
+              {saveMsg && <p style={{ marginTop: 8 }}>{saveMsg}</p>}
+            </section>
+
+            {/* Community suggestions */}
+            <section style={{ marginTop: 20 }}>
+              <h3>Community suggestions (Reddit)</h3>
+              {commLoading && <p>Gathering advice…</p>}
+              {comm && (
+                <>
+                  {comm.highlights?.length ? (
+                    <ul className="list">
+                      {comm.highlights.map((h, i) => (
+                        <li key={i}>{h}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No highlights found.</p>
+                  )}
+                  {comm.resources?.length ? (
+                    <>
+                      <h4>Resources mentioned</h4>
+                      <ul className="list">
+                        {comm.resources.map((r, i) => (
+                          <li key={i}>
+                            <a href={r.url} target="_blank" rel="noreferrer">
+                              {r.title || r.url}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </>
+              )}
             </section>
           </>
         )}

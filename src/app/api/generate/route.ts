@@ -11,84 +11,195 @@ const Input = z.object({
   daily_minutes: z.number().int(),
 });
 
+// Tunables
 const CHUNK_SIZE = Number(process.env.FAST_CHUNK_SIZE ?? 7);
 const CONCURRENCY = Number(process.env.FAST_CONCURRENCY ?? 3);
+const TICK_MS = 1000;
+const EMA_ALPHA = 0.3;
+const STITCHING_FRACTION = 0.02;
 
-// simple in-memory cache (optional)
-const cache = new Map<string, { at: number; json: string }>();
-const CACHE_TTL_MS = 1000 * 60 * 60; // 1h
-
-function keyOf(p: any) { return JSON.stringify(p); }
-function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
-async function pLimit<T>(limit: number, tasks: (() => Promise<T>)[]) {
-  const results: T[] = new Array(tasks.length);
-  let i = 0, active = 0;
-  return await new Promise<T[]>((resolve, reject) => {
-    const next = () => {
-      if (i === tasks.length && active === 0) return resolve(results);
-      while (active < limit && i < tasks.length) {
-        const cur = i++;
-        active++;
-        tasks[cur]().then(
-          (r) => { results[cur] = r; active--; next(); },
-          (e) => reject(e)
-        );
-      }
-    };
-    next();
-  });
-}
+type Task = () => Promise<RoadmapT>;
+type ChunkMeta = {
+  id: number;
+  spanDays: number;
+  run: Task;
+  start?: number;
+  end?: number;
+  done: boolean;
+};
 
 export async function POST(req: Request) {
+  const encoder = new TextEncoder();
+  let closed = false;
+  let tickTimer: ReturnType<typeof setInterval> | null = null;
+
+  function safeSend(controller: ReadableStreamDefaultController<Uint8Array>, obj: any) {
+    if (closed) return;
+    try {
+      controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+    } catch {
+      // if enqueue throws (closed), mark closed to prevent further sends
+      closed = true;
+    }
+  }
+
+  function closeAll(controller: ReadableStreamDefaultController<Uint8Array>) {
+    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    if (closed) return;
+    closed = true;
+    try { controller.close(); } catch {}
+  }
+
   try {
     const body = await req.json();
     const params = Input.parse(body);
 
-    // cache hit?
-    const key = keyOf(params);
-    const cached = cache.get(key);
-    if (cached && (Date.now() - cached.at) < CACHE_TTL_MS) {
-      return new Response(cached.json, { status: 200, headers: { "Content-Type": "application/json" } });
-    }
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        // abort handling
+        const abort = (msg?: string) => {
+          if (!closed) {
+            safeSend(controller, { type: "error", message: msg || "Aborted" });
+            closeAll(controller);
+          }
+        };
+        try {
+          // if client disconnects
+          // @ts-expect-error: Request in Next has a signal
+          const signal: AbortSignal | undefined = (req as any).signal;
+          if (signal) {
+            signal.addEventListener("abort", () => abort("Client disconnected"));
+          }
 
-    // If target_date is used or total_days is small, single call (unchanged logic)
-    if (params.target_date || !params.total_days || params.total_days <= CHUNK_SIZE) {
-      const data = await generateRoadmap(params);
-      const json = JSON.stringify(data);
-      cache.set(key, { at: Date.now(), json });
-      return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
-    }
+          // Build chunks (even for small plans we make 1 chunk for smooth progress)
+          const chunks: ChunkMeta[] = (() => {
+            if (params.target_date && !params.total_days) {
+              return [{ id: 0, spanDays: 1, run: () => generateRoadmap(params), done: false }];
+            }
+            const totalDays = Math.max(1, Number(params.total_days ?? 1));
+            const arr: ChunkMeta[] = [];
+            let rem = totalDays, id = 0;
+            while (rem > 0) {
+              const span = Math.min(rem, Math.max(1, CHUNK_SIZE));
+              const sub = { goal: params.goal, total_days: span, daily_minutes: params.daily_minutes } as const;
+              arr.push({ id: id++, spanDays: span, run: () => generateRoadmap(sub), done: false });
+              rem -= span;
+            }
+            return arr;
+          })();
 
-    // Otherwise: split into chunks and run in parallel (same logic per chunk)
-    const tasks: (() => Promise<RoadmapT>)[] = [];
-    let remaining = params.total_days!;
-    while (remaining > 0) {
-      const span = Math.min(remaining, CHUNK_SIZE);
-      const sub = { goal: params.goal, total_days: span, daily_minutes: params.daily_minutes } as const;
-      tasks.push(() => generateRoadmap(sub));
-      remaining -= span;
-    }
+          const totalWeight = chunks.reduce((s, c) => s + c.spanDays, 0);
+          let emaMsPerDay = 8000; // adaptive estimate
+          let completedWeight = 0;
+          let stitching = false;
 
-    const chunks = await pLimit(CONCURRENCY, tasks);
+          const chunkingMax = 1 - STITCHING_FRACTION;
 
-    // stitch and renumber days (logic content unchanged)
-    const first = chunks[0];
-    const allDays = chunks.flatMap(c => c.days);
-    allDays.forEach((d, i) => (d.day = i + 1));
-    const merged: RoadmapT = {
-      ...first,
-      total_days: allDays.length,
-      days: allDays,
-    };
+          const calcPercent = (now = Date.now()) => {
+            let active = 0;
+            for (const ch of chunks) {
+              if (ch.done || ch.start == null || ch.end != null) continue;
+              const elapsed = now - ch.start;
+              const expect = Math.max(emaMsPerDay * ch.spanDays, 1000);
+              const frac = Math.min(0.99, elapsed / expect);
+              active += ch.spanDays * frac;
+            }
+            const weight = completedWeight + active;
+            return Math.min(1, (weight / totalWeight) * chunkingMax);
+          };
 
-    const json = JSON.stringify(merged);
-    cache.set(key, { at: Date.now(), json });
-    return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
-  } catch (err: any) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: err.message ?? "Unknown error" }), {
-      status: 400, headers: { "Content-Type": "application/json" }
+          const emitProgress = (message?: string) => {
+            const pct = Math.round(Math.max(0, Math.min(1, calcPercent())) * 100);
+            safeSend(controller, { type: "progress", percent: pct, message: message || "Working…", done: pct, total: 100 });
+          };
+
+          // Ticking micro-progress (never after close)
+          tickTimer = setInterval(() => {
+            if (!closed && !stitching) emitProgress();
+          }, TICK_MS);
+
+          emitProgress("Starting…");
+
+          // Concurrency runner with progress updates
+          const results: RoadmapT[] = new Array(chunks.length);
+          await new Promise<void>((resolve, reject) => {
+            let inFlight = 0;
+            let nextIdx = 0;
+
+            const runNext = () => {
+              if (closed) return; // client aborted
+              if (nextIdx >= chunks.length && inFlight === 0) return resolve();
+
+              while (inFlight < CONCURRENCY && nextIdx < chunks.length) {
+                const idx = nextIdx++;
+                const ch = chunks[idx];
+                ch.start = Date.now();
+                inFlight++;
+
+                ch.run()
+                  .then((res) => {
+                    ch.end = Date.now();
+                    ch.done = true;
+                    results[idx] = res;
+                    const ms = Math.max(1, (ch.end - ch.start));
+                    const mpd = ms / ch.spanDays;
+                    emaMsPerDay = EMA_ALPHA * mpd + (1 - EMA_ALPHA) * emaMsPerDay;
+                    completedWeight += ch.spanDays;
+                    emitProgress(`Generated ${completedWeight}/${totalWeight} days`);
+                  })
+                  .catch((e) => {
+                    reject(e);
+                  })
+                  .finally(() => {
+                    inFlight--;
+                    runNext();
+                  });
+              }
+            };
+
+            runNext();
+          });
+
+          // Stitching phase
+          stitching = true;
+          if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+
+          const pre = Math.max(99, Math.round(calcPercent() * 100));
+          safeSend(controller, { type: "progress", percent: pre, message: "Stitching…" });
+
+          const first = results[0];
+          const allDays = results.flatMap((r) => r.days);
+          allDays.forEach((d, i) => (d.day = i + 1));
+          const merged: RoadmapT = { ...first, total_days: allDays.length, days: allDays };
+
+          safeSend(controller, { type: "progress", percent: 100, message: "Done" });
+          safeSend(controller, { type: "result", data: merged });
+          closeAll(controller);
+        } catch (e: any) {
+          if (!closed) {
+            const msg = e?.message || "Generation failed";
+            safeSend(controller, { type: "error", message: msg });
+            closeAll(controller);
+          }
+        }
+      }
     });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err: any) {
+    // Fallback if creating the stream failed before start()
+    const msg = err?.message ?? "Unknown error";
+    const rs = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(JSON.stringify({ type: "error", message: msg }) + "\n"));
+        controller.close();
+      }
+    });
+    return new Response(rs, { status: 400, headers: { "Content-Type": "application/x-ndjson" } });
   }
 }

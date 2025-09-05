@@ -6,10 +6,13 @@ LINK LOGIC
 - Prefer high quality sources and YouTube chapters; avoid homepages and paywalls.
 
 CONTENT RULES
-- Each day: Learn (2–4 links; mix watch/listen/read), Practice (1–3 links), Reflect (text only).
+- Each day: Learn (1–3 links; mix watch/listen/read), Practice (1–3 links), Reflect (text only).
+- Give quests durations as much that the sum of the quest durations is not more than the daily_minutes set by the user.
+- Start with beginner-friendly resources, then ramp up difficulty.
 - Include enough videos overall.
 - Split long items across days with split { total_parts, part_number, range } (timestamps/sections/chapters).
 - Keep titles concise.
+- Do not repeat the same resource across days unless it is a large resource (course/book/long video/podcast/official docs). When you repeat a large resource, split it across days and include split with total_parts, part_number, and a specific range (timestamps for video/audio; chapter/section names for reading).
 
 OUTPUT SHAPE
 {

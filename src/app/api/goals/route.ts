@@ -1,21 +1,65 @@
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { hashRoadmap } from "@/lib/hash";
 
 export async function GET() {
   const s = await getServerSession(authOptions);
-  if (!s?.user?.email) return new Response("Unauthorized", { status:401 });
+  if (!s?.user?.email) return new Response("Unauthorized", { status: 401 });
   const u = await prisma.user.findUnique({ where: { email: s.user.email } });
-  const goals = await prisma.goal.findMany({ where: { userId: u!.id }, orderBy: { createdAt:"desc" } });
-  return new Response(JSON.stringify(goals));
+  const goals = await prisma.goal.findMany({ where: { userId: u!.id }, orderBy: { createdAt: "desc" } });
+  return new Response(JSON.stringify(goals), { headers: { "Content-Type": "application/json" } });
 }
 
 export async function POST(req: Request) {
   const s = await getServerSession(authOptions);
-  if (!s?.user?.email) return new Response("Unauthorized", { status:401 });
+  if (!s?.user?.email) return new Response("Unauthorized", { status: 401 });
+
   const u = await prisma.user.findUnique({ where: { email: s.user.email } });
-  const { title, dailyMinutes, totalDays, roadmap } = await req.json();
-  if (!title || !dailyMinutes || !totalDays || !roadmap) return new Response("Bad Request",{status:400});
-  const goal = await prisma.goal.create({ data: { userId: u!.id, title, dailyMinutes, totalDays, roadmapJson: roadmap } });
-  return new Response(JSON.stringify(goal), { status:201 });
+  if (!u) return new Response("Unauthorized", { status: 401 });
+
+  const { title, dailyMinutes, totalDays, roadmap, startNow } = await req.json();
+
+  if (!title || !dailyMinutes || !totalDays || !roadmap) {
+    return new Response(JSON.stringify({ error: "Bad Request" }), { status: 400, headers: { "Content-Type": "application/json" } });
+  }
+
+  const contentHash = hashRoadmap(roadmap);
+
+  // Find existing goal with the same hash
+  let existing = await prisma.goal.findFirst({
+    where: { userId: u.id, contentHash },
+  });
+
+  if (existing) {
+    // If caller asked to start now and it's not started yet, set startDate
+    if (startNow && !existing.startDate) {
+      existing = await prisma.goal.update({
+        where: { id: existing.id },
+        data: { startDate: new Date() },
+      });
+    }
+    return new Response(JSON.stringify({ existed: true, goal: existing }), {
+      headers: { "Content-Type": "application/json" },
+      status: 200,
+    });
+  }
+
+  // Create new goal (first time we see this content for this user)
+  const goal = await prisma.goal.create({
+    data: {
+      userId: u.id,
+      title,
+      dailyMinutes,
+      totalDays,
+      roadmapJson: roadmap,
+      startDate: startNow ? new Date() : null,
+      contentHash,
+    },
+  });
+
+  return new Response(JSON.stringify({ existed: false, goal }), {
+    headers: { "Content-Type": "application/json" },
+    status: 201,
+  });
 }
