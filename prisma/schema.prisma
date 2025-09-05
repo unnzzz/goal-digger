@@ -1,3 +1,9 @@
+enum ItemCategory {
+  NERDY
+  FITNESS
+  GREENTHUMB
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -8,42 +14,79 @@ generator client {
 }
 
 model User {
-  id           String            @id @default(cuid())
-  email        String            @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
   name         String?
-  coins        Int               @default(0)
-  createdAt    DateTime          @default(now())
-  goals        Goal[]
-  diary        DiaryEntry[]
-  completions  QuestCompletion[]
+  coins        Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  tz String? // <-- user's IANA time zone for reminders
+
+  goals       Goal[]
+  diary       DiaryEntry[]
+  completions QuestCompletion[]
+  reminders   ReminderState[] // <-- relation
+  avatarKey   String? // "astronaut" | ...
+  // running totals (recalc is possible, but totals make gating fast)
+  statINT     Int               @default(0)
+  statSTR     Int               @default(0)
+  statVIT     Int               @default(0)
+  statAES     Int               @default(0)
+  statWLH     Int               @default(0)
+  items       UserItem[]
+}
+
+model ReminderState {
+  id         String    @id @default(cuid())
+  userId     String
+  dateLabel  String // YYYY-MM-DD in user's TZ
+  lastSentAt DateTime? // UTC timestamp of last reminder
+  completed  Boolean   @default(false) // true when all daily quests completed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, dateLabel])
 }
 
 model Goal {
-  id           String            @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
   title        String
   dailyMinutes Int
   totalDays    Int
   roadmapJson  Json
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  user         User              @relation(fields: [userId], references: [id])
-  diary        DiaryEntry[]
-  completions  QuestCompletion[]
+  startDate    DateTime?
+  contentHash  String? // ← NEW: idempotency key per user+roadmap
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id])
+  diary       DiaryEntry[]
+  completions QuestCompletion[]
+
+  @@unique([userId, contentHash]) // ← NEW (allows multiple NULL; unique when hash exists)
 }
 
 model DiaryEntry {
   id        String   @id @default(cuid())
   userId    String
-  goalId    String?
-  date      DateTime
+  goalId    String
   type      String // "practice" | "reflect"
   content   String
+  date      DateTime @default(now()) // legacy timestamp
+  dateLabel String? // <- STEP 1: nullable for backfill
   dayNumber Int?
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  goal      Goal?    @relation(fields: [goalId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+  goal Goal @relation(fields: [goalId], references: [id])
+
+  @@index([userId, dateLabel])
+  @@index([goalId, dateLabel])
 }
 
 model QuestCompletion {
@@ -57,4 +100,55 @@ model QuestCompletion {
   completedAt  DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id])
   goal         Goal     @relation(fields: [goalId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@index([identifier])
+}
+
+model ShopItem {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  category ItemCategory
+  cost     Int
+
+  // stat boosts on purchase
+  intBoost Int @default(0)
+  strBoost Int @default(0)
+  vitBoost Int @default(0)
+  aesBoost Int @default(0)
+  wlhBoost Int @default(0)
+
+  // unlock requirements
+  reqINT    Int     @default(0)
+  reqSTR    Int     @default(0)
+  reqVIT    Int     @default(0)
+  reqAES    Int     @default(0)
+  reqWLH    Int     @default(0)
+  reqStatus String? // optional named status key (e.g., "tech_scholar")
+
+  imageKey  String?
+  createdAt DateTime @default(now())
+
+  // 🔁 back-reference for UserItem relation (RELATION NAME MUST MATCH)
+  userItems UserItem[] @relation("UserItemsOnShopItem")
+}
+
+model UserItem {
+  id     String  @id @default(cuid())
+  userId String
+  itemId String
+  placed Boolean @default(false)
+  posX   Int?
+  posY   Int?
+
+  user User     @relation(fields: [userId], references: [id])
+  // 🔁 points to ShopItem using the same relation name
+  item ShopItem @relation("UserItemsOnShopItem", fields: [itemId], references: [id])
+
+  @@unique([userId, itemId]) // one copy per user (remove if you want multiples)
 }
