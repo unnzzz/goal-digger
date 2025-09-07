@@ -106,20 +106,28 @@ function isValidResourceUrl(url: string, kind: string): boolean {
     
     // Check for specific content indicators
     if (kind === "watch") {
-      // Should be a specific video URL
-      return urlObj.pathname.includes('/watch') || urlObj.pathname.includes('/v/') || 
-             urlObj.pathname.includes('/embed/') || urlObj.pathname.includes('/episode/');
+      // Should be a specific video URL with watch parameter
+      return (urlObj.pathname.includes('/watch') && urlObj.searchParams.has('v')) || 
+             urlObj.pathname.includes('/v/') || 
+             urlObj.pathname.includes('/embed/') || 
+             urlObj.pathname.includes('/episode/');
     }
     
     if (kind === "read") {
-      // Should be a specific article URL
-      return urlObj.pathname.length > 1 && !urlObj.pathname.endsWith('/');
+      // Should be a specific article URL with meaningful path
+      return urlObj.pathname.length > 1 && 
+             !urlObj.pathname.endsWith('/') &&
+             !urlObj.pathname.includes('/search') &&
+             !urlObj.pathname.includes('/category') &&
+             !urlObj.pathname.includes('/tag');
     }
     
     if (kind === "listen") {
       // Should be a specific episode URL
-      return urlObj.pathname.includes('/episode/') || urlObj.pathname.includes('/show/') ||
-             urlObj.pathname.includes('/podcast/');
+      return urlObj.pathname.includes('/episode/') || 
+             urlObj.pathname.includes('/show/') ||
+             urlObj.pathname.includes('/podcast/') ||
+             (urlObj.pathname.includes('/ep/') && urlObj.searchParams.has('id'));
     }
     
     return true;
@@ -132,11 +140,12 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
   if (!client) return null;
   
   try {
-    const searchQuery = `${title} ${goal} ${kind === 'watch' ? 'video tutorial' : kind === 'read' ? 'article guide' : 'podcast episode'}`;
+    // Search for the exact quest title first
+    const searchQuery = `"${title}" ${kind === 'watch' ? 'video' : kind === 'read' ? 'article' : 'podcast episode'}`;
     
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4o",
-      input: [{ role: "user", content: `Find a specific ${kind} resource for: "${title}" related to "${goal}". Search for: ${searchQuery}. Return only the URL and title.` }],
+      input: [{ role: "user", content: `Find a specific ${kind} resource with the EXACT title: "${title}". Search for: ${searchQuery}. The content must match the title exactly. Return only the URL and title.` }],
       tools: [{ type: "web_search" }],
       tool_choice: "required",
     });
@@ -149,6 +158,27 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
         url: urlMatch[0],
         title: title,
         source: getSourceFromUrl(urlMatch[0])
+      };
+    }
+    
+    // If exact match not found, try with "tutorial" or "guide"
+    const fallbackQuery = `"${title}" ${kind === 'watch' ? 'tutorial video' : kind === 'read' ? 'guide article' : 'podcast episode'}`;
+    
+    const fallbackResponse = await client.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+      input: [{ role: "user", content: `Find a ${kind} resource about: "${title}". Search for: ${fallbackQuery}. Return only the URL and title.` }],
+      tools: [{ type: "web_search" }],
+      tool_choice: "required",
+    });
+    
+    const fallbackText = (fallbackResponse as any).output_text ?? "";
+    const fallbackUrlMatch = fallbackText.match(/https?:\/\/[^\s]+/);
+    
+    if (fallbackUrlMatch && isValidResourceUrl(fallbackUrlMatch[0], kind)) {
+      return {
+        url: fallbackUrlMatch[0],
+        title: title,
+        source: getSourceFromUrl(fallbackUrlMatch[0])
       };
     }
   } catch (error) {
