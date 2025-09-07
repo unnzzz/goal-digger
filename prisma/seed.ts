@@ -2,77 +2,80 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // idempotent seed by name
+  // idempotent seed by name - 8 CATEGORIES, 5 ITEMS EACH = 40 TOTAL ITEMS
   const items: Array<Parameters<typeof prisma.shopItem.upsert>[0]> = [
-    // --- NERDY ---
-    up("Poster: Circuit Blueprint","NERDY",20,{aes:2,int:1}),
-    up("Desk Lamp: Adjustable","NERDY",40,{aes:2,int:1}),
-    up("Whiteboard (M)","NERDY",80,{int:3,aes:1},{reqINT:10}),
-    up("Mechanical Keyboard","NERDY",120,{int:2,aes:2,wlh:1},{reqINT:10}),
-    up("Bookshelf: Starter STEM","NERDY",150,{int:4,aes:1,wlh:1},{reqINT:15}),
-    up("Raspberry Pi Lab","NERDY",180,{int:5,aes:1,wlh:1},{reqINT:20}),
-    up("Dual Monitor Rig","NERDY",220,{int:4,aes:3,wlh:2},{reqINT:25,reqAES:15}),
-    up("Robotics Kit","NERDY",280,{int:6,aes:1,wlh:2},{reqINT:30}),
-    up("3D Printer","NERDY",320,{int:7,aes:2,wlh:2},{reqINT:35}),
-    up("VR Headset","NERDY",350,{int:5,aes:4,wlh:2},{reqINT:35,reqAES:25}),
-    up("Quad-Monitor Command","NERDY",420,{int:8,aes:3,wlh:3},{reqINT:40,reqAES:30}),
-    up("Server Rack (Mini)","NERDY",480,{int:9,aes:2,wlh:3},{reqINT:45}),
-    up("Hologram Projector","NERDY",520,{int:8,aes:5,wlh:4},{reqINT:50,reqAES:40}),
-    up("Quantum Bookshelf","NERDY",600,{int:10,aes:4,wlh:4},{reqINT:55,reqStatus:"tech_scholar"}),
-    up("Neon Matrix Wall","NERDY",260,{aes:6,int:2,wlh:2},{reqAES:30}),
+    // --- NERDY (6 items) - Tech & Learning ---
+    up("Desk Lamp","NERDY",15,{aes:1,int:1}),
+    up("Mechanical Keyboard","NERDY",40,{int:2,aes:2,wlh:1}, {reqINT:2}),
+    up("Bookshelf","NERDY",60,{int:3,aes:1,wlh:1}, {reqINT:3}),
+    up("Dual Monitor Setup","NERDY",100,{int:4,aes:2,wlh:2}, {reqINT:5}),
+    up("3D Printer","NERDY",500,{int:5,aes:2,wlh:2}, {reqINT:8,reqWLH:3}),
+    up("VR Headset","NERDY",200,{int:4,aes:3,wlh:2}, {reqINT:6,reqAES:2}),
 
-    // --- FITNESS ---
-    up("Yoga Mat","FITNESS",30,{str:2,aes:1}),
-    up("Resistance Bands","FITNESS",60,{str:3,aes:1},{reqSTR:10}),
-    up("Kettlebell (Set)","FITNESS",120,{str:5,aes:1},{reqSTR:15}),
-    up("Pull-up Bar","FITNESS",140,{str:5,aes:1},{reqSTR:20}),
-    up("Dumbbell Rack","FITNESS",200,{str:7,aes:1,wlh:1},{reqSTR:25}),
-    up("Heavy Bag","FITNESS",240,{str:8,aes:1,wlh:1},{reqSTR:30}),
-    up("Rowing Machine","FITNESS",300,{str:6,vit:2,aes:1,wlh:2},{reqSTR:35,reqVIT:15}),
-    up("Spin Bike","FITNESS",320,{str:6,vit:2,aes:1,wlh:2},{reqSTR:35,reqVIT:15}),
-    up("Squat Rack","FITNESS",380,{str:10,aes:1,wlh:2},{reqSTR:45}),
-    up("Smart Mirror Coach","FITNESS",420,{int:2,str:6,aes:3,wlh:3},{reqSTR:40,reqINT:25,reqAES:25}),
-    up("Cold Plunge Tub","FITNESS",450,{str:4,vit:4,aes:1,wlh:3},{reqSTR:40,reqVIT:30}),
-    up("Treadmill (Pro)","FITNESS",520,{str:7,vit:3,aes:2,wlh:3},{reqSTR:50,reqVIT:30}),
-    up("Recovery Massager","FITNESS",260,{str:3,vit:2,aes:1,wlh:1},{reqSTR:20}),
+    // --- FITNESS (5 items) - Health & Strength ---
+    up("Yoga Mat","FITNESS",20,{str:2,aes:1}),
+    up("Kettlebell Set","FITNESS",50,{str:4,aes:1}, {reqSTR:2}),
+    up("Pull-up Bar","FITNESS",75,{str:5,aes:1}, {reqSTR:3}),
+    up("Rowing Machine","FITNESS",180,{str:5,vit:2,aes:1,wlh:2}, {reqSTR:5,reqVIT:2}),
+    up("Smart Mirror","FITNESS",250,{int:2,str:5,aes:2,wlh:2}, {reqSTR:6,reqINT:2}),
 
-    // --- GREENTHUMB ---
-    up("Succulent Trio","GREENTHUMB",20,{vit:2,aes:2}),
-    up("Herb Planter","GREENTHUMB",40,{vit:3,aes:2}),
-    up("Hanging Planter","GREENTHUMB",60,{vit:3,aes:3},{reqVIT:10}),
-    up("Watering Station","GREENTHUMB",80,{vit:3,aes:2},{reqVIT:10}),
-    up("Grow Light (Small)","GREENTHUMB",120,{vit:4,aes:2,wlh:1},{reqVIT:15}),
-    up("Compost Bin","GREENTHUMB",160,{vit:5,aes:1,wlh:1},{reqVIT:20}),
-    up("Bonsai","GREENTHUMB",200,{vit:5,aes:4,wlh:1},{reqVIT:25,reqAES:20}),
-    up("Hydroponic Tower","GREENTHUMB",260,{vit:7,aes:3,wlh:2},{reqVIT:30}),
-    up("Living Moss Wall","GREENTHUMB",320,{vit:6,aes:6,wlh:2},{reqVIT:35,reqAES:30}),
-    up("Smart Irrigation","GREENTHUMB",340,{int:2,vit:5,aes:2,wlh:2},{reqVIT:35,reqINT:20}),
-    up("Indoor Beehive (Edu)","GREENTHUMB",380,{int:3,vit:7,aes:3,wlh:2},{reqVIT:40,reqINT:25}),
-    up("Greenhouse Corner","GREENTHUMB",500,{vit:10,aes:4,wlh:3},{reqVIT:50}),
-    up("Zen Fountain","GREENTHUMB",220,{vit:3,aes:5,wlh:2},{reqAES:25}),
+    // --- GREENTHUMB (5 items) - Plants & Nature ---
+    up("Plant Pot Set","GREENTHUMB",15,{vit:2,aes:1}),
+    up("Indoor Herb Garden","GREENTHUMB",50,{vit:4,aes:2}, {reqVIT:2}),
+    up("Hydroponic System","GREENTHUMB",120,{vit:6,aes:2,wlh:1}, {reqVIT:3}),
+    up("Hanging Pot Set","GREENTHUMB",180,{vit:8,aes:3,wlh:2}, {reqVIT:5,reqAES:2}),
+    up("Creeper","GREENTHUMB",220,{vit:7,aes:4,wlh:2}, {reqVIT:6,reqAES:3}),
 
-    // --- PREMIUM STYLE ---
-    up("Designer Rug","GREENTHUMB",200,{vit:1,aes:6,wlh:2},{reqAES:30}),
-    up("Ambient LED Strips","NERDY",140,{aes:5,wlh:1},{reqAES:20}),
-    up("Framed Art Print","NERDY",180,{int:1,vit:0,aes:6,wlh:2},{reqAES:35}),
-    up("Minimal Sofa","FITNESS",260,{str:1,vit:1,aes:6,wlh:2},{reqAES:35}),
-    up("Vinyl Record Setup","NERDY",300,{int:1,vit:1,aes:7,wlh:3},{reqAES:40}),
-    up("Sculpture Pedestal","GREENTHUMB",340,{vit:1,aes:8,wlh:3},{reqAES:45,reqWLH:30}),
-    up("Smart Ambient Hub","NERDY",360,{int:2,vit:1,aes:8,wlh:3},{reqAES:45,reqINT:30}),
-    up("Designer Lighting Tree","GREENTHUMB",420,{vit:2,aes:9,wlh:4},{reqAES:50,reqWLH:35}),
-    up("Premium Coffee Station","FITNESS",380,{int:2,str:1,vit:2,aes:6,wlh:4},{reqAES:40,reqWLH:35}),
-    up("Gallery Wall System","NERDY",500,{int:3,vit:2,aes:10,wlh:5},{reqAES:60,reqWLH:40}),
+    // --- CREATIVE (5 items) - Art & Expression ---
+    up("Sketch Pad & Pencils","CREATIVE",25,{aes:2,int:1}),
+    up("Watercolor Set","CREATIVE",45,{aes:3,int:1}, {reqAES:2}),
+    up("Digital Drawing Tablet","CREATIVE",120,{aes:4,int:2,wlh:1}, {reqAES:3,reqINT:2}),
+    up("Pottery Wheel","CREATIVE",180,{aes:5,vit:2,wlh:2}, {reqAES:5,reqVIT:2}),
+    up("Art Studio Easel","CREATIVE",250,{aes:6,int:2,wlh:2}, {reqAES:6,reqINT:2}),
+
+    // --- COZY (5 items) - Comfort & Warmth ---
+    up("Designer Tapestry","COZY",100,{vit:2,aes:1}, {reqVIT:2}),
+    up("Reading Nook Chair","COZY",80,{vit:3,aes:2,int:1}, {reqVIT:2,reqAES:1}),
+    up("Aromatherapy Diffuser","COZY",60,{vit:3,aes:2}, {reqVIT:2}),
+    up("Fireplace Heater","COZY",150,{vit:4,aes:3,wlh:1}, {reqVIT:3,reqAES:2}),
+    up("Hammock Chair","COZY",200,{vit:5,aes:3,wlh:2}, {reqVIT:4,reqAES:3}),
+
+    // --- LUXURY (5 items) - Premium & Wealth ---
+    up("Gold Accent Vase","LUXURY",100,{wlh:3,aes:2}, {reqWLH:2}),
+    up("Marble Coffee Table","LUXURY",200,{wlh:4,aes:3}, {reqWLH:3,reqAES:2}),
+    up("Crystal Chandelier","LUXURY",300,{wlh:5,aes:4}, {reqWLH:4,reqAES:3}),
+    up("Leather Recliner","LUXURY",400,{wlh:6,aes:3,str:1}, {reqWLH:5,reqAES:2}),
+    up("Diamond Art Display","LUXURY",500,{wlh:8,aes:5}, {reqWLH:6,reqAES:4}),
+
+    // --- MINIMALIST (5 items) - Clean & Simple ---
+    up("White Ceramic Vase","MINIMALIST",30,{aes:2}),
+    up("Bamboo Desk Organizer","MINIMALIST",50,{aes:3,int:1}, {reqAES:2}),
+    up("Floating Shelves Set","MINIMALIST",80,{aes:4,int:1}, {reqAES:3}),
+    up("Geometric Wall Art","MINIMALIST",120,{aes:5,int:1}, {reqAES:4}),
+    up("Zen Garden Kit","MINIMALIST",180,{aes:6,vit:2,int:1}, {reqAES:5,reqVIT:2}),
+
+    // --- VINTAGE (5 items) - Retro & Classic ---
+    up("Vintage Typewriter","VINTAGE",80,{aes:3,int:2}, {reqAES:2,reqINT:1}),
+    up("Antique Brass Lamp","VINTAGE",120,{aes:4,wlh:2}, {reqAES:3,reqWLH:1}),
+    up("Retro Record Player","VINTAGE",200,{aes:5,wlh:3,int:1}, {reqAES:4,reqWLH:2}),
+    up("Victorian Armchair","VINTAGE",300,{aes:6,wlh:4,vit:1}, {reqAES:5,reqWLH:3}),
+    up("Steampunk Clock","VINTAGE",400,{aes:7,wlh:5,int:2}, {reqAES:6,reqWLH:4,reqINT:2}),
   ];
 
   for (const i of items) await prisma.shopItem.upsert(i);
 
-  console.log("Seeded shop items.");
+  console.log("Seeded 41 items across 8 categories (6 NERDY, 5 each for others).");
 }
 
-function up(name:string, category:"NERDY"|"FITNESS"|"GREENTHUMB", cost:number, boosts:{int?:number,str?:number,vit?:number,aes?:number,wlh?:number}, reqs?:{reqINT?:number,reqSTR?:number,reqVIT?:number,reqAES?:number,reqWLH?:number,reqStatus?:string}) {
+function up(name:string, category:"NERDY"|"FITNESS"|"GREENTHUMB"|"CREATIVE"|"COZY"|"LUXURY"|"MINIMALIST"|"VINTAGE", cost:number, boosts:{int?:number,str?:number,vit?:number,aes?:number,wlh?:number}, reqs?:{reqINT?:number,reqSTR?:number,reqVIT?:number,reqAES?:number,reqWLH?:number,reqStatus?:string}) {
   return {
     where: { name },
-    update: {},
+    update: {
+      name, category, cost,
+      intBoost: boosts.int??0, strBoost: boosts.str??0, vitBoost: boosts.vit??0, aesBoost: boosts.aes??0, wlhBoost: boosts.wlh??0,
+      reqINT: reqs?.reqINT??0, reqSTR: reqs?.reqSTR??0, reqVIT: reqs?.reqVIT??0, reqAES: reqs?.reqAES??0, reqWLH: reqs?.reqWLH??0,
+      reqStatus: reqs?.reqStatus ?? null,
+    },
     create: {
       name, category, cost,
       intBoost: boosts.int??0, strBoost: boosts.str??0, vitBoost: boosts.vit??0, aesBoost: boosts.aes??0, wlhBoost: boosts.wlh??0,

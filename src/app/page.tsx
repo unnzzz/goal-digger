@@ -1,550 +1,620 @@
 "use client";
+import React, { useState, useEffect } from "react";
+import Image from 'next/image';
+import { useUserData } from '@/hooks/useUserData';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import AppLayout from '../components/AppLayout';
+import { useAvatar } from '../contexts/AvatarContext';
+import { getMessageForAction } from '../lib/avatarMessages';
 
-import { useState } from "react";
-
-const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
-
-type Resource = {
-  kind: "watch" | "listen" | "read";
-  title: string;
-  url: string;
-  source: string | null;
-  duration_minutes: number | null;
-  split: { total_parts: number; part_number: number; range: string } | null;
-};
-
-type Day = {
-  day: number;
-  title: string;
-  minutes: number;
-  learn: Resource[];
-  practice: Resource[];
-  reflect: string;
-};
-
-type Roadmap = {
-  goal: string;
-  total_days: number;
-  daily_minutes: number;
-  days: Day[];
-};
-
-function SplitBadge({ r }: { r: Resource }) {
-  if (!r?.split) return null;
-  const { part_number, total_parts, range } = r.split;
-  const approx =
-    r.duration_minutes && total_parts
-      ? `≈ ${Math.round(r.duration_minutes / total_parts)} min`
-      : null;
-  return (
-    <span className="kpill">
-      Today: Part {part_number}/{total_parts}
-      {range ? ` — ${range}` : ""}{approx ? ` (${approx})` : ""}
-    </span>
-  );
-}
-
-export default function Page() {
-  // form state
+export default function Home() {
   const [goal, setGoal] = useState("");
-  const [dailyMinutes, setDailyMinutes] = useState(60);
+  const [dailyMinutes, setDailyMinutes] = useState(30);
   const [totalDays, setTotalDays] = useState(10);
-  const [targetDate, setTargetDate] = useState("");
-
-  // generation state
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<number>(0); // 0–100
-  const [status, setStatus] = useState<string>("");
-  const [data, setData] = useState<Roadmap | null>(null);
-  const [original, setOriginal] = useState<Roadmap | null>(null);
+  const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // editing state
-  const [editMode, setEditMode] = useState(false);
-
-  // save state (prevents double-create)
-  const [saveTitle, setSaveTitle] = useState("");
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [goalName, setGoalName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const { showMessage } = useAvatar();
+  const [savedGoals, setSavedGoals] = useState<any[]>([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
 
-  // community suggestions
-  const [comm, setComm] = useState<{ highlights: string[]; resources: { title: string; url: string }[] } | null>(null);
-  const [commLoading, setCommLoading] = useState(false);
+  // Show avatar message when roadmap generator page loads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      showMessage(getMessageForAction('generator_visited'));
+    }, 2000); // Delay to let page load
+    return () => clearTimeout(timer);
+  }, [showMessage]);
+  
+  // Save Goal Modal
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveModalData, setSaveModalData] = useState<{
+    success: boolean;
+    message: string;
+    isStartGoal: boolean;
+  }>({
+    success: false,
+    message: '',
+    isStartGoal: false
+  });
 
-  // ---- inline edit helpers (before saving) ----
-  const setRoadmap = (updater: (prev: Roadmap) => Roadmap) => {
-    setData((prev) => (prev ? updater(prev) : prev));
-  };
+  const { userData, loading: userLoading } = useUserData();
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  const addResource = (dayIdx: number, section: "learn" | "practice") => {
-    const title = prompt("Resource title");
-    if (!title) return;
-    const url = prompt("Resource URL");
-    if (!url) return;
-    const kind = (prompt('kind: "watch" | "listen" | "read"') || "read") as Resource["kind"];
-    setRoadmap((prev) => {
-      const next = structuredClone(prev);
-      next.days[dayIdx][section].push({
-        kind,
-        title,
-        url,
-        source: null,
-        duration_minutes: null,
-        split: null,
+
+  // Redirect to login if not authenticated
+  if (status === "loading") {
+    return <div className="loading-screen">Loading...</div>;
+  }
+
+  if (status === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    setStatusMessage("Starting generation...");
+
+    const requestData = {
+      goal,
+      daily_minutes: dailyMinutes,
+      total_days: totalDays,
+    };
+
+    try {
+      const res = await fetch("/api/generate/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
       });
-      return next;
-    });
-  };
 
-  const editResource = (dayIdx: number, section: "learn" | "practice", idx: number) => {
-    setRoadmap((prev) => {
-      const r = prev.days[dayIdx][section][idx];
-      const title = prompt("New title", r.title) ?? r.title;
-      const url = prompt("New URL", r.url) ?? r.url;
-      const next = structuredClone(prev);
-      next.days[dayIdx][section][idx] = { ...r, title, url };
-      return next;
-    });
-  };
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
+      }
 
-  const deleteResource = (dayIdx: number, section: "learn" | "practice", idx: number) => {
-    setRoadmap((prev) => {
-      const next = structuredClone(prev);
-      next.days[dayIdx][section].splice(idx, 1);
-      return next;
-    });
-  };
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
 
-  const editDayTitle = (dayIdx: number) => {
-    setRoadmap((prev) => {
-      const current = prev.days[dayIdx].title;
-      const title = prompt("New day title", current);
-      if (!title) return prev;
-      const next = structuredClone(prev);
-      next.days[dayIdx].title = title;
-      return next;
-    });
-  };
+      let buffer = "";
+      let result: any = null;
 
-  const onChangeReflect = (dayIdx: number, value: string) => {
-    setRoadmap((prev) => {
-      const next = structuredClone(prev);
-      next.days[dayIdx].reflect = value;
-      return next;
-    });
-  };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-  const revertEdits = () => {
-    if (!original) return;
-    setData(structuredClone(original));
-    setEditMode(false);
-  };
+        buffer += new TextDecoder().decode(value);
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-  // ---- generation submit (NDJSON streaming) ----
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setData(null);
-  setOriginal(null);
-  setEditMode(false);
-  setSaveMsg(null);
-  setSaving(false);
-  setComm(null);
-  setCommLoading(false);
-  setProgress(0);
-  setStatus("Starting…");
-  setLoading(true);
-
-  try {
-    const res = await fetch("/api/generate/stream", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        goal,
-        daily_minutes: Number(dailyMinutes),
-        total_days: targetDate ? undefined : Number(totalDays),
-        target_date: targetDate || undefined,
-      }),
-    });
-
-    // If server rejects and doesn't provide a body (unlikely), show text
-    if (!res.body) {
-      const text = await res.text();
-      setError(text || "Generation failed.");
-      setLoading(false);
-      setStatus("");
-      setProgress(0);
-      return;
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-    let aborted = false;
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-
-      let idx;
-      while ((idx = buf.indexOf("\n")) >= 0) {
-        const line = buf.slice(0, idx).trim();
-        buf = buf.slice(idx + 1);
-        if (!line) continue;
-
-        let evt: any = null;
-        try {
-          evt = JSON.parse(line);
-        } catch {
-          // ignore malformed line and continue
-          continue;
-        }
-
-        if (evt.type === "progress") {
-          const pct =
-            typeof evt.percent === "number"
-              ? Math.max(0, Math.min(100, Math.round(evt.percent)))
-              : Math.round((evt.done / Math.max(1, evt.total)) * 100);
-          setProgress(pct);
-          if (evt.message) setStatus(evt.message);
-          continue;
-        }
-
-        if (evt.type === "error") {
-          // <<< SHOW THE MESSAGE & STOP >>>
-          setError(evt.message || "This goal is not allowed.");
-          setLoading(false);
-          setStatus("");
-          setProgress(0);
-          aborted = true;
-          try { await reader.cancel(); } catch {}
-          break; // break inner while
-        }
-
-        if (evt.type === "result") {
-          const out = evt.data as Roadmap;
-          setData(out);
-          setOriginal(out);
-          setSaveTitle(out.goal);
-          setProgress(100);
-          setStatus("Done");
-
-          // Load community suggestions (Reddit)
-          setComm(null);
-          setCommLoading(true);
+        for (const line of lines) {
+          if (line.trim() === "") continue;
           try {
-            const r = await fetch("/api/community", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ goal: out.goal }),
-            });
-            const j = await r.json();
-            setComm(j.suggestions || null);
-          } catch {
-            setComm(null);
-          } finally {
-            setCommLoading(false);
+            const parsed = JSON.parse(line);
+            if (parsed.type === "progress") {
+              setProgress(parsed.percent || 0);
+              setStatusMessage(parsed.message || "Processing...");
+            } else if (parsed.type === "result") {
+              result = parsed.data;
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.message);
+            }
+          } catch (e) {
+            console.warn("Failed to parse line:", line, e);
           }
-
-          continue;
         }
       }
 
-      if (aborted) break; // stop outer read loop too
+      setData(result);
+      setGoalName(result.title || goal);
+      setStatusMessage("Complete!");
+    } catch (e: any) {
+      setError(e?.message || "Generation failed");
+    } finally {
+      setLoading(false);
     }
-  } catch (err: any) {
-    setError(err?.message || "Unexpected error");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  const handleSaveGoal = async (startGoal = false) => {
+    if (!data || !goalName.trim()) {
+      setSaveModalData({
+        success: false,
+        message: "Please enter a goal name",
+        isStartGoal: startGoal
+      });
+      setShowSaveModal(true);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: goalName,
+          content: data,
+          totalDays: data.total_days,
+          dailyMinutes: data.daily_minutes,
+          startGoal: startGoal
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setSaveModalData({
+          success: true,
+          message: startGoal ? "Goal saved and started successfully!" : "Goal saved successfully!",
+          isStartGoal: startGoal
+        });
+        setShowSaveModal(true);
+        
+        // Show instant avatar message for goal creation
+        if (startGoal) {
+          showMessage(getMessageForAction('goal_started'), true);
+          // Navigate to dashboard after a short delay
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 2000);
+        } else {
+          showMessage(getMessageForAction('goal_created'), true);
+        }
+      } else {
+        const errorData = await response.json();
+        setSaveModalData({
+          success: false,
+          message: `Error: ${errorData.error || "Failed to save goal"}`,
+          isStartGoal: startGoal
+        });
+        setShowSaveModal(true);
+      }
+    } catch (err) {
+      setSaveModalData({
+        success: false,
+        message: "Error saving goal. Please try again.",
+        isStartGoal: startGoal
+      });
+      setShowSaveModal(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+  const loadSavedGoals = async () => {
+    setLoadingGoals(true);
+    try {
+      const response = await fetch("/api/goals");
+      if (response.ok) {
+        const goals = await response.json();
+        setSavedGoals(goals);
+      }
+    } catch (err) {
+      console.error("Failed to load saved goals:", err);
+    } finally {
+      setLoadingGoals(false);
+    }
+  };
+
+  const loadGoal = async (goalId: string) => {
+    try {
+      const response = await fetch(`/api/goals/${goalId}`);
+      if (response.ok) {
+        const result = await response.json();
+        const roadmapData = result.goal.roadmapJson;
+        setData(roadmapData);
+        setGoalName(result.goal.title);
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error("Failed to load goal:", err);
+    }
+  };
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Goal-Digger</h1>
-        <p>Enter a goal and time budget. Get a daily Learn / Practice / Reflect plan with free links — and now edit it before saving.</p>
+    <AppLayout activePage="generator">
+      <div className="page-layout">
+        <div className="content-main">
+          <div className="form-container">
+            <form onSubmit={handleSubmit}>
+            <div className="form-box main-form-box">
+              <h1 className="form-title">
+                <Image src="/icons/trophy.png" alt="Trophy" width={53} height={53} className="title-icon" />
+                Create your RoadMap
+              </h1>
+              
+              <div className="form-group">
+                <label className="form-label">Enter your Goal</label>
+            <input
+                  type="text"
+                  className="form-input"
+              placeholder="e.g., Learn SQL for data analysis"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              required
+            />
+              </div>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
-          <label>Goal</label>
-          <input
-            placeholder="e.g., Learn SQL for data analysis"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            required
-          />
+              <div className="form-group">
+                <label className="form-label">Daily Minutes</label>
+                <div className="slider-container">
+                  <div className="slider-wrapper">
+                <input
+                      type="range"
+                      className="slider"
+                      min="10"
+                      max="120"
+                      step="5"
+                  value={dailyMinutes}
+                      onChange={(e) => setDailyMinutes(Number(e.target.value))}
+                      aria-label="Daily minutes"
+                      style={{
+                        background: `linear-gradient(90deg, #6A3EE8 ${Math.round(((dailyMinutes - 10) * 100) / (120 - 10))}%, #D8D8D8 ${Math.round(((dailyMinutes - 10) * 100) / (120 - 10))}%)`,
+                      }}
+                    />
+                  </div>
+                  <div className="slider-value">{dailyMinutes} mins</div>
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Total Days</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  min="1"
+                  max="365"
+                  value={totalDays}
+                  onChange={(e) => setTotalDays(Number(e.target.value))}
+                  required
+                />
+              </div>
 
-          <div className="grid" style={{ marginTop: 10 }}>
-            <div>
-              <label>Daily minutes</label>
-              <input
-                type="number"
-                min={10}
-                max={240}
-                value={dailyMinutes}
-                onChange={(e) => setDailyMinutes(parseInt(e.target.value, 10))}
-                required
-              />
-            </div>
-            <div>
-              <label>Total days</label>
-              <input
-                type="number"
-                min={1}
-                value={totalDays}
-                onChange={(e) => setTotalDays(parseInt(e.target.value, 10))}
-                disabled={!!targetDate}
-              />
-              <small>Disabled if you set a target date</small>
-            </div>
-            <div>
-              <label>Target date (optional)</label>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <button className="btn" style={{ marginTop: 12 }} disabled={loading}>
-            {loading ? "Generating…" : "Generate roadmap"}
-          </button>
-        </form>
-
-        {loading && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <progress value={progress} max={100} style={{ width: 240 }} />
-              <span>{status || `${progress}%`}</span>
-            </div>
-            <small>Finding resources and building your plan…</small>
-          </div>
-        )}
-
-        {error && <p style={{ color: "#ff8a8a", marginTop: 12 }}>Error: {error}</p>}
-
-        {data && (
-          <>
-            {/* Edit controls */}
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button className="btn" onClick={() => setEditMode((v) => !v)}>
-                {editMode ? "Stop editing" : "Edit roadmap"}
-              </button>
-              {editMode && original && (
-                <button className="btn" onClick={revertEdits}>Revert changes</button>
-              )}
-            </div>
-
-            <section style={{ marginTop: 20 }}>
-              <header>
-                <h2>
-                  {data.goal}{" "}
-                  <span className="kpill">{data.total_days} days</span>{" "}
-                  <span className="kpill">≈ {data.daily_minutes} min/day</span>
-                </h2>
-              </header>
-
-              {data.days.map((d, di) => (
-                <article key={d.day} className="day">
-                  <h3>
-                    Day {d.day}: {d.title} <span className="badge">{d.minutes} min</span>
-                    {editMode && (
-                      <button className="btn" style={{ marginLeft: 8 }} onClick={() => editDayTitle(di)}>
-                        Edit title
-                      </button>
-                    )}
-                  </h3>
-
-                  <h4>Learn</h4>
-                  <ul className="list">
-                    {d.learn.map((r, i) => (
-                      <li key={`L${d.day}-${i}`}>
-                        <strong>[{r.kind}]</strong>{" "}
-                        <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                        <SplitBadge r={r} />
-                        <span className="kpill">+{COINS.learn} coins</span>
-                        {editMode && (
-                          <>
-                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "learn", i)}>Edit</button>
-                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "learn", i)}>Delete</button>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {editMode && (
-                    <button className="btn" onClick={() => addResource(di, "learn")}>Add Learn resource</button>
-                  )}
-
-                  <h4>Practice</h4>
-                  <ul className="list">
-                    {d.practice.map((r, i) => (
-                      <li key={`P${d.day}-${i}`}>
-                        <strong>[{r.kind}]</strong>{" "}
-                        <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
-                        <SplitBadge r={r} />
-                        <span className="kpill">+{COINS.practice} coins</span>
-                        {editMode && (
-                          <>
-                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "practice", i)}>Edit</button>
-                            <button className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "practice", i)}>Delete</button>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {editMode && (
-                    <button className="btn" onClick={() => addResource(di, "practice")}>Add Practice resource</button>
-                  )}
-
-                  <h4>Reflect</h4>
-                  {!editMode ? (
-                    <p style={{ marginTop: 6 }}>
-                      {d.reflect} <span className="kpill">+{COINS.reflect} coins</span>
-                    </p>
-                  ) : (
-                    <div style={{ marginTop: 6 }}>
-                      <textarea
-                        style={{ width: "100%", minHeight: 90 }}
-                        value={d.reflect}
-                        onChange={(e) => onChangeReflect(di, e.target.value)}
-                      />
-                      <span className="kpill">+{COINS.reflect} coins</span>
-                    </div>
-                  )}
-                </article>
-              ))}
-            </section>
-
-            {/* Save to account (uses the possibly edited roadmap) */}
-            <section style={{ marginTop: 12 }}>
-              <h3>Save this roadmap</h3>
-              <label>Goal title</label>
-              <input
-                placeholder="e.g., Learn SQL for data analysis"
-                value={saveTitle}
-                onChange={(e) => setSaveTitle(e.target.value)}
-              />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              <div className="button-container">
                 <button
-                  className="btn"
-                  disabled={saving}
-                  onClick={async () => {
-                    if (!data) return;
-                    setSaving(true);
-                    setSaveMsg(null);
-                    try {
-                      const res = await fetch("/api/goals", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          title: saveTitle || data.goal,
-                          dailyMinutes: data.daily_minutes,
-                          totalDays: data.total_days,
-                          roadmap: data,
-                          startNow: false,
-                        }),
-                      });
-                      const j = await res.json();
-                      setSaveMsg(
-                        res.ok
-                          ? j.existed
-                            ? "Already saved."
-                            : "Saved!"
-                          : "Save failed (log in?)"
-                      );
-                    } catch (e: any) {
-                      setSaveMsg(e.message || "Save failed");
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
+                  type="submit"
+                  className="btn generate-btn"
+                  disabled={loading}
                 >
-                  {saving ? "Saving…" : "Save to my account"}
-                </button>
-
-                <button
-                  className="btn"
-                  disabled={saving}
-                  onClick={async () => {
-                    if (!data) return;
-                    setSaving(true);
-                    setSaveMsg(null);
-                    try {
-                      const res = await fetch("/api/goals", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          title: saveTitle || data.goal,
-                          dailyMinutes: data.daily_minutes,
-                          totalDays: data.total_days,
-                          roadmap: data,
-                          startNow: true, // idempotent server will only set once
-                        }),
-                      });
-                      const j = await res.json();
-                      setSaveMsg(
-                        res.ok
-                          ? j.existed
-                            ? "Already saved — started today if not already."
-                            : "Saved & started! Check Dashboard → Daily quests."
-                          : "Save failed (log in?)"
-                      );
-                    } catch (e: any) {
-                      setSaveMsg(e.message || "Save failed");
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                >
-                  {saving ? "Starting…" : "Save & start today"}
+                  {loading ? `${statusMessage} (${progress}%)` : "Generate Roadmap"}
                 </button>
               </div>
-              {saveMsg && <p style={{ marginTop: 8 }}>{saveMsg}</p>}
-            </section>
 
-            {/* Community suggestions */}
-            <section style={{ marginTop: 20 }}>
-              <h3>Community suggestions (Reddit)</h3>
-              {commLoading && <p>Gathering advice…</p>}
-              {comm && (
-                <>
-                  {comm.highlights?.length ? (
-                    <ul className="list">
-                      {comm.highlights.map((h, i) => (
-                        <li key={i}>{h}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>No highlights found.</p>
-                  )}
-                  {comm.resources?.length ? (
-                    <>
-                      <h4>Resources mentioned</h4>
-                      <ul className="list">
-                        {comm.resources.map((r, i) => (
-                          <li key={i}>
-                            <a href={r.url} target="_blank" rel="noreferrer">
-                              {r.title || r.url}
-                            </a>
-                          </li>
+            {loading && (
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${progress}%` }}
+                  />
+              </div>
+            )}
+
+            {error && (
+                <div className="error-message" style={{
+                  marginTop: "16px",
+                  padding: "12px",
+                  backgroundColor: "#FEE2E2",
+                  border: "1px solid #FECACA",
+                  borderRadius: "8px",
+                  color: "#DC2626" 
+                }}>
+                {error}
+              </div>
+            )}
+            </div>
+          </form>
+        </div>
+
+
+          {/* Roadmap Display */}
+      {data && (
+            <div className="roadmap-display">
+              <div className="roadmap-header">
+                <div className="roadmap-title-section">
+                  <h2>Generated Roadmap</h2>
+                  <div className="roadmap-controls">
+                    {isEditing && (
+                      <button 
+                        className="btn-ghost regenerate-btn"
+                        onClick={() => {
+                          setData(null);
+                          setGoalName("");
+                          setIsEditing(false);
+                          setLoading(false);
+                          setError(null);
+                          setProgress(0);
+                          setStatusMessage(null);
+                        }}
+                      >
+                        Regenerate
+                      </button>
+                    )}
+                    <button 
+                      className="btn-ghost edit-btn"
+                      onClick={() => {
+                        setIsEditing(!isEditing);
+                        if (!isEditing) {
+                          loadSavedGoals();
+                        }
+                      }}
+                    >
+                      {isEditing ? "Done Editing" : "Edit Roadmap"}
+                    </button>
+                  </div>
+                </div>
+                <div className="roadmap-actions">
+                  {isEditing && savedGoals.length > 0 && (
+                    <div className="load-goal-section">
+                      <label className="form-label">Load Saved Goal:</label>
+                      <select 
+                        className="goal-select"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            loadGoal(e.target.value);
+                          }
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="">Select a saved goal...</option>
+                        {savedGoals.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.title} {g.startDate ? '(Started)' : '(Not Started)'}
+                          </option>
                         ))}
-                      </ul>
-                    </>
-                  ) : null}
-                </>
-              )}
-            </section>
-          </>
-        )}
+                      </select>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Add a name for your goal..."
+                    className="goal-name-input"
+                    value={goalName}
+                    onChange={(e) => setGoalName(e.target.value)}
+                  />
+                  <div className="action-buttons">
+                    <button 
+                      className="btn-secondary" 
+                      onClick={() => handleSaveGoal(false)}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "Save Goal"}
+                                </button>
+                    <button 
+                      className="btn-primary" 
+                      onClick={() => handleSaveGoal(true)}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "Save & Start Goal"}
+                                </button>
+                  </div>
+                </div>
+              </div>
+              <div className="roadmap-content">
+                <h3>{data.title}</h3>
+                <p><strong>Total Days:</strong> {data.total_days}</p>
+                <p><strong>Daily Minutes:</strong> {data.daily_minutes}</p>
+                <div className="roadmap-days">
+                  {data.days?.map((day: any, index: number) => (
+                    <div key={index} className="roadmap-day">
+                      <h4>Day {day.day}</h4>
+                      <div className="day-sections">
+                        {day.learn && (
+                          <div className="section learn">
+                            <h5>Learn</h5>
+                            <div className="section-content">
+                              {Array.isArray(day.learn) ? (
+                                day.learn.map((item: any, idx: number) => (
+                                  <div key={idx} className="task-item">
+                                    <h6>{item.title}</h6>
+                                    <p>{item.description || item.content}</p>
+                                    <div className="task-meta">
+                                      {item.kind && (
+                                        <span className={`resource-badge ${item.kind}`}>
+                                          {item.kind === 'watch' ? '📺 Watch' : 
+                                           item.kind === 'read' ? '📖 Read' : 
+                                           item.kind === 'listen' ? '🎧 Listen' : 
+                                           item.kind}
+                                        </span>
+                                      )}
+                                      {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
+                                      {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p>{typeof day.learn === 'string' ? day.learn : JSON.stringify(day.learn)}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {day.practice && (
+                          <div className="section practice">
+                            <h5>Practice</h5>
+                            <div className="section-content">
+                              {Array.isArray(day.practice) ? (
+                                day.practice.map((item: any, idx: number) => (
+                                  <div key={idx} className="task-item">
+                                    <h6>{item.title}</h6>
+                                    <p>{item.description || item.content}</p>
+                                    <div className="task-meta">
+                                      {item.kind && (
+                                        <span className={`resource-badge ${item.kind}`}>
+                                          {item.kind === 'watch' ? '📺 Watch' : 
+                                           item.kind === 'read' ? '📖 Read' : 
+                                           item.kind === 'listen' ? '🎧 Listen' : 
+                                           item.kind}
+                                        </span>
+                                      )}
+                                      {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
+                                      {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p>{typeof day.practice === 'string' ? day.practice : JSON.stringify(day.practice)}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {day.reflect && (
+                          <div className="section reflect">
+                            <h5>Reflect</h5>
+                            <div className="section-content">
+                              {Array.isArray(day.reflect) ? (
+                                day.reflect.map((item: any, idx: number) => (
+                                  <div key={idx} className="task-item">
+                                    <h6>{item.title}</h6>
+                                    <p>{item.description || item.content}</p>
+                                    <div className="task-meta">
+                                      {item.kind && (
+                                        <span className={`resource-badge ${item.kind}`}>
+                                          {item.kind === 'watch' ? '📺 Watch' : 
+                                           item.kind === 'read' ? '📖 Read' : 
+                                           item.kind === 'listen' ? '🎧 Listen' : 
+                                           item.kind}
+                                        </span>
+                                      )}
+                                      {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
+                                      {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p>{typeof day.reflect === 'string' ? day.reflect : JSON.stringify(day.reflect)}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="content-sidebar">
+          <div className="sidebar-section">
+            <h2 className="sidebar-title">
+              <Image src="/icons/check.png" alt="What We Do" width={34} height={34} className="section-icon" />
+              What We Do
+            </h2>
+            <ul className="sidebar-list">
+              <li>We turn your big goal into a daily roadmap, by finding top rated resources from the internet and reddit</li>
+              <li>Each day has 3 parts: Learn, Practice, Reflect.</li>
+              <li>You earn <img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> coins for completing daily tasks.</li>
+              <li><img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>
+              <li>Each item boosts stats (Intelligence, Strength, Vitality, Aesthetic, Wealth).</li>
+              <li>Higher stats unlock rarer themed items and fun statuses (e.g., Code Scholar, Fitness Freak).</li>
+            </ul>
+          </div>
+
+          <div className="sidebar-section">
+            <h2 className="sidebar-title">
+              <Image src="/icons/lightning.png" alt="Tips" width={34} height={34} className="section-icon" />
+              Tips
+            </h2>
+            <ul className="sidebar-list">
+              <li>Be specific: "Ship a React portfolio" beats "learn coding".</li>
+              <li>Pick a realistic time budget (15-60 min works great).</li>
+              <li>After generation you can edit the plan after saving it to the dashboard.</li>
+                    </ul>
+          </div>
+        </div>
       </div>
 
-      <footer>
-        <p>Built with OpenAI Responses API (web_search tool) + Structured Outputs — generation logic unchanged.</p>
-      </footer>
-    </main>
+      {/* Save Goal Modal */}
+      {showSaveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            {/* Icon */}
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              {saveModalData.success ? '✅' : '❌'}
+            </div>
+
+            {/* Title */}
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#1F2937'
+            }}>
+              {saveModalData.success ? 'Success!' : 'Error'}
+            </h2>
+
+            {/* Message */}
+            <p style={{
+              margin: '0 0 20px 0',
+              fontSize: '16px',
+              color: '#6B7280',
+              fontWeight: '500'
+            }}>
+              {saveModalData.message}
+            </p>
+
+            {/* Action Button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowSaveModal(false)}
+                style={{
+                  background: saveModalData.success ? '#10B981' : '#6A3EE8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                {saveModalData.success ? 'Great!' : 'OK'}
+              </button>
+            </div>
+          </div>
+          </div>
+      )}
+    </AppLayout>
   );
 }

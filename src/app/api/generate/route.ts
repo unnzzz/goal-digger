@@ -65,7 +65,6 @@ export async function POST(req: Request) {
         };
         try {
           // if client disconnects
-          // @ts-expect-error: Request in Next has a signal
           const signal: AbortSignal | undefined = (req as any).signal;
           if (signal) {
             signal.addEventListener("abort", () => abort("Client disconnected"));
@@ -141,7 +140,7 @@ export async function POST(req: Request) {
                     ch.end = Date.now();
                     ch.done = true;
                     results[idx] = res;
-                    const ms = Math.max(1, (ch.end - ch.start));
+                    const ms = Math.max(1, (ch.end - (ch.start || 0)));
                     const mpd = ms / ch.spanDays;
                     emaMsPerDay = EMA_ALPHA * mpd + (1 - EMA_ALPHA) * emaMsPerDay;
                     completedWeight += ch.spanDays;

@@ -1,10 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from 'next/image';
+import { useUserData } from '@/hooks/useUserData';
+import AppLayout from '../../components/AppLayout';
+import { useAvatar } from '@/contexts/AvatarContext';
+import { getMessageForAction } from '@/lib/avatarMessages';
 
 type ShopItem = {
   id: string;
   name: string;
   cost: number;
+  category: string;
   boosts: { INT: number; STR: number; VIT: number; AES: number; WLH: number };
   locked: boolean;
   reasons: string[];
@@ -15,13 +21,42 @@ type ShopListResponse =
   | { coins: number; items: ShopItem[] }
   | { error: string };
 
+// Helper function to group items by category
+function groupItemsByCategory(items: ShopItem[]) {
+  return items.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, ShopItem[]>);
+}
+
+// Helper function to get furniture image path
+function getFurnitureImagePath(itemName: string): string {
+  const filename = itemName.toLowerCase().replace(/[^a-z0-9]/g, '_') + '.png';
+  return `/furniture/${filename}`;
+}
+
 export default function ShopPage() {
   const [coins, setCoins] = useState<number>(0);
+  const { userData, loading: userLoading } = useUserData();
   const [items, setItems] = useState<ShopItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [unauth, setUnauth] = useState(false);
+  const { showMessage } = useAvatar();
+
+  // Show avatar message when shop page loads
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => {
+        showMessage(getMessageForAction('shop_visited'));
+      }, 2000); // Delay to let page load
+      return () => clearTimeout(timer);
+    }
+  }, [loading, showMessage]);
 
   const load = async () => {
     setLoading(true);
@@ -92,14 +127,17 @@ export default function ShopPage() {
       await load();
       // Let the navbar refresh coins
       window.dispatchEvent(new Event("coins:refresh"));
+      
+      // Show instant avatar message for purchase
+      showMessage(getMessageForAction('furniture_bought'), true);
     } catch (e: any) {
       setError(e?.message || "Network error");
     }
   };
 
   return (
-    <main className="container" style={{ marginTop: 16 }}>
-      <h1>Shop</h1>
+    <AppLayout activePage="shop">
+      <div className="content-main" style={{ padding: "32px" }}>
 
       {loading && <div>Loading…</div>}
 
@@ -141,51 +179,211 @@ npx prisma db seed`}
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: 12,
+              marginBottom: 24,
             }}
           >
-            <div>
-              <strong>Coins:</strong> {coins}
+            <h1 style={{ 
+              fontSize: '32px', 
+              fontWeight: '700', 
+              color: 'white', 
+              margin: 0,
+              fontFamily: "'Baloo Bhai', sans-serif"
+            }}>
+              Shop
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white',
+                fontFamily: "'Baloo Bhai', sans-serif"
+              }}>
+                Coins: {coins}
+              </span>
+              <img src="/icons/coin.png" alt="coins" width={24} height={24} />
             </div>
-            {msg && <div className="success">{msg}</div>}
           </div>
+          {msg && <div className="success" style={{ marginBottom: 20 }}>{msg}</div>}
 
-          <ul className="list">
-            {items.map((it) => (
-              <li key={it.id} className="card" style={{ padding: 12, display: "grid", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div>
-                    <strong>{it.name}</strong>
-                    <div style={{ opacity: 0.7, marginTop: 4 }}>
-                      Cost: <img src="/ui/coin.png" alt="" width={14} height={14} style={{ verticalAlign: "text-bottom" }} />{" "}
-                      {it.cost}
+          {Object.entries(groupItemsByCategory(items)).map(([category, categoryItems]) => (
+            <div key={category} style={{ marginBottom: '32px' }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '16px',
+                fontFamily: "'Baloo Bhai', sans-serif",
+                textTransform: 'capitalize'
+              }}>
+                {category.replace(/([A-Z])/g, ' $1').trim()}
+              </h2>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '16px'
+              }}>
+                {categoryItems.map((it) => (
+                  <div key={it.id} style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: it.owned ? '2px solid #10B981' : '2px solid transparent',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    {/* Furniture Image */}
+                    <div style={{
+                      width: '100%',
+                      height: '120px',
+                      marginBottom: '12px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)'
+                    }}>
+                      <Image
+                        src={getFurnitureImagePath(it.name)}
+                        alt={it.name}
+                        width={200}
+                        height={120}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          borderRadius: '4px'
+                        }}
+                        onError={(e) => {
+                          // Fallback to a colored rectangle if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<div style="
+                              width: 100%; 
+                              height: 100%; 
+                              background: linear-gradient(45deg, #8B5CF6, #A78BFA); 
+                              border-radius: 8px; 
+                              display: flex; 
+                              align-items: center; 
+                              justify-content: center; 
+                              color: white; 
+                              font-weight: bold; 
+                              font-size: 12px; 
+                              text-align: center;
+                              font-family: 'Baloo Bhai', sans-serif;
+                            ">${it.name}</div>`;
+                          }
+                        }}
+                      />
                     </div>
-                    <div style={{ opacity: 0.7, marginTop: 4 }}>
-                      Boosts: INT +{it.boosts.INT}, STR +{it.boosts.STR}, VIT +{it.boosts.VIT}, AES +{it.boosts.AES}, WLH +{it.boosts.WLH}
+                    
+                    <div style={{ marginBottom: '12px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: '#1F2937',
+                        margin: '0 0 8px 0',
+                        fontFamily: "'Baloo Bhai', sans-serif"
+                      }}>
+                        {it.name}
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        marginBottom: '8px'
+                      }}>
+                        <img src="/icons/coin.png" alt="coins" width={16} height={16} />
+                        <span style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600', 
+                          color: '#F59E0B',
+                          fontFamily: "'Baloo Bhai', sans-serif"
+                        }}>
+                          {it.cost}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#6B7280', fontFamily: "'Baloo Bhai', sans-serif" }}>
+                        Boosts: {Object.entries(it.boosts)
+                          .filter(([_, value]) => value > 0)
+                          .map(([stat, value]) => `${stat} +${value}`)
+                          .join(', ') || 'None'}
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {it.owned ? (
-                      <span className="kpill">Owned</span>
-                    ) : it.locked ? (
-                      <button className="disabled" disabled title={it.reasons.join(", ") || "Locked"}>
-                        Locked
-                      </button>
-                    ) : (
-                      <button onClick={() => buy(it.id)} disabled={coins < it.cost}>
-                        Buy
-                      </button>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      {it.owned ? (
+                        <span style={{
+                          background: '#10B981',
+                          color: 'white',
+                          padding: '8px 16px',
+                          borderRadius: '20px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          fontFamily: "'Baloo Bhai', sans-serif"
+                        }}>
+                          ✓ Owned
+                        </span>
+                      ) : it.locked ? (
+                        <button 
+                          style={{
+                            background: '#6B7280',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            fontFamily: "'Baloo Bhai', sans-serif",
+                            cursor: 'not-allowed'
+                          }}
+                          disabled
+                          title={it.reasons.join(", ") || "Locked"}
+                        >
+                          🔒 Locked
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => buy(it.id)} 
+                          disabled={coins < it.cost}
+                          style={{
+                            background: coins < it.cost ? '#D1D5DB' : 'linear-gradient(45deg, #8B5CF6, #A78BFA)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            fontFamily: "'Baloo Bhai', sans-serif",
+                            cursor: coins < it.cost ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          Buy
+                        </button>
+                      )}
+                    </div>
+                    
+                    {it.locked && it.reasons.length > 0 && (
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#EF4444', 
+                        marginTop: '8px',
+                        fontFamily: "'Baloo Bhai', sans-serif"
+                      }}>
+                        Requires: {it.reasons.join(", ")}
+                      </div>
                     )}
                   </div>
-                </div>
-                {it.locked && it.reasons.length > 0 ? (
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Requires: {it.reasons.join(", ")}</div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+                ))}
+              </div>
+            </div>
+          ))}
         </>
       )}
-    </main>
+        </div>
+    </AppLayout>
   );
 }

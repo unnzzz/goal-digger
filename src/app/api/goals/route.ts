@@ -18,13 +18,15 @@ export async function POST(req: Request) {
   const u = await prisma.user.findUnique({ where: { email: s.user.email } });
   if (!u) return new Response("Unauthorized", { status: 401 });
 
-  const { title, dailyMinutes, totalDays, roadmap, startNow } = await req.json();
+  const { title, dailyMinutes, totalDays, content, startGoal } = await req.json();
 
-  if (!title || !dailyMinutes || !totalDays || !roadmap) {
+  if (!title || !dailyMinutes || !totalDays || !content) {
     return new Response(JSON.stringify({ error: "Bad Request" }), { status: 400, headers: { "Content-Type": "application/json" } });
   }
 
-  const contentHash = hashRoadmap(roadmap);
+  // Parse the content if it's a string
+  const roadmapData = typeof content === 'string' ? JSON.parse(content) : content;
+  const contentHash = hashRoadmap(roadmapData);
 
   // Find existing goal with the same hash
   let existing = await prisma.goal.findFirst({
@@ -33,13 +35,16 @@ export async function POST(req: Request) {
 
   if (existing) {
     // If caller asked to start now and it's not started yet, set startDate
-    if (startNow && !existing.startDate) {
+    if (startGoal && !existing.startDate) {
       existing = await prisma.goal.update({
         where: { id: existing.id },
-        data: { startDate: new Date() },
+        data: { 
+          startDate: new Date(),
+          roadmapJson: roadmapData // Update the roadmap data as well
+        },
       });
     }
-    return new Response(JSON.stringify({ existed: true, goal: existing }), {
+    return new Response(JSON.stringify({ id: existing.id, existed: true, goal: existing }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
@@ -52,13 +57,13 @@ export async function POST(req: Request) {
       title,
       dailyMinutes,
       totalDays,
-      roadmapJson: roadmap,
-      startDate: startNow ? new Date() : null,
+      roadmapJson: roadmapData,
+      startDate: startGoal ? new Date() : null,
       contentHash,
     },
   });
 
-  return new Response(JSON.stringify({ existed: false, goal }), {
+  return new Response(JSON.stringify({ id: goal.id, existed: false, goal }), {
     headers: { "Content-Type": "application/json" },
     status: 201,
   });

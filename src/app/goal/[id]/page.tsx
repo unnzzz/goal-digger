@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AppLayout from "../../../components/AppLayout";
 
 const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
 
@@ -14,16 +15,37 @@ type Resource = {
   split: { total_parts: number; part_number: number; range?: string | null } | null;
 };
 
-type Day = { day: number; title: string; minutes: number; learn: Resource[]; practice: Resource[]; reflect: string; };
+type Day = {
+  day: number;
+  title: string;
+  minutes: number;
+  learn: Resource[];
+  practice: Resource[];
+  reflect: string;
+};
 
-type Roadmap = { goal: string; total_days: number; daily_minutes: number; days: Day[]; };
+type Roadmap = { goal: string; total_days: number; daily_minutes: number; days: Day[] };
 
-type Completion = { dayNumber: number; section: "learn" | "practice" | "reflect"; index: number; };
+type Completion = { dayNumber: number; section: "learn" | "practice" | "reflect"; index: number };
+
+const CARD_COLORS = ["#FFD1A1", "#C6F1DA", "#9FD6FF", "#FFB3C7", "#C8B6FF", "#FFE6A7"];
+const SECTION_META: Record<
+  "learn" | "practice" | "reflect",
+  { label: string; icon: string; tint: string }
+> = {
+  learn: { label: "LEARN", icon: "📚", tint: "#EAF7FF" },
+  practice: { label: "PRACTICE", icon: "🛠️", tint: "#EFFFF1" },
+  reflect: { label: "REFLECT", icon: "💭", tint: "#FFF3F5" },
+};
+
+function colorFromKey(n: number) {
+  return CARD_COLORS[n % CARD_COLORS.length];
+}
 
 function SplitBadge({
   r,
 }: {
-  r: { split?: { part_number: number; total_parts: number; range?: string | null }; duration_minutes?: number | null };
+  r: { split?: { part_number: number; total_parts: number; range?: string | null } | null; duration_minutes?: number | null };
 }) {
   const s = r?.split;
   if (!s) return null;
@@ -47,7 +69,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
   const router = useRouter();
 
   // Browser TZ for diary saves
-  const [tz, setTz] = useState<string>("America/Detroit");
+  const [tz, setTz] = useState<string>("UTC");
   useEffect(() => {
     try {
       const guess = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -60,6 +82,30 @@ export default function GoalPage({ params }: { params: { id: string } }) {
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
+  const [addResourceData, setAddResourceData] = useState<{
+    dayIndex: number;
+    section: "learn" | "practice";
+    title: string;
+    url: string;
+    kind: Resource["kind"];
+  }>({
+    dayIndex: 0,
+    section: "learn",
+    title: "",
+    url: "",
+    kind: "read"
+  });
+  const [showCoinRewardModal, setShowCoinRewardModal] = useState(false);
+  const [coinRewardData, setCoinRewardData] = useState<{
+    coinsAwarded: number;
+    totalCoins: number;
+    questType: string;
+  }>({
+    coinsAwarded: 0,
+    totalCoins: 0,
+    questType: ""
+  });
 
   useEffect(() => {
     (async () => {
@@ -76,7 +122,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     })();
   }, [params.id, router]);
 
-  // ---- helpers that don’t use hooks ----
+  // ---- helpers (no React hooks inside) ----
   const saveRoadmap = async () => {
     const res = await fetch(`/api/goals/${goal.id}`, {
       method: "PUT",
@@ -88,23 +134,40 @@ export default function GoalPage({ params }: { params: { id: string } }) {
   };
 
   const addResource = (di: number, section: "learn" | "practice") => {
-    const title = prompt("Resource title");
-    if (!title) return;
-    const url = prompt("Resource URL");
-    if (!url) return;
-    const kind = (prompt('kind: "watch" | "listen" | "read"') || "read") as Resource["kind"];
+    setAddResourceData({
+      dayIndex: di,
+      section: section,
+      title: "",
+      url: "",
+      kind: "read"
+    });
+    setShowAddResourceModal(true);
+  };
+
+  const handleAddResource = () => {
+    if (!addResourceData.title || !addResourceData.url) return;
+    
     setRoadmap((prev) => {
       if (!prev) return prev;
       const next = structuredClone(prev);
-      next.days[di][section].push({
-        kind,
-        title,
-        url,
+      next.days[addResourceData.dayIndex][addResourceData.section].push({
+        kind: addResourceData.kind,
+        title: addResourceData.title,
+        url: addResourceData.url,
         source: null,
         duration_minutes: null,
         split: null,
       });
       return next;
+    });
+    
+    setShowAddResourceModal(false);
+    setAddResourceData({
+      dayIndex: 0,
+      section: "learn",
+      title: "",
+      url: "",
+      kind: "read"
     });
   };
 
@@ -154,39 +217,59 @@ export default function GoalPage({ params }: { params: { id: string } }) {
         const j = await res.json();
         if (j?.error) msg = j.error;
       } catch {}
-      alert(msg);
+      console.error('Quest completion failed:', msg, 'Status:', res.status);
+      alert(`ERROR: ${msg} (Status: ${res.status})`);
       return;
     }
 
     const j = await res.json();
     setCompletions((prev) => [...prev, { dayNumber, section, index }]);
+    
+    // Dispatch coin refresh event with a small delay to ensure API has updated
+    setTimeout(() => {
+      console.log('Dispatching coins:refresh event from goal page');
     window.dispatchEvent(new Event("coins:refresh"));
-    alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins})`);
+    }, 100);
+    
+    // Show coin reward popup
+    setCoinRewardData({
+      coinsAwarded: j.coinsAwarded,
+      totalCoins: j.totalCoins,
+      questType: section.toUpperCase()
+    });
+    setShowCoinRewardModal(true);
+    
+    // Auto-hide popup after 5 seconds
+    setTimeout(() => {
+      setShowCoinRewardModal(false);
+    }, 5000);
   };
 
- const startToday = async (e?: React.MouseEvent) => {
-  e?.preventDefault(); e?.stopPropagation();
-  const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const res = await fetch(`/api/goals/${goal.id}/start`, {
-    method: "POST",
-    headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
-  });
-  if (!res.ok) { alert("Could not start"); return; }
-  const j = await res.json();
-  setGoal((g: any) => ({ ...g, startDate: j.startDate }));
-  alert("Starts today — reminders armed. Check Dashboard → Daily quests.");
-};
+  const startToday = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = await fetch(`/api/goals/${goal.id}/start`, {
+      method: "POST",
+      headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
+    });
+    if (!res.ok) {
+      alert("Could not start");
+      return;
+    }
+    const j = await res.json();
+    setGoal((g: any) => ({ ...g, startDate: j.startDate }));
+    alert("Starts today — reminders armed. Check Dashboard → Daily quests.");
+  };
 
-
-  // ----- Diary helpers (no hooks) -----
+  // ----- Diary helpers -----
   const [diaryDrafts, setDiaryDrafts] = useState<Record<string, string>>({});
   const [savedKeys, setSavedKeys] = useState<Record<string, number>>({});
 
   const diaryKeyFor = (day: number, section: "practice" | "reflect", index: number) =>
     `${goal?.id ?? "g"}-${day}-${section}-${index}`;
 
-  const onDiaryChange = (key: string, v: string) =>
-    setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
+  const onDiaryChange = (key: string, v: string) => setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
 
   const markSavedFlash = (key: string) => {
     setSavedKeys((prev) => ({ ...prev, [key]: Date.now() }));
@@ -207,12 +290,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     const res = await fetch("/api/diary", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Timezone": tz },
-      body: JSON.stringify({
-        goalId: goal.id,
-        type: section,
-        content,
-        dayNumber,
-      }),
+      body: JSON.stringify({ goalId: goal.id, type: section, content, dayNumber }),
     });
 
     if (!res.ok) {
@@ -249,12 +327,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       <div style={{ marginTop: 6 }}>
         <textarea
           placeholder="Diary: what did you practice/struggle with?"
-          style={{ width: "100%", minHeight: 80 }}
+          style={{ width: "100%", minHeight: 90 }}
           value={val}
           onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
           onKeyDown={(e) => onDiaryKeyDown(e, d.day, "practice", i)}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <button
             type="button"
             className="btn"
@@ -264,7 +342,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
           >
             Save diary
           </button>
-          {justSaved ? <span className="kpill">Saved!</span> : <small>Tip: Ctrl/Cmd+Enter to save</small>}
+          {justSaved ? <span className="kpill">Saved!</span> : <small className="meta">Tip: Ctrl/Cmd+Enter</small>}
         </div>
       </div>
     );
@@ -278,12 +356,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       <div style={{ marginTop: 6 }}>
         <textarea
           placeholder="Diary: quick reflection…"
-          style={{ width: "100%", minHeight: 80 }}
+          style={{ width: "100%", minHeight: 90 }}
           value={val}
           onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
           onKeyDown={(e) => onDiaryKeyDown(e, d.day, "reflect", 0)}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <button
             type="button"
             className="btn"
@@ -293,46 +371,52 @@ export default function GoalPage({ params }: { params: { id: string } }) {
           >
             Save diary
           </button>
-          {justSaved ? <span className="kpill">Saved!</span> : <small>Tip: Ctrl/Cmd+Enter to save</small>}
+          {justSaved ? <span className="kpill">Saved!</span> : <small className="meta">Tip: Ctrl/Cmd+Enter</small>}
         </div>
       </div>
     );
   };
 
-  // ✅ Plain const instead of useMemo (no conditional hooks issue)
+  // ✅ Plain const instead of useMemo (avoids “rendered more hooks” pitfalls)
   const dayOrder = (roadmap?.days ?? []).map((d) => d.day);
 
-  // Early returns are fine now — no hooks follow below
   if (loading) {
     return (
-      <main className="container">
+      <AppLayout activePage="goal">
+        <div className="content-main" style={{ padding: "32px" }}>
         <div className="card">Loading…</div>
-      </main>
+        </div>
+      </AppLayout>
     );
   }
+  
   if (!goal || !roadmap) {
     return (
-      <main className="container">
+      <AppLayout activePage="goal">
+        <div className="content-main" style={{ padding: "32px" }}>
         <div className="card">Not found.</div>
-      </main>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <main className="container">
-      <div className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <AppLayout activePage="goal">
+      <div className="content-main" style={{ padding: "32px" }}>
+      {/* Header card */}
+      <div className="card" style={{ background: "#FFF8E8" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <h1 style={{ margin: 0 }}>{goal.title}</h1>
           <span className="kpill">{roadmap.total_days} days</span>
           <span className="kpill">≈ {roadmap.daily_minutes} min/day</span>
           {!goal.startDate && (
-            <button type="button" className="btn" onClick={(e) => startToday(e)}>
+            <button type="button" className="btn" onClick={startToday} style={{ marginLeft: "auto" }}>
               Start from today
             </button>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button type="button" className="btn" onClick={() => setEditMode((v) => !v)}>
             {editMode ? "Stop editing" : "Edit roadmap"}
           </button>
@@ -341,160 +425,1018 @@ export default function GoalPage({ params }: { params: { id: string } }) {
               Save changes
             </button>
           )}
+          <a className="btn-ghost" href="/dashboard" style={{ marginLeft: "auto" }}>
+            ← Back to dashboard
+          </a>
         </div>
-
-        {(roadmap.days ?? []).map((d, di) => (
-          <article key={di} className="day">
-            <h3>
-              Day {d.day}: {d.title} <span className="badge">{d.minutes} min</span>
-              {editMode && (
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8 }}
-                  onClick={() =>
-                    setRoadmap((prev) => {
-                      if (!prev) return prev;
-                      const t = prompt("New day title", prev.days[di].title);
-                      if (!t) return prev;
-                      const next = structuredClone(prev);
-                      next.days[di].title = t;
-                      return next;
-                    })
-                  }
-                >
-                  Edit title
-                </button>
-              )}
-            </h3>
-
-            <h4>Learn</h4>
-            <ul className="list">
-              {d.learn.map((r, i) => (
-                <li key={`L${di}-${i}`}>
-                  <strong>[{r.kind}]</strong>{" "}
-                  <a href={r.url} target="_blank" rel="noreferrer">
-                    {r.title}
-                  </a>
-                  <SplitBadge r={r} />
-                  <span className="kpill">+{COINS.learn} coins</span>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ marginLeft: 8 }}
-                    onClick={(e) => completeQuest(d.day, "learn", i, e)}
-                    disabled={isCompleted(d.day, "learn", i)}
-                  >
-                    {isCompleted(d.day, "learn", i) ? "Completed" : "Complete"}
-                  </button>
-                  {editMode && (
-                    <>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "learn", i)}>
-                        Edit
-                      </button>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "learn", i)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {editMode && (
-              <button type="button" className="btn" onClick={() => addResource(di, "learn")}>
-                Add Learn resource
-              </button>
-            )}
-
-            <h4>Practice</h4>
-            <ul className="list">
-              {d.practice.map((r, i) => (
-                <li key={`P${di}-${i}`} style={{ marginBottom: 10 }}>
-                  <strong>[{r.kind}]</strong>{" "}
-                  <a href={r.url} target="_blank" rel="noreferrer">
-                    {r.title}
-                  </a>
-                  <SplitBadge r={r} />
-                  <span className="kpill">+{COINS.practice} coins</span>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ marginLeft: 8 }}
-                    onClick={(e) => completeQuest(d.day, "practice", i, e)}
-                    disabled={isCompleted(d.day, "practice", i)}
-                  >
-                    {isCompleted(d.day, "practice", i) ? "Completed" : "Complete"}
-                  </button>
-                  {editMode && (
-                    <>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => editResource(di, "practice", i)}>
-                        Edit
-                      </button>
-                      <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={() => deleteResource(di, "practice", i)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-
-                  {/* Practice diary box */}
-                  {renderPracticeDiary(d, i)}
-                </li>
-              ))}
-            </ul>
-            {editMode && (
-              <button type="button" className="btn" onClick={() => addResource(di, "practice")}>
-                Add Practice resource
-              </button>
-            )}
-
-            <h4>Reflect</h4>
-            {!editMode ? (
-              <div style={{ marginBottom: 6 }}>
-                <p style={{ margin: 0 }}>
-                  {d.reflect} <span className="kpill">+{COINS.reflect} coins</span>
-                </p>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8, marginTop: 6 }}
-                  onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
-                  disabled={isCompleted(d.day, "reflect", 0)}
-                >
-                  {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
-                </button>
-              </div>
-            ) : (
-              <div style={{ marginBottom: 6 }}>
-                <textarea
-                  style={{ width: "100%", minHeight: 90 }}
-                  value={d.reflect}
-                  onChange={(e) =>
-                    setRoadmap((prev) => {
-                      if (!prev) return prev;
-                      const next = structuredClone(prev);
-                      next.days[di].reflect = e.target.value;
-                      return next;
-                    })
-                  }
-                />
-                <span className="kpill">+{COINS.reflect} coins</span>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ marginLeft: 8 }}
-                  onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
-                  disabled={isCompleted(d.day, "reflect", 0)}
-                >
-                  {isCompleted(d.day, "reflect", 0) ? "Completed" : "Mark Reflect Complete"}
-                </button>
-              </div>
-            )}
-
-            {/* Reflect diary box */}
-            {renderReflectDiary(d)}
-          </article>
-        ))}
       </div>
-    </main>
+
+      {/* Days grid - New Modern Design */}
+      <div
+        style={{ 
+          marginTop: 20, 
+          display: "grid", 
+          gap: 20, 
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+          width: "100%"
+        }}
+      >
+        {(roadmap?.days ?? []).map((d, di) => {
+          const isCompletedDay = (day: number) => {
+            const learnCompleted = d.learn.every((_, i) => isCompleted(day, "learn", i));
+            const practiceCompleted = d.practice.every((_, i) => isCompleted(day, "practice", i));
+            const reflectCompleted = isCompleted(day, "reflect", 0);
+            return learnCompleted && practiceCompleted && reflectCompleted;
+          };
+
+          const dayCompleted = isCompletedDay(d.day);
+          const band = colorFromKey(di);
+          
+          return (
+            <article 
+              key={di} 
+              style={{ 
+                background: 'white',
+                borderRadius: '16px',
+                border: `2px solid ${dayCompleted ? '#10B981' : '#E5E7EB'}`,
+                boxShadow: dayCompleted 
+                  ? '0 8px 32px rgba(16, 185, 129, 0.15)' 
+                  : '0 4px 16px rgba(0, 0, 0, 0.1)',
+                overflow: "hidden",
+                position: 'relative',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {/* Day header with gradient */}
+              <div style={{ 
+                background: `linear-gradient(135deg, ${band} 0%, ${band}CC 100%)`,
+                padding: '20px',
+                position: 'relative'
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'black',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    Day {d.day}
+                  </div>
+                  <h3 style={{ 
+                    margin: 0, 
+                    color: 'black', 
+                    fontSize: '14px', 
+                    fontWeight: '600',
+                    flex: 1,
+                    minWidth: '200px'
+                  }}>
+                    {d.title}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: 'black',
+                      padding: '6px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backdropFilter: 'blur(10px)'
+                    }}>
+                      {d.minutes} min
+                  </span>
+                    {dayCompleted && (
+                      <div style={{
+                        background: 'rgba(16, 185, 129, 0.9)',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        ✓ Complete
+                      </div>
+                    )}
+                  </div>
+                </div>
+                  {editMode && (
+                    <button
+                      type="button"
+                    style={{
+                      position: 'absolute',
+                      top: '20px',
+                      right: '20px',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                      onClick={() =>
+                        setRoadmap((prev) => {
+                          if (!prev) return prev;
+                          const t = prompt("New day title", prev.days[di].title);
+                          if (!t) return prev;
+                          const next = structuredClone(prev);
+                          next.days[di].title = t;
+                          return next;
+                        })
+                      }
+                    >
+                      Edit title
+                    </button>
+                  )}
+                </div>
+
+              <div style={{ padding: '20px' }}>
+                {/* LEARN Section */}
+                <div style={{ 
+                  background: 'white',
+                  borderRadius: '12px', 
+                  padding: '0',
+                  marginBottom: '16px',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  overflow: 'hidden'
+                }}>
+                  {/* Blue vertical bar */}
+                  <div style={{
+                    width: '6px',
+                    background: '#3B82F6',
+                    flexShrink: 0
+                  }} />
+                  
+                  <div style={{ padding: '16px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '16px' }}>🌱</span>
+                      <span style={{ 
+                        background: '#3B82F6', 
+                        color: 'white', 
+                        padding: '4px 8px', 
+                        borderRadius: '8px', 
+                        fontSize: '12px', 
+                        fontWeight: '600' 
+                      }}>
+                        LEARN +{COINS.learn} coins
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {d.learn.map((r, i) => (
+                        <div key={`L${di}-${i}`} style={{
+                          background: 'white',
+                          padding: '16px',
+                          borderRadius: '12px',
+                          border: '1px solid #E5E7EB',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                          position: 'relative'
+                        }}>
+                          
+                          {/* Day and Quest badges */}
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                            <span style={{
+                              background: '#8B5CF6',
+                              color: 'white',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '10px',
+                              fontWeight: '600'
+                            }}>
+                              Day {d.day}
+                            </span>
+                            <span style={{
+                              background: '#F3F4F6',
+                              color: '#6B7280',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '10px',
+                              fontWeight: '600'
+                            }}>
+                              Quest #{i + 1}
+                            </span>
+                          </div>
+                          
+                          {/* Resource card */}
+                          <div style={{
+                            background: '#F8FAFC',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #E2E8F0',
+                            marginBottom: '12px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                              <button style={{
+                                background: '#374151',
+                                color: 'white',
+                                border: 'none',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '9px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                {r.kind === 'watch' ? '📺' : r.kind === 'listen' ? '🎧' : '📖'} {r.kind.toUpperCase()}
+                              </button>
+                              <a 
+                                href={r.url} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                style={{
+                                  background: '#3B82F6',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  fontWeight: '500',
+                                  textDecoration: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                View Resource
+                              </a>
+                              <span style={{
+                                background: '#F3F4F6',
+                                color: '#6B7280',
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '9px',
+                                fontWeight: '500'
+                              }}>
+                                {r.duration_minutes || 7} min
+                              </span>
+                            </div>
+                            <div style={{ 
+                              fontSize: '13px', 
+                              fontWeight: '600', 
+                              color: '#1F2937',
+                              lineHeight: '1.4'
+                            }}>
+                            {r.title}
+                            </div>
+                          </div>
+                          
+                          {/* Complete button and reward */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '12px', color: '#6B7280' }}>+{COINS.learn}</span>
+                              <img src="/icons/coin.png" alt="coin" style={{ width: '14px', height: '14px' }} />
+                            </div>
+                          <button
+                            type="button"
+                              style={{
+                                background: isCompleted(d.day, "learn", i) ? '#10B981' : '#6A3EE8',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                fontFamily: 'inherit',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                            onClick={(e) => completeQuest(d.day, "learn", i, e)}
+                            disabled={isCompleted(d.day, "learn", i)}
+                          >
+                              {isCompleted(d.day, "learn", i) ? "✓ COMPLETE" : "COMPLETE"}
+                          </button>
+                          </div>
+                          
+                          {editMode && (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                              <button 
+                                style={{
+                                  background: 'transparent',
+                                  color: '#6B7280',
+                                  border: '1px solid #D1D5DB',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => editResource(di, "learn", i)}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                style={{
+                                  background: 'transparent',
+                                  color: '#DC2626',
+                                  border: '1px solid #FECACA',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => deleteResource(di, "learn", i)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                    ))}
+                    </div>
+                  {editMode && (
+                      <button 
+                        type="button" 
+                        style={{
+                          background: 'transparent',
+                          color: '#3B82F6',
+                          border: '1px dashed #3B82F6',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          marginTop: '8px',
+                          width: '100%'
+                        }}
+                        onClick={() => addResource(di, "learn")}
+                      >
+                      + Add Learn resource
+                    </button>
+                  )}
+                  </div>
+                </div>
+
+                {/* PRACTICE Section */}
+                <div style={{ 
+                  background: 'white',
+                  borderRadius: '12px', 
+                  padding: '0',
+                  marginBottom: '16px',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  overflow: 'hidden'
+                }}>
+                  {/* Green vertical bar */}
+                  <div style={{
+                    width: '6px',
+                    background: '#10B981',
+                    flexShrink: 0
+                  }} />
+                  
+                  <div style={{ padding: '16px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '16px' }}>🛠️</span>
+                      <span style={{ 
+                        background: '#10B981', 
+                        color: 'white', 
+                        padding: '4px 8px', 
+                        borderRadius: '8px', 
+                        fontSize: '12px', 
+                        fontWeight: '600' 
+                      }}>
+                        PRACTICE +{COINS.practice} coins
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {d.practice.map((r, i) => (
+                        <div key={`P${di}-${i}`} style={{
+                          background: 'white',
+                          padding: '20px',
+                          borderRadius: '12px',
+                          border: '1px solid #E5E7EB',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                          position: 'relative'
+                        }}>
+                          {/* Quest category */}
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '600', 
+                            color: '#1F2937',
+                            marginBottom: '12px'
+                          }}>
+                            PRACTICE
+                          </div>
+                          
+                          {/* Day and Quest badges */}
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                            <span style={{
+                              background: '#000000',
+                              color: 'white',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '10px',
+                              fontWeight: '600'
+                            }}>
+                              Day {d.day}
+                            </span>
+                            <span style={{
+                              background: '#F3F4F6',
+                              color: '#6B7280',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '10px',
+                              fontWeight: '600'
+                            }}>
+                              Quest #{i + 1}
+                            </span>
+                          </div>
+                          
+                          {/* Resource card */}
+                          <div style={{
+                            background: '#F8FAFC',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #E2E8F0',
+                            marginBottom: '12px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                              <button style={{
+                                background: '#374151',
+                                color: 'white',
+                                border: 'none',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '9px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                {r.kind === 'watch' ? '📺' : r.kind === 'listen' ? '🎧' : '📖'} {r.kind.toUpperCase()}
+                              </button>
+                              <a 
+                                href={r.url} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                style={{
+                                  background: '#3B82F6',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  fontWeight: '500',
+                                  textDecoration: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                View Resource
+                              </a>
+                              <span style={{
+                                background: '#F3F4F6',
+                                color: '#6B7280',
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '9px',
+                                fontWeight: '500'
+                              }}>
+                                {r.duration_minutes || 7} min
+                              </span>
+                            </div>
+                            <div style={{ 
+                              fontSize: '13px', 
+                              fontWeight: '600', 
+                              color: '#1F2937',
+                              lineHeight: '1.4'
+                            }}>
+                            {r.title}
+                            </div>
+                          </div>
+                          
+                          {/* Complete button and reward */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '14px', color: '#6B7280' }}>+{COINS.practice}</span>
+                              <span style={{ fontSize: '16px' }}>🪙</span>
+                            </div>
+                          <button
+                            type="button"
+                              style={{
+                                background: isCompleted(d.day, "practice", i) ? '#10B981' : '#6A3EE8',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                fontFamily: 'inherit',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                            onClick={(e) => completeQuest(d.day, "practice", i, e)}
+                            disabled={isCompleted(d.day, "practice", i)}
+                          >
+                              {isCompleted(d.day, "practice", i) ? "✓ COMPLETE" : "COMPLETE"}
+                          </button>
+                          </div>
+                          
+                          {/* Practice diary */}
+                          <div style={{ marginTop: '16px' }}>{renderPracticeDiary(d, i)}</div>
+                          
+                          {editMode && (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                              <button 
+                                style={{
+                                  background: 'transparent',
+                                  color: '#6B7280',
+                                  border: '1px solid #D1D5DB',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => editResource(di, "practice", i)}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                style={{
+                                  background: 'transparent',
+                                  color: '#DC2626',
+                                  border: '1px solid #FECACA',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '10px',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => deleteResource(di, "practice", i)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                    ))}
+                    </div>
+                  {editMode && (
+                      <button 
+                        type="button" 
+                        style={{
+                          background: 'transparent',
+                          color: '#10B981',
+                          border: '1px dashed #10B981',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          marginTop: '8px',
+                          width: '100%'
+                        }}
+                        onClick={() => addResource(di, "practice")}
+                      >
+                      + Add Practice resource
+                    </button>
+                  )}
+                  </div>
+                </div>
+
+                {/* REFLECT Section */}
+                <div style={{ 
+                  background: 'white',
+                  borderRadius: '12px', 
+                  padding: '0',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  overflow: 'hidden'
+                }}>
+                  {/* Orange vertical bar */}
+                  <div style={{
+                    width: '6px',
+                    background: '#F59E0B',
+                    flexShrink: 0
+                  }} />
+                  
+                  <div style={{ padding: '16px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '16px' }}>💭</span>
+                      <span style={{ 
+                        background: '#F59E0B', 
+                        color: 'white', 
+                        padding: '4px 8px', 
+                        borderRadius: '8px', 
+                        fontSize: '12px', 
+                        fontWeight: '600' 
+                      }}>
+                        REFLECT +{COINS.reflect} coins
+                      </span>
+                    </div>
+
+                    <div style={{
+                      background: 'white',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      border: '1px solid #E5E7EB',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      position: 'relative'
+                    }}>
+                      {/* Goal name at top */}
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '700', 
+                        color: '#1F2937',
+                        marginBottom: '8px'
+                      }}>
+                        {goal.title}
+                      </div>
+                      
+                      {/* Quest category */}
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        color: '#1F2937',
+                        marginBottom: '12px'
+                      }}>
+                        REFLECT
+                      </div>
+                      
+                      {/* Day and Quest badges */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <span style={{
+                          background: '#000000',
+                          color: 'white',
+                          padding: '3px 8px',
+                          borderRadius: '12px',
+                          fontSize: '10px',
+                          fontWeight: '600'
+                        }}>
+                          Day {d.day}
+                        </span>
+                        <span style={{
+                          background: '#F3F4F6',
+                          color: '#6B7280',
+                          padding: '3px 8px',
+                          borderRadius: '12px',
+                          fontSize: '10px',
+                          fontWeight: '600'
+                        }}>
+                          Quest #1
+                        </span>
+                    </div>
+                      
+                      {/* Resource card */}
+                      <div style={{
+                        background: '#FFFBEB',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        border: '1px solid #FED7AA',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '700', 
+                          color: '#1F2937',
+                          lineHeight: '1.4'
+                        }}>
+                          {!editMode ? d.reflect : (
+                      <textarea
+                              style={{ 
+                                width: "100%", 
+                                minHeight: 90,
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #D1D5DB',
+                                fontSize: '12px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical',
+                                background: 'white'
+                              }}
+                        value={d.reflect}
+                        onChange={(e) =>
+                          setRoadmap((prev) => {
+                            if (!prev) return prev;
+                            const next = structuredClone(prev);
+                            next.days[di].reflect = e.target.value;
+                            return next;
+                          })
+                        }
+                      />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Complete button and reward */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '14px', color: '#6B7280' }}>+{COINS.reflect}</span>
+                          <span style={{ fontSize: '16px' }}>🪙</span>
+                        </div>
+                      <button
+                        type="button"
+                          style={{
+                            background: isCompleted(d.day, "reflect", 0) ? '#10B981' : '#6A3EE8',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        onClick={(e) => completeQuest(d.day, "reflect", 0, e)}
+                        disabled={isCompleted(d.day, "reflect", 0)}
+                      >
+                          {isCompleted(d.day, "reflect", 0) ? "✓ COMPLETE" : "COMPLETE"}
+                      </button>
+                    </div>
+
+                  {/* Reflect diary */}
+                      <div style={{ marginTop: '16px' }}>{renderReflectDiary(d)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      </div>
+
+      {/* Add Resource Modal */}
+      {showAddResourceModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB'
+          }}>
+            <h2 style={{
+              margin: '0 0 20px 0',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#1F2937'
+            }}>
+              Add New Resource
+            </h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Resource Title */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  Resource Title
+                </label>
+                <input
+                  type="text"
+                  value={addResourceData.title}
+                  onChange={(e) => setAddResourceData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter resource title"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* Resource URL */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  Resource URL
+                </label>
+                <input
+                  type="url"
+                  value={addResourceData.url}
+                  onChange={(e) => setAddResourceData(prev => ({ ...prev, url: e.target.value }))}
+                  placeholder="https://example.com"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* Resource Kind */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '6px'
+                }}>
+                  Resource Type
+                </label>
+                <select
+                  value={addResourceData.kind}
+                  onChange={(e) => setAddResourceData(prev => ({ ...prev, kind: e.target.value as Resource["kind"] }))}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    background: 'white'
+                  }}
+                >
+                  <option value="read">📖 Read</option>
+                  <option value="watch">📺 Watch</option>
+                  <option value="listen">🎧 Listen</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              marginTop: '24px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowAddResourceModal(false)}
+                style={{
+                  background: 'transparent',
+                  color: '#6B7280',
+                  border: '1px solid #D1D5DB',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddResource}
+                disabled={!addResourceData.title || !addResourceData.url}
+                style={{
+                  background: addResourceData.title && addResourceData.url ? '#6A3EE8' : '#9CA3AF',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: addResourceData.title && addResourceData.url ? 'pointer' : 'not-allowed',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Add Resource
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coin Reward Modal */}
+      {showCoinRewardModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            {/* Success Icon */}
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              🎉
+            </div>
+
+            {/* Quest Completed Text */}
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#1F2937'
+            }}>
+              Quest Completed!
+            </h2>
+
+            {/* Quest Type */}
+            <p style={{
+              margin: '0 0 20px 0',
+              fontSize: '16px',
+              color: '#6B7280',
+              fontWeight: '500'
+            }}>
+              {coinRewardData.questType} Quest
+            </p>
+
+            {/* Coin Reward */}
+            <div style={{
+              background: '#F9FAFB',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '20px',
+              border: '1px solid #E5E7EB'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
+                <img src="/icons/coin.png" alt="coin" style={{ width: '20px', height: '20px' }} />
+                <span style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#1F2937'
+                }}>
+                  +{coinRewardData.coinsAwarded}
+                </span>
+              </div>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#6B7280',
+                fontWeight: '500'
+              }}>
+                Total: {coinRewardData.totalCoins} coins
+              </p>
+            </div>
+
+            {/* Action Button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowCoinRewardModal(false)}
+                style={{
+                  background: '#6A3EE8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AppLayout>
   );
 }

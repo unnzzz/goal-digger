@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 
 type MeResponse =
@@ -20,16 +20,18 @@ type MeResponse =
       avatarKey?: string | null;
     };
 
-const AVATAR_FALLBACK = "/avatars/astronaut.png";
-const COIN_ICON = "/ui/coin.png";
+const AVATAR_FALLBACK = "/avatars/monkey.png";
+const COIN_ICON = "/icons/coin.png";
 
 export default function NavBar() {
   const { data: session, status } = useSession();
   const [coins, setCoins] = useState<number>(0);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarKey, setAvatarKey] = useState<string | null>(null);
+  const fetchMeRef = useRef<() => Promise<void>>();
 
-  async function fetchMe() {
+  const fetchMe = useCallback(async () => {
+    console.log('NavBar fetchMe called');
     try {
       const res = await fetch("/api/me", { cache: "no-store" });
       if (!res.ok) {
@@ -49,27 +51,39 @@ export default function NavBar() {
       const avatar =
         (isOkFlag ? (j as any).avatarKey : (j as any).avatarKey) ?? null;
 
+      console.log('NavBar updating coins to:', coinsVal);
       setCoins(coinsVal);
       setDisplayName((name && name.trim()) || email || null);
       setAvatarKey(avatar);
     } catch {
       // ignore network errors, keep prior UI
     }
-  }
+  }, []);
+
+  // Keep the ref updated with the latest fetchMe function
+  useEffect(() => {
+    fetchMeRef.current = fetchMe;
+  }, [fetchMe]);
 
   useEffect(() => {
     if (status === "authenticated") fetchMe();
-  }, [status]);
+  }, [status, fetchMe]);
 
   useEffect(() => {
-    const onRefresh = () => fetchMe();
+    const onRefresh = () => {
+      console.log('NavBar received coins:refresh event');
+      // Use the ref to get the latest fetchMe function
+      if (fetchMeRef.current) {
+        fetchMeRef.current();
+      }
+    };
     window.addEventListener("coins:refresh", onRefresh);
     window.addEventListener("auth:changed", onRefresh);
     return () => {
       window.removeEventListener("coins:refresh", onRefresh);
       window.removeEventListener("auth:changed", onRefresh);
     };
-  }, []);
+  }, []); // Empty dependency array - event listener is set up once
 
   const avatarSrc =
     avatarKey ? `/avatars/${avatarKey}.png` : AVATAR_FALLBACK;

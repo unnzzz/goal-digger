@@ -11,10 +11,15 @@ function json(body: any, status = 200) {
 }
 
 const ALLOWED_AVATARS = new Set([
-  "astronaut",
-  "runner",
-  "hacker_cat",
-  "plant_witch",
+  "monkey",
+  "penguin", 
+  "cat",
+  "lion",
+  "dog",
+  "rabbit",
+  "elephant",
+  "duck",
+  "owl",
 ]);
 
 export async function POST(req: Request) {

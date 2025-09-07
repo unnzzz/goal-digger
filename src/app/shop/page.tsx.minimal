@@ -1,0 +1,13 @@
+"use client";
+import { useEffect, useState } from "react";
+
+export default function ShopPage() {
+  return (
+    <div className="app-layout">
+      <div className="content-main">
+        <h1>Shop</h1>
+        <p>Welcome to the Shop!</p>
+      </div>
+    </div>
+  );
+}

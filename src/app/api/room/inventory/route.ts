@@ -17,6 +17,7 @@ export async function GET(){
   return NextResponse.json({ items: items.map(x=>({
     id:x.id,
     placed:x.placed, posX:x.posX, posY:x.posY,
-    item:{ id:x.item.id, name:x.item.name, cost:x.item.cost }
+    rotation:x.rotation, scale:x.scale,
+    item:{ id:x.item.id, name:x.item.name, cost:x.item.cost, category:x.item.category }
   }))});
 }
