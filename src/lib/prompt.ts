@@ -10,9 +10,22 @@ CONTENT RULES
 - Give quests durations as much that the sum of the quest durations is not more than the daily_minutes set by the user.
 - Start with beginner-friendly resources, then ramp up difficulty.
 - Include enough videos overall.
-- Split long items across days with split { total_parts, part_number, range } (timestamps/sections/chapters).
 - Keep titles concise.
-- Do not repeat the same resource across days unless it is a large resource (course/book/long video/podcast/official docs). When you repeat a large resource, split it across days and include split with total_parts, part_number, and a specific range (timestamps for video/audio; chapter/section names for reading).
+- Don't repeat resources unless following a SPLITTING RULE. 
+- REFLECT RULES: The reflect questions must be directly related to the specific topics covered in that day's learn and practice resources. Base questions on the actual content titles and topics from the learn/practice sections, not generic cooking concepts.
+
+SPLITTING RULES - CRITICAL FOR LARGE RESOURCES:
+- ALWAYS split resources longer than 30 minutes across multiple days
+- ALWAYS split courses, long videos, books, or comprehensive tutorials across days
+- When splitting, use the SAME URL but different part_number and range
+- Example: A 2-hour course should be split into 4 parts (30 min each) across 4 days
+- Example: A 45-minute video should be split into 2 parts (22-23 min each) across 2 days
+- Example: A book should be split by chapters across multiple days
+- For each split part, include:
+  - total_parts: total number of parts (e.g., 4)
+  - part_number: which part this is (e.g., 1, 2, 3, 4)
+  - range: specific timestamps or chapter names (e.g., "0:00-22:30", "Chapters 1-3")
+- Do NOT create separate resources for each part - use the SAME resource with different split values
 
 OUTPUT SHAPE
 {
@@ -33,5 +46,15 @@ Resource = {
   "source": string | null,
   "duration_minutes": number | null,
   "split": { "total_parts": number, "part_number": number, "range": string } | null
+}
+
+EXAMPLE SPLIT RESOURCE:
+{
+  "kind": "watch",
+  "title": "Complete React Course for Beginners",
+  "url": "https://youtube.com/watch?v=abc123",
+  "source": "YouTube",
+  "duration_minutes": 120,
+  "split": { "total_parts": 4, "part_number": 1, "range": "0:00-30:00" }
 }
 `;

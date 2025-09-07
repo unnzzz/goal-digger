@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint"
   },
-    "prisma": {
+  "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
@@ -16,15 +16,18 @@
     "bcryptjs": "^3.0.2",
     "next": "^14.2.5",
     "next-auth": "^4.24.11",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.1",
     "openai": "^5.18.1",
     "prisma": "^6.15.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sqlite3": "^5.1.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
+    "@types/nodemailer": "^7.0.1",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "eslint": "^8.57.0",
@@ -32,5 +35,4 @@
     "tsx": "^4.20.5",
     "typescript": "^5.4.5"
   }
-  
 }

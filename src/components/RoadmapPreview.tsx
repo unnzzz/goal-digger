@@ -23,7 +23,7 @@ type Completion = { dayNumber: number; section: "learn" | "practice" | "reflect"
 function SplitBadge({
   r,
 }: {
-  r: { split?: { part_number: number; total_parts: number; range?: string | null }; duration_minutes?: number | null };
+  r: { split?: { part_number: number; total_parts: number; range?: string | null } | null; duration_minutes?: number | null };
 }) {
   const s = r?.split;
   if (!s) return null;
@@ -161,7 +161,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     const j = await res.json();
     setCompletions((prev) => [...prev, { dayNumber, section, index }]);
     window.dispatchEvent(new Event("coins:refresh"));
-    alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins})`);
+    alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins}) 🪙`);
   };
 
  const startToday = async (e?: React.MouseEvent) => {

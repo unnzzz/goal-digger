@@ -14,7 +14,7 @@ const Input = z.object({
 });
 
 // You can tune these via env if you like
-const CHUNK_SIZE = Number(process.env.FAST_CHUNK_SIZE ?? 7);   // days per generation call
+const CHUNK_SIZE = Number(process.env.FAST_CHUNK_SIZE ?? 10);   // days per generation call
 const CONCURRENCY = Number(process.env.FAST_CONCURRENCY ?? 3); // parallel calls
 const TICK_MS = 1000;                                         // progress update interval (ms)
 const EMA_ALPHA = 0.3;                                        // smoothing for per-day duration estimate
@@ -62,9 +62,46 @@ export async function POST(req: Request) {
 
     const params = Input.parse(body);
 
+    let tickTimer: ReturnType<typeof setInterval> | null = null;
+    let controllerClosed = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (obj: any) => controller.enqueue(enc(obj));
+        const send = (obj: any) => {
+          if (controllerClosed) return;
+          try {
+            controller.enqueue(enc(obj));
+          } catch (error) {
+            // Controller might be closed, ignore the error
+            controllerClosed = true;
+            console.warn('Send failed:', error);
+          }
+        };
+
+        const closeStream = () => {
+          if (controllerClosed) return;
+          try {
+            controllerClosed = true;
+            if (tickTimer) {
+              clearInterval(tickTimer);
+              tickTimer = null;
+            }
+            if (timeout) {
+              clearTimeout(timeout);
+              timeout = null;
+            }
+            controller.close();
+          } catch (error) {
+            console.warn('Close failed:', error);
+          }
+        };
+
+        // Set a timeout to prevent hanging streams
+        timeout = setTimeout(() => {
+          console.warn('Stream timeout, closing...');
+          closeStream();
+        }, 300000); // 5 minutes timeout
 
         // Build chunk tasks (we ALWAYS chunk when total_days is provided, even if small)
         const buildChunks = (): ChunkMeta[] => {
@@ -122,7 +159,6 @@ export async function POST(req: Request) {
         let nextIdx = 0;
         let completedWeight = 0;
         let stitching = false;
-        let tickTimer: ReturnType<typeof setInterval> | null = null;
 
         function calcPercent(now = Date.now()) {
           // Completed weight (exact)
@@ -144,66 +180,98 @@ export async function POST(req: Request) {
         }
 
         const emitProgress = (message?: string) => {
-          const pct = Math.max(0, Math.min(1, calcPercent())) * 100;
-          send({
-            type: "progress",
-            percent: Math.round(pct),
-            message: message || "Working…",
-            done: Math.round(pct),
-            total: 100
-          });
+          try {
+            const pct = Math.max(0, Math.min(1, calcPercent())) * 100;
+            send({
+              type: "progress",
+              percent: Math.round(pct),
+              message: message || "Working…",
+              done: Math.round(pct),
+              total: 100
+            });
+          } catch (error) {
+            // Controller might be closed, ignore the error
+            console.warn('Progress emit failed:', error);
+          }
         };
 
         // Start a ticking timer to push micro-progress every second
         tickTimer = setInterval(() => {
-          if (!stitching) emitProgress();
+          if (!stitching && !controllerClosed) {
+            try {
+              emitProgress();
+            } catch (error) {
+              // Timer might be running after controller is closed, clear it
+              controllerClosed = true;
+              if (tickTimer) {
+                clearInterval(tickTimer);
+                tickTimer = null;
+              }
+            }
+          }
         }, TICK_MS);
 
         // Kick initial progress
         emitProgress("Starting…");
 
         // Runner that respects CONCURRENCY and updates timings
-        await new Promise<void>((resolve, reject) => {
-          const runNext = () => {
-            // All queued & none in-flight? done scheduling
-            if (nextIdx >= chunks.length && inFlight === 0) return resolve();
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const runNext = () => {
+              // All queued & none in-flight? done scheduling
+              if (nextIdx >= chunks.length && inFlight === 0) return resolve();
 
-            // Launch up to CONCURRENCY
-            while (inFlight < CONCURRENCY && nextIdx < chunks.length) {
-              const idx = nextIdx++;
-              const ch = chunks[idx];
-              ch.start = Date.now();
-              inFlight++;
+              // Launch up to CONCURRENCY
+              while (inFlight < CONCURRENCY && nextIdx < chunks.length) {
+                const idx = nextIdx++;
+                const ch = chunks[idx];
+                ch.start = Date.now();
+                inFlight++;
 
-              ch.run().then((res) => {
-                ch.end = Date.now();
-                ch.done = true;
-                results[idx] = res;
+                ch.run().then((res) => {
+                  if (controllerClosed) return;
+                  
+                  ch.end = Date.now();
+                  ch.done = true;
+                  results[idx] = res;
 
-                // Update EMA (ms/day)
-                const ms = Math.max(1, (ch.end - ch.start));
-                const msPerDay = ms / ch.spanDays;
-                emaMsPerDay = EMA_ALPHA * msPerDay + (1 - EMA_ALPHA) * emaMsPerDay;
+                  // Update EMA (ms/day)
+                  const ms = Math.max(1, (ch.end - (ch.start || 0)));
+                  const msPerDay = ms / ch.spanDays;
+                  emaMsPerDay = EMA_ALPHA * msPerDay + (1 - EMA_ALPHA) * emaMsPerDay;
 
-                // Update completed weight & emit immediate progress
-                completedWeight += ch.spanDays;
-                emitProgress(`Chunk ${completedWeight}/${totalWeight} days complete`);
+                  // Update completed weight & emit immediate progress
+                  completedWeight += ch.spanDays;
+                  emitProgress(`Chunk ${completedWeight}/${totalWeight} days complete`);
 
-              }).catch((e) => {
-                reject(e);
-              }).finally(() => {
-                inFlight--;
-                runNext();
-              });
-            }
-          };
+                }).catch((e) => {
+                  console.error(`Chunk ${idx} failed:`, e);
+                  controllerClosed = true;
+                  reject(e);
+                }).finally(() => {
+                  inFlight--;
+                  if (!controllerClosed) {
+                    runNext();
+                  }
+                });
+              }
+            };
 
-          runNext();
-        });
+            runNext();
+          });
+        } catch (error) {
+          // Clear timer on error and mark controller as closed
+          console.error('Streaming error:', error);
+          closeStream();
+          throw error;
+        }
 
         // All chunks done — finalize with a small stitching phase (2%)
         stitching = true;
-        if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+        if (tickTimer) { 
+          clearInterval(tickTimer); 
+          tickTimer = null; 
+        }
 
         // Push to 99% smoothly (if not already)
         send({ type: "progress", percent: Math.max(99, Math.round(calcPercent() * 100)), message: "Stitching…" });
@@ -217,7 +285,14 @@ export async function POST(req: Request) {
         // 100% and result
         send({ type: "progress", percent: 100, message: "Done" });
         send({ type: "result", data: merged });
-        controller.close();
+        
+        // Close the stream properly
+        closeStream();
+      },
+      cancel() {
+        // Handle stream cancellation
+        console.log('Stream cancelled');
+        closeStream();
       }
     });
 

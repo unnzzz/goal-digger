@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bento } from "@/components/ui/Bento";
 import { SplitBadge } from "@/components/ui/SplitBadge";
+import Image from 'next/image';
+import { useUserData } from '@/hooks/useUserData';
+import AppLayout from '../../components/AppLayout';
+import { useAvatar } from '../../contexts/AvatarContext';
+import { getMessageForAction } from '../../lib/avatarMessages';
 
 const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
 
@@ -31,16 +36,17 @@ type GoalListItem = {
   title: string;
   createdAt: string;
   startDate: string | null;
+  totalDays: number;
 };
 
-const CARD_COLORS = ["#FFD1A1", "#C6F1DA", "#9FD6FF", "#FFB3C7", "#C8B6FF", "#FFE6A7"];
+const CARD_COLORS = ["#FFD1A1", "#FFE4E1", "#9FD6FF", "#FFB3C7", "#C8B6FF", "#FFE6A7"];
 const SECTION_META: Record<
   DailyItem["section"],
   { label: string; icon: string; tint: string }
 > = {
   learn: { label: "LEARN", icon: "📚", tint: "#EAF7FF" },
-  practice: { label: "PRACTICE", icon: "🛠️", tint: "#EFFFF1" },
-  reflect: { label: "REFLECT", icon: "💭", tint: "#FFF3F5" },
+  practice: { label: "PRACTICE", icon: "🛠️", tint: "#FFF3E0" },
+  reflect: { label: "REFLECT", icon: "💭", tint: "#F3E5F5" },
 };
 
 function colorFromKey(key: string) {
@@ -49,18 +55,72 @@ function colorFromKey(key: string) {
   return CARD_COLORS[h % CARD_COLORS.length];
 }
 
+async function calculateProgress(goal: GoalListItem, dailyItems: DailyItem[]) {
+  if (!goal.startDate) return { percentage: 0, daysRemaining: 0, daysSinceStart: 0 };
+  
+  const startDate = new Date(goal.startDate);
+  const today = new Date();
+  
+  // Fix timezone issues by normalizing dates to start of day
+  const startOfStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  const daysSinceStart = Math.floor((startOfToday.getTime() - startOfStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const totalDays = goal.totalDays;
+  const daysRemaining = Math.max(0, totalDays - daysSinceStart);
+  
+  // Calculate progress based on ALL quests across the entire goal duration
+  // We need to fetch all quest completions for this goal, not just today's
+  try {
+    const response = await fetch(`/api/goals/${goal.id}/progress`);
+    if (response.ok) {
+      const data = await response.json();
+      const percentage = data.percentage || 0;
+      
+      // Debug logging
+      console.log(`Goal: ${goal.title}`, {
+        totalDays,
+        daysSinceStart,
+        daysRemaining,
+        totalQuests: data.totalQuests,
+        completedQuests: data.completedQuests,
+        percentage
+      });
+      
+      return { percentage, daysRemaining, daysSinceStart };
+    }
+  } catch (error) {
+    console.error('Error fetching goal progress:', error);
+  }
+  
+  // Fallback: calculate based on today's quests only
+  const goalQuests = dailyItems.filter(item => item.goalId === goal.id);
+  const completedQuests = goalQuests.filter(item => item.completed).length;
+  const percentage = completedQuests > 0 ? Math.min(100, Math.round((completedQuests / goalQuests.length) * 100)) : 0;
+  
+  return { percentage, daysRemaining, daysSinceStart };
+}
+
 function GoalCard({
   g,
   onView,
   onStart,
   onDelete,
+  dailyItems,
 }: {
   g: GoalListItem;
   onView: (g: GoalListItem) => void;
   onStart: (g: GoalListItem) => void;
   onDelete: (g: GoalListItem) => void;
+  dailyItems: DailyItem[];
 }) {
   const color = colorFromKey(g.title);
+  const [progress, setProgress] = useState({ percentage: 0, daysRemaining: 0, daysSinceStart: 0 });
+
+  useEffect(() => {
+    calculateProgress(g, dailyItems).then(setProgress);
+  }, [g, dailyItems]);
   return (
     <div className="goal-card" style={{ overflow: "hidden", background: "#fff" }}>
       <div className="band" style={{ background: color }} />
@@ -73,7 +133,7 @@ function GoalCard({
         </div>
         <div className="meta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span className="kpill" title="Created">
-            🗓️ {new Date(g.createdAt).toISOString().slice(0, 10)}
+            🗓️ Created: {new Date(g.createdAt).toISOString().slice(0, 10)}
           </span>
           {g.startDate ? (
             <span className="kpill" title="Started">
@@ -84,16 +144,76 @@ function GoalCard({
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <button className="btn" onClick={() => onView(g)}>
+        {/* Progress Bar */}
+        {g.startDate && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: "#666", fontWeight: 600 }}>Progress</span>
+              <span style={{ fontSize: 12, color: "#666", fontWeight: 600 }}>{progress.percentage}% Complete</span>
+            </div>
+            <div style={{ 
+              width: "100%", 
+              height: "8px", 
+              backgroundColor: "#E5E7EB", 
+              borderRadius: "4px", 
+              overflow: "hidden" 
+            }}>
+              <div style={{ 
+                width: `${progress.percentage}%`, 
+                height: "100%", 
+                backgroundColor: "#10B981", 
+                borderRadius: "4px",
+                transition: "width 0.3s ease"
+              }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+              <span style={{ fontSize: 11, color: "#9CA3AF" }}>Days remaining: {progress.daysRemaining}</span>
+              <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                {progress.daysSinceStart === 0 ? "Started today" : `Started ${progress.daysSinceStart} day${progress.daysSinceStart === 1 ? '' : 's'} ago`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: 'space-between' }}>
+          <button 
+            className="btn" 
+            onClick={() => onView(g)}
+            style={{ 
+              minWidth: '80px', 
+              padding: '12px 16px', 
+              fontSize: '14px',
+              flex: '1'
+            }}
+          >
             View
           </button>
           {!g.startDate && (
-            <button className="btn-ghost" onClick={() => onStart(g)}>
+            <button 
+              className="btn" 
+              onClick={() => onStart(g)}
+              style={{ 
+                minWidth: '80px', 
+                padding: '12px 16px', 
+                fontSize: '14px',
+                background: 'linear-gradient(45deg, #10B981, #059669)',
+                flex: '1'
+              }}
+            >
               Start today
             </button>
           )}
-          <button className="btn-ghost" onClick={() => onDelete(g)}>
+          <button 
+            className="btn" 
+            onClick={() => onDelete(g)}
+            style={{ 
+              minWidth: '80px', 
+              padding: '12px 16px', 
+              fontSize: '14px',
+              background: 'linear-gradient(45deg, #991B1B, #B91C1C)',
+              flex: '1'
+            }}
+          >
             Delete
           </button>
         </div>
@@ -102,8 +222,335 @@ function GoalCard({
   );
 }
 
+function diaryKeyFor(it: DailyItem) {
+  return `${it.goalId}-${it.dayNumber}-${it.section}-${it.index}`;
+}
+
+function SectionCard({ 
+  it, 
+  openDiary, 
+  diaryDrafts, 
+  savedKeys, 
+  toggleDiary, 
+  onDiaryChange, 
+  onDiaryKeyDown, 
+  saveDiary, 
+  completeQuest 
+}: { 
+  it: DailyItem;
+  openDiary: Record<string, boolean>;
+  diaryDrafts: Record<string, string>;
+  savedKeys: Record<string, number>;
+  toggleDiary: (key: string) => void;
+  onDiaryChange: (key: string, v: string) => void;
+  onDiaryKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, it: DailyItem) => void;
+  saveDiary: (it: DailyItem) => void;
+  completeQuest: (it: DailyItem, e?: React.MouseEvent) => void;
+}) {
+  const meta = SECTION_META[it.section];
+  const coins = COINS[it.section];
+  const key = diaryKeyFor(it);
+  const open = !!openDiary[key];
+
+  // Color-coded section bars
+  const getSectionColor = (section: string) => {
+    switch (section) {
+      case "learn": return "#3B82F6"; // Blue
+      case "practice": return "#10B981"; // Green  
+      case "reflect": return "#F59E0B"; // Orange
+      default: return "#6B7280"; // Gray
+    }
+  };
+
+  const sectionColor = getSectionColor(it.section);
+  const isCompleted = it.completed;
+
+  return (
+    <div style={{ 
+      background: "#FFFFFF", 
+      border: "1px solid #E5E7EB", 
+      borderRadius: "12px", 
+      padding: "20px", 
+      marginBottom: "16px",
+      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+      position: "relative",
+      opacity: isCompleted ? 0.7 : 1
+    }}>
+      {/* Section Color Bar */}
+      <div style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: "6px",
+        backgroundColor: sectionColor,
+        borderTopLeftRadius: "12px",
+        borderBottomLeftRadius: "12px"
+      }} />
+
+      {/* Header */}
+      <div style={{ marginLeft: "16px", marginBottom: "16px", marginTop: "8px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+          <div style={{ flex: 1, marginRight: "12px" }}>
+            {/* Goal Title - above section name */}
+            <h2 style={{ 
+              fontSize: "16px", 
+              fontWeight: "600", 
+              color: "#4B5563", 
+              margin: "0 0 6px 0",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px"
+            }}>
+              {it.goalTitle}
+            </h2>
+            {/* Section Name */}
+            <h3 style={{ 
+              fontSize: "18px", 
+              fontWeight: "700", 
+              color: "#1F2937", 
+              margin: "0 0 8px 0",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px"
+            }}>
+              {meta.label}
+            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+              <span style={{
+                background: "#E0E7FF",
+                color: "#3730A3",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontSize: "11px",
+                fontWeight: "600",
+                border: "1px solid #C7D2FE"
+              }}>
+                Day {it.dayNumber}
+              </span>
+              <span style={{
+                background: "#F3F4F6",
+                color: "#6B7280",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                fontSize: "10px",
+                fontWeight: "500"
+              }}>
+                Quest #{it.index + 1}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <span style={{
+              background: "#F3F4F6",
+              color: "#374151",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}>
+              +{coins} <img src="/icons/coin.png" alt="" width={18} height={18} style={{ 
+                verticalAlign: "middle",
+                filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
+              }} />
+            </span>
+            <button
+              className={`btn ${isCompleted ? "disabled" : ""}`}
+              onClick={(e) => completeQuest(it, e)}
+              disabled={isCompleted}
+              title={isCompleted ? "Already completed" : "Mark complete"}
+              style={{
+                padding: "8px 16px",
+                fontSize: "14px",
+                fontWeight: "600"
+              }}
+            >
+              {isCompleted ? "Completed" : "Complete"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ marginLeft: "16px" }}>
+        {it.section !== "reflect" && (it.title || it.url) ? (
+          <div style={{
+            background: "#F9FAFB",
+            border: "1px solid #E5E7EB",
+            borderRadius: "8px",
+            padding: "16px",
+            marginBottom: "12px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <span style={{
+                background: it.kind === "watch" ? "#EF4444" : "#6B7280",
+                color: "white",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                fontWeight: "600",
+                textTransform: "uppercase"
+              }}>
+                {it.kind === "watch" ? "📺 WATCH" : it.kind === "read" ? "📖 READ" : "🎧 LISTEN"}
+              </span>
+              {it.url && (
+                <a 
+                  href={it.url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{
+                    background: "#3B82F6",
+                    color: "white",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    display: "inline-block"
+                  }}
+                >
+                  View Resource
+                </a>
+              )}
+              {it.duration_minutes && (
+                <span style={{
+                  background: "#E5E7EB",
+                  color: "#6B7280",
+                  padding: "4px 8px",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  fontWeight: "500"
+                }}>
+                  {it.duration_minutes} min
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: "16px", color: "#1F2937", fontWeight: "500" }}>
+              {it.url ? (
+                <a href={it.url} target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                  {it.title}
+                </a>
+              ) : (
+                it.title
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            background: "#FEF3C7",
+            border: "1px solid #F59E0B",
+            borderRadius: "8px",
+            padding: "16px",
+            marginBottom: "12px"
+          }}>
+            <p style={{ 
+              fontSize: "16px", 
+              color: "#92400E", 
+              margin: 0,
+              fontStyle: "italic"
+            }}>
+              {it.reflectText || "Reflect on what you learned today."}
+            </p>
+          </div>
+        )}
+
+        {/* Diary toggle + editor */}
+        {(it.section === "practice" || it.section === "reflect") && (
+          <div style={{ marginTop: "12px" }}>
+            <button 
+              className="btn-ghost" 
+              onClick={() => toggleDiary(key)}
+              style={{
+                background: "transparent",
+                border: "1px solid #D1D5DB",
+                color: "#6B7280",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                fontSize: "14px",
+                cursor: "pointer"
+              }}
+            >
+              {open ? "Hide diary" : "Add to diary"}
+            </button>
+            {open && (
+              <div style={{ 
+                background: "#F9FAFB", 
+                border: "1px solid #E5E7EB", 
+                borderRadius: "8px", 
+                padding: "16px", 
+                marginTop: "8px" 
+              }}>
+                <textarea
+                  placeholder={
+                    it.section === "practice"
+                      ? "Diary: what did you practice/struggle with?"
+                      : "Diary: quick reflection…"
+                  }
+                  style={{ 
+                    width: "100%", 
+                    minHeight: "90px",
+                    border: "1px solid #D1D5DB",
+                    borderRadius: "6px",
+                    padding: "12px",
+                    fontSize: "14px",
+                    fontFamily: "inherit",
+                    resize: "vertical"
+                  }}
+                  value={diaryDrafts[key] ?? ""}
+                  onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
+                  onKeyDown={(e) => onDiaryKeyDown(e, it)}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      console.log("Save button clicked");
+                      saveDiary(it);
+                    }}
+                    disabled={!String(diaryDrafts[key] ?? "").trim()}
+                    title="Ctrl/Cmd+Enter to save"
+                    style={{ 
+                      opacity: !String(diaryDrafts[key] ?? "").trim() ? 0.5 : 1,
+                      cursor: !String(diaryDrafts[key] ?? "").trim() ? "not-allowed" : "pointer",
+                      padding: "8px 16px",
+                      fontSize: "14px"
+                    }}
+                  >
+                    Save diary
+                  </button>
+                  {key in savedKeys ? (
+                    <span style={{
+                      background: "#10B981",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "600"
+                    }}>
+                      Saved!
+                    </span>
+                  ) : (
+                    <small style={{ color: "#6B7280", fontSize: "12px" }}>
+                      Tip: Ctrl/Cmd+Enter
+                    </small>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
+  const { userData, loading: userLoading } = useUserData();
+  const { showMessage } = useAvatar();
 
   // ---- Timezone (IANA) & tell server (for reminders, daily calc) ----
   const [tz, setTz] = useState<string>("UTC");
@@ -121,6 +568,16 @@ export default function Dashboard() {
       }
     } catch {}
   }, []);
+
+  // Show avatar message when dashboard loads (only once per session)
+  useEffect(() => {
+    if (!userLoading && userData) {
+      const timer = setTimeout(() => {
+        showMessage(getMessageForAction('dashboard_visited'));
+      }, 2000); // Longer delay to let page fully load
+      return () => clearTimeout(timer);
+    }
+  }, [userLoading, userData, showMessage]);
 
   // ---- GOALS state ----
   const [goalsLoading, setGoalsLoading] = useState(true);
@@ -203,16 +660,26 @@ export default function Dashboard() {
     if (!daily?.items) return [];
     const order: Record<DailyItem["section"], number> = { learn: 0, practice: 1, reflect: 2 };
     return [...daily.items].sort((a, b) => {
+      // First sort by completion status (incomplete first, completed last)
+      const aCompleted = !!a.completed;
+      const bCompleted = !!b.completed;
+      if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+      
+      // Then by goal title
       const g = a.goalTitle.localeCompare(b.goalTitle);
       if (g) return g;
+      
+      // Then by day number
       if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+      
+      // Finally by section and index
       return order[a.section] - order[b.section] || a.index - b.index;
     });
   }, [daily]);
 
   const isCompleted = (it: DailyItem) => !!it.completed;
 
-  const completeQuest = async (it: DailyItem, e?: React.MouseEvent) => {
+  const completeQuest = useCallback(async (it: DailyItem, e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
     if (isCompleted(it)) return;
@@ -238,19 +705,51 @@ export default function Dashboard() {
       if (!prev) return prev;
       return { ...prev, items: prev.items.map((x) => (x === it ? { ...x, completed: true } : x)) };
     });
+    
+    // Dispatch coin refresh event with a small delay to ensure API has updated
+    setTimeout(() => {
+      console.log('Dispatching coins:refresh event from dashboard');
     window.dispatchEvent(new Event("coins:refresh"));
-    // tiny toast
-    alert(`Quest completed! +${j.coinsAwarded} coins (total: ${j.totalCoins})`);
-  };
+    }, 100);
+    
+    // Show coin reward popup
+    setCoinRewardData({
+      coinsAwarded: j.coinsAwarded,
+      totalCoins: j.totalCoins,
+      questType: it.section.toUpperCase()
+    });
+    setShowCoinRewardModal(true);
+    
+    // Auto-hide popup after 5 seconds
+    setTimeout(() => {
+      setShowCoinRewardModal(false);
+    }, 5000);
+
+    // Show avatar message for quest completion (instant)
+    setTimeout(() => {
+      showMessage(getMessageForAction('quest_completed'), true);
+    }, 2000); // Show after coin popup
+  }, [showMessage]);
+
+  // ---- Coin Reward Modal ----
+  const [showCoinRewardModal, setShowCoinRewardModal] = useState(false);
+  const [coinRewardData, setCoinRewardData] = useState<{
+    coinsAwarded: number;
+    totalCoins: number;
+    questType: string;
+  }>({
+    coinsAwarded: 0,
+    totalCoins: 0,
+    questType: ""
+  });
 
   // ---- Diary helpers ----
-  const diaryKeyFor = (it: DailyItem) => `${it.goalId}-${it.dayNumber}-${it.section}-${it.index}`;
   const [openDiary, setOpenDiary] = useState<Record<string, boolean>>({});
-  const toggleDiary = (key: string) =>
-    setOpenDiary((p) => ({ ...p, [key]: !p[key] }));
+  const toggleDiary = useCallback((key: string) =>
+    setOpenDiary((p) => ({ ...p, [key]: !p[key] })), []);
 
-  const onDiaryChange = (key: string, v: string) =>
-    setDiaryDrafts((prev) => ({ ...prev, [key]: v }));
+  const onDiaryChange = useCallback((key: string, v: string) =>
+    setDiaryDrafts((prev) => ({ ...prev, [key]: v })), []);
 
   const markSavedFlash = (key: string) => {
     setSavedKeys((prev) => ({ ...prev, [key]: Date.now() }));
@@ -263,11 +762,17 @@ export default function Dashboard() {
     }, 1500);
   };
 
-  const saveDiary = async (it: DailyItem) => {
+  const saveDiary = useCallback(async (it: DailyItem) => {
     const key = diaryKeyFor(it);
     const content = (diaryDrafts[key] || "").trim();
-    if (!content) return;
+    console.log("Saving diary:", { key, content, goalId: it.goalId, section: it.section, dayNumber: it.dayNumber });
+    
+    if (!content) {
+      console.log("No content to save");
+      return;
+    }
 
+    try {
     const res = await fetch("/api/diary", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Timezone": tz },
@@ -285,20 +790,25 @@ export default function Dashboard() {
         const j = await res.json();
         if (j?.error) msg = j.error;
       } catch {}
+        console.error("Diary save failed:", msg);
       alert(msg);
       return;
     }
 
-    setDiaryDrafts((prev) => ({ ...prev, [key]: "" }));
+      console.log("Diary saved successfully");
     markSavedFlash(key);
-  };
+    } catch (error) {
+      console.error("Diary save error:", error);
+      alert("Failed to save diary. Please try again.");
+    }
+  }, [diaryDrafts, tz]);
 
-  const onDiaryKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, it: DailyItem) => {
+  const onDiaryKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>, it: DailyItem) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       saveDiary(it);
     }
-  };
+  }, [saveDiary]);
 
   const startGoal = async (g: GoalListItem) => {
     const tzHead = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -336,126 +846,31 @@ export default function Dashboard() {
   // ---- UI helpers ----
   const niceDate = useMemo(() => {
     try {
-      return daily?.date ? new Date(daily.date).toLocaleDateString(undefined, { dateStyle: "full" }) : "";
+      if (!daily?.date) return "";
+      // Parse the date string and format it in the correct timezone
+      const [year, month, day] = daily.date.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString(undefined, { 
+        dateStyle: "full",
+        timeZone: daily.tz || tz 
+      });
     } catch {
       return daily?.date || "";
     }
-  }, [daily?.date]);
+  }, [daily?.date, daily?.tz, tz]);
 
-  const SectionCard = ({ it }: { it: DailyItem }) => {
-    const meta = SECTION_META[it.section];
-    const coins = COINS[it.section];
-    const key = diaryKeyFor(it);
-    const open = !!openDiary[key];
-
-    const goalColor = colorFromKey(it.goalTitle);
-    const bg = meta.tint;
-    return (
-      <div className="quest-card" style={{ background: bg, borderColor: "#00000022" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span className="kpill" style={{ background: goalColor, borderColor: "#00000022" }}>
-              {meta.icon}
-            </span>
-            <strong>
-              {it.goalTitle} — Day {it.dayNumber}
-            </strong>
-            <span className="kpill">{meta.label}</span>
-            <span className="kpill">+{coins} 💰</span>
-          </div>
-          <button
-            className={`btn ${it.completed ? "disabled" : ""}`}
-            onClick={(e) => completeQuest(it, e)}
-            disabled={!!it.completed}
-            title={it.completed ? "Already completed" : "Mark complete"}
-          >
-            {it.completed ? "Completed" : "Complete"}
-          </button>
-        </div>
-
-        {it.section !== "reflect" && (it.title || it.url) ? (
-          <div style={{ marginTop: 10 }}>
-            <div className="res" style={{ alignItems: "center" }}>
-              <span className="dot" style={{ background: goalColor }} />
-              <div style={{ flex: 1 }}>
-                {it.url ? (
-                  <a href={it.url} target="_blank" rel="noreferrer">
-                    <strong>[{it.kind}]</strong> {it.title}
-                  </a>
-                ) : (
-                  <span>
-                    <strong>[{it.kind}]</strong> {it.title}
-                  </span>
-                )}
-                <div style={{ marginTop: 6 }}>
-                  <SplitBadge r={{ split: it.split, duration_minutes: it.duration_minutes ?? null }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 8 }} className="meta">
-            {it.reflectText || "Reflect on what you learned today."}
-          </div>
-        )}
-
-        {/* Diary toggle + editor */}
-        {(it.section === "practice" || it.section === "reflect") && (
-          <div style={{ marginTop: 10 }}>
-            <button className="btn-ghost" onClick={() => toggleDiary(key)}>
-              {open ? "Hide diary" : "Add to diary"}
-            </button>
-            {open && (
-              <div className="card" style={{ marginTop: 8 }}>
-                <textarea
-                  placeholder={
-                    it.section === "practice"
-                      ? "Diary: what did you practice/struggle with?"
-                      : "Diary: quick reflection…"
-                  }
-                  style={{ width: "100%", minHeight: 90 }}
-                  value={diaryDrafts[key] ?? ""}
-                  onChange={(e) => onDiaryChange(key, e.currentTarget.value)}
-                  onKeyDown={(e) => onDiaryKeyDown(e, it)}
-                />
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => saveDiary(it)}
-                    disabled={!String(diaryDrafts[key] ?? "").trim()}
-                    title="Ctrl/Cmd+Enter to save"
-                  >
-                    Save diary
-                  </button>
-                  {key in savedKeys ? (
-                    <span className="kpill">Saved!</span>
-                  ) : (
-                    <small className="meta">Tip: Ctrl/Cmd+Enter</small>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // ---- Render ----
   return (
-    <main className="container">
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-        <div className="logo" />
-        <h1 className="brand">Goal-Digger</h1>
-      </div>
-      <div className="subtitle">Your cozy dashboard — goals & today’s quests ✨</div>
+    <AppLayout activePage="dashboard">
+      {/* Content Area */}
+      <div className="content-main" style={{ padding: "32px" }}>
 
       <div className="bento-grid">
         {/* GOALS */}
         <Bento
           title="Your goals"
-          color="var(--card)"
+          color="#FFF8E8"
           right={
             <a className="btn" href="/">
               + New roadmap
@@ -474,10 +889,10 @@ export default function Dashboard() {
 
           <div
             className="grid"
-            style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}
+            style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16 }}
           >
             {goals.map((g) => (
-              <GoalCard key={g.id} g={g} onView={viewGoal} onStart={startGoal} onDelete={deleteGoal} />
+              <GoalCard key={g.id} g={g} onView={viewGoal} onStart={startGoal} onDelete={deleteGoal} dailyItems={items} />
             ))}
           </div>
         </Bento>
@@ -485,7 +900,7 @@ export default function Dashboard() {
         {/* DAILY QUESTS */}
         <Bento
           title="Daily quests"
-          color="var(--card-2)"
+          color="#F3FBFF"
           right={
             <span className="kpill">
               {niceDate ? `Today • ${niceDate}` : "Today"} {daily?.tz ? `• ${daily.tz}` : ""}
@@ -506,18 +921,452 @@ export default function Dashboard() {
                 <div className="meta">No quests for today. Great day to rest 🌤️</div>
               )}
 
+              {/* Daily Quest Summary */}
+              {!dailyLoading && !dailyErr && items.length > 0 && (
+                <div style={{
+                  background: "linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%)",
+                  color: "white",
+                  padding: "16px 20px",
+                  borderRadius: "12px",
+                  marginBottom: "20px",
+                  boxShadow: "0 4px 12px rgba(76, 29, 149, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                }}>
+                  <div style={{ textAlign: "center", width: "100%" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
+                      <img 
+                        src="/icons/trophy.png" 
+                        alt="trophy" 
+                        width={54} 
+                        height={54} 
+                        style={{ 
+                          filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
+                        }} 
+                      />
+                      <div>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: "18px",
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px"
+                        }}>
+                          Today's Quest Summary
+                        </h3>
+                        <p style={{
+                          margin: 0,
+                          fontSize: "14px",
+                          opacity: 0.9,
+                          fontWeight: "500"
+                        }}>
+                          {items.length} total quest{items.length !== 1 ? 's' : ''} across {new Set(items.map(item => item.goalId)).size} goal{new Set(items.map(item => item.goalId)).size !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{
+                        fontSize: "24px",
+                        fontWeight: "700",
+                        color: "#3B82F6"
+                      }}>
+                        {items.filter(item => !item.completed).length}
+                      </div>
+                      <div style={{
+                        fontSize: "12px",
+                        opacity: 0.8,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        Pending
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{
+                        fontSize: "24px",
+                        fontWeight: "700",
+                        color: "#10B981"
+                      }}>
+                        {items.filter(item => item.completed).length}
+                      </div>
+                      <div style={{
+                        fontSize: "12px",
+                        opacity: 0.8,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        Completed
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{
+                        fontSize: "24px",
+                        fontWeight: "700",
+                        color: "#F59E0B"
+                      }}>
+                        {Math.round((items.filter(item => item.completed).length / items.length) * 100)}%
+                      </div>
+                      <div style={{
+                        fontSize: "12px",
+                        opacity: 0.8,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        Progress
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{
+                        fontSize: "24px",
+                        fontWeight: "700",
+                        color: "#F59E0B",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "4px"
+                      }}>
+                        {items.reduce((total, item) => {
+                          const coins = COINS[item.section];
+                          return total + (item.completed ? coins : 0);
+                        }, 0)}
+                        <img 
+                          src="/icons/coin.png" 
+                          alt="coins" 
+                          width={18} 
+                          height={18} 
+                          style={{ 
+                            verticalAlign: "middle"
+                          }} 
+                        />
+                      </div>
+                      <div style={{
+                        fontSize: "12px",
+                        opacity: 0.8,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        Coins Earned
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 12 }}>
+                {(() => {
+                  // Separate completed and unfinished quests
+                  const completedQuests = items.filter(item => item.completed);
+                  const unfinishedQuests = items.filter(item => !item.completed);
+
+                  // Group only unfinished quests by goal
+                  const groupedByGoal = unfinishedQuests.reduce((acc, item) => {
+                    if (!acc[item.goalId]) {
+                      acc[item.goalId] = [];
+                    }
+                    acc[item.goalId].push(item);
+                    return acc;
+                  }, {} as Record<string, typeof unfinishedQuests>);
+
+                  const goalEntries = Object.entries(groupedByGoal);
+                  const hasUnfinishedQuests = goalEntries.length > 0;
+                  const hasCompletedQuests = completedQuests.length > 0;
+                  
+                  return (
+                    <>
+                      {/* Unfinished Quests - Grouped by Goal */}
+                      {hasUnfinishedQuests && goalEntries.map(([goalId, goalItems], goalIndex) => {
+                        const goal = goals.find(g => g.id === goalId);
+                        const goalTitle = goal?.title || "Unknown Goal";
+                        const isLastGoal = goalIndex === goalEntries.length - 1;
+                        const isLastSection = isLastGoal && !hasCompletedQuests;
+                        
+                        return (
+                          <div key={goalId} style={{ marginBottom: isLastSection ? 0 : "32px" }}>
+                        {/* Goal Header */}
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          marginBottom: "16px",
+                          padding: "12px 16px",
+                          background: "#8B5CF6",
+                          borderRadius: "12px",
+                          color: "white",
+                          boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)"
+                        }}>
+                              <div style={{
+                                background: "rgba(255, 255, 255, 0.2)",
+                                borderRadius: "8px",
+                                padding: "8px",
+                                fontSize: "20px"
+                              }}>
+                                🎯
+                              </div>
+                              <div>
+                                <h3 style={{
+                                  margin: 0,
+                                  fontSize: "18px",
+                                  fontWeight: "700",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px"
+                                }}>
+                                  {goalTitle}
+                                </h3>
+                                <p style={{
+                                  margin: 0,
+                                  fontSize: "14px",
+                                  opacity: 0.9,
+                                  fontWeight: "500"
+                                }}>
+                                  {goalItems.length} quest{goalItems.length !== 1 ? 's' : ''} for today
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Quest Cards Grid */}
               <div
                 className="grid"
-                style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 12 }}
-              >
-                {items.map((it, i) => (
-                  <SectionCard key={`${it.goalId}-${it.dayNumber}-${it.section}-${it.index}-${i}`} it={it} />
-                ))}
+                              style={{ 
+                                gridTemplateColumns: "repeat(auto-fit,minmax(350px,1fr))", 
+                                gap: 16,
+                                marginBottom: isLastSection ? 0 : "24px"
+                              }}
+                            >
+                              {goalItems.map((it, i) => (
+                                <SectionCard 
+                                  key={`${it.goalId}-${it.dayNumber}-${it.section}-${it.index}-${i}`} 
+                                  it={it}
+                                  openDiary={openDiary}
+                                  diaryDrafts={diaryDrafts}
+                                  savedKeys={savedKeys}
+                                  toggleDiary={toggleDiary}
+                                  onDiaryChange={onDiaryChange}
+                                  onDiaryKeyDown={onDiaryKeyDown}
+                                  saveDiary={saveDiary}
+                                  completeQuest={completeQuest}
+                                />
+                              ))}
+                            </div>
+
+                            {/* Goal Separator (if not last section) */}
+                            {!isLastSection && (
+                              <div style={{
+                                height: "2px",
+                                background: "linear-gradient(90deg, transparent, #E5E7EB, transparent)",
+                                margin: "16px 0",
+                                borderRadius: "1px"
+                              }} />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Completed Quests - All at the end, not grouped */}
+                      {hasCompletedQuests && (
+                        <>
+                          {/* Separator between unfinished and completed */}
+                          {hasUnfinishedQuests && (
+                            <div style={{
+                              height: "3px",
+                              background: "linear-gradient(90deg, transparent, #10B981, transparent)",
+                              margin: "24px 0",
+                              borderRadius: "2px"
+                            }} />
+                          )}
+
+                          {/* Completed Quests Header */}
+                          <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            marginBottom: "16px",
+                            padding: "12px 16px",
+                            background: "linear-gradient(135deg, #10B981 0%, #34D399 100%)",
+                            borderRadius: "12px",
+                            color: "white",
+                            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)"
+                          }}>
+                            <div style={{
+                              background: "rgba(255, 255, 255, 0.2)",
+                              borderRadius: "8px",
+                              padding: "8px",
+                              fontSize: "20px"
+                            }}>
+                              ✅
+                            </div>
+                            <div>
+                              <h3 style={{
+                                margin: 0,
+                                fontSize: "18px",
+                                fontWeight: "700",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px"
+                              }}>
+                                Completed Quests
+                              </h3>
+                              <p style={{
+                                margin: 0,
+                                fontSize: "14px",
+                                opacity: 0.9,
+                                fontWeight: "500"
+                              }}>
+                                {completedQuests.length} quest{completedQuests.length !== 1 ? 's' : ''} completed today
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Completed Quest Cards Grid */}
+              <div
+                className="grid"
+                            style={{ 
+                              gridTemplateColumns: "repeat(auto-fit,minmax(350px,1fr))", 
+                              gap: 16
+                            }}
+                          >
+                            {completedQuests.map((it, i) => (
+                              <SectionCard 
+                                key={`completed-${it.goalId}-${it.dayNumber}-${it.section}-${it.index}-${i}`} 
+                                it={it}
+                                openDiary={openDiary}
+                                diaryDrafts={diaryDrafts}
+                                savedKeys={savedKeys}
+                                toggleDiary={toggleDiary}
+                                onDiaryChange={onDiaryChange}
+                                onDiaryKeyDown={onDiaryKeyDown}
+                                saveDiary={saveDiary}
+                                completeQuest={completeQuest}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </>
           )}
         </Bento>
       </div>
-    </main>
+      </div>
+
+      {/* Coin Reward Modal */}
+      {showCoinRewardModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            {/* Success Icon */}
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              🎉
+            </div>
+
+            {/* Quest Completed Text */}
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#1F2937'
+            }}>
+              Quest Completed!
+            </h2>
+
+            {/* Quest Type */}
+            <p style={{
+              margin: '0 0 20px 0',
+              fontSize: '16px',
+              color: '#6B7280',
+              fontWeight: '500'
+            }}>
+              {coinRewardData.questType} Quest
+            </p>
+
+            {/* Coin Reward */}
+            <div style={{
+              background: '#F9FAFB',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '20px',
+              border: '1px solid #E5E7EB'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
+                <img src="/icons/coin.png" alt="coin" style={{ width: '20px', height: '20px' }} />
+                <span style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#1F2937'
+                }}>
+                  +{coinRewardData.coinsAwarded}
+                </span>
+              </div>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#6B7280',
+                fontWeight: '500'
+              }}>
+                Total: {coinRewardData.totalCoins} coins
+              </p>
+            </div>
+
+            {/* Action Button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowCoinRewardModal(false)}
+                style={{
+                  background: '#6A3EE8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AppLayout>
   );
 }

@@ -3,29 +3,31 @@ import type { ShopItem, ItemCategory, UserItem } from "@prisma/client";
 
 export type Stats = { INT:number; STR:number; VIT:number; AES:number; WLH:number };
 
-export const CATEGORY_PRIMARY: Record<ItemCategory, keyof Stats> = {
-  NERDY: "INT",
-  FITNESS: "STR",
-  GREENTHUMB: "VIT",
-};
+export const CATEGORY_PRIMARY = {
+  NERDY: "INT" as keyof Stats,
+  FITNESS: "STR" as keyof Stats,
+  GREENTHUMB: "VIT" as keyof Stats,
+  CREATIVE: "AES" as keyof Stats,
+  COZY: "VIT" as keyof Stats,
+  LUXURY: "WLH" as keyof Stats,
+  MINIMALIST: "AES" as keyof Stats,
+  VINTAGE: "AES" as keyof Stats,
+} as const;
 
-// Simple tier curve from cost: 1..5
+// Simplified tier curve from cost: 1..3 (easier progression)
 export function itemTierByCost(cost: number) {
-  if (cost <= 120) return 1;
-  if (cost <= 220) return 2;
-  if (cost <= 320) return 3;
-  if (cost <= 420) return 4;
-  return 5;
+  if (cost <= 50) return 1;
+  if (cost <= 150) return 2;
+  return 3;
 }
 
-// Category level: every 3 owned items in a category = +1 level, starts at 1
+// Category level: DISABLED (only use explicit stats)
 export function categoryLevels(owned: Array<UserItem & { item: ShopItem }>) {
-  const counts = { NERDY: 0, FITNESS: 0, GREENTHUMB: 0 } as Record<ItemCategory, number>;
-  for (const o of owned) counts[o.item.category]++;
+  // Disable category level unlocking - only use explicit stat requirements
   return {
-    NERDY: 1 + Math.floor(counts.NERDY / 3),
-    FITNESS: 1 + Math.floor(counts.FITNESS / 3),
-    GREENTHUMB: 1 + Math.floor(counts.GREENTHUMB / 3),
+    NERDY: 999, FITNESS: 999, GREENTHUMB: 999, 
+    CREATIVE: 999, COZY: 999, LUXURY: 999, 
+    MINIMALIST: 999, VINTAGE: 999,
   };
 }
 
@@ -34,11 +36,10 @@ export function globalProgress(stats: Stats) {
   return stats.INT + stats.STR + stats.VIT + stats.AES + stats.WLH;
 }
 
-// Tier gates for global path
+// Tier gates for global path - DISABLED (only use explicit stats)
 export function globalRequiredForTier(tier: number) {
-  // gentle ramp:  Tier1:  15, Tier2: 45, Tier3: 90, Tier4: 150, Tier5: 225
-  const thresholds = [0, 15, 45, 90, 150, 225];
-  return thresholds[Math.max(0, Math.min(tier, thresholds.length - 1))];
+  // Disable global unlocking - only use explicit stat requirements
+  return 999999; // Impossible to reach
 }
 
 // Does user meet explicit reqs (old path)?
@@ -58,31 +59,19 @@ export function unlockCheck(
   it: ShopItem,
   statusOK: boolean
 ) {
-  const tier = itemTierByCost(it.cost);
-  const cats = categoryLevels(owned);
-  const catLevel = cats[it.category];
-  const gScore = globalProgress(stats);
-
-  const explicit = meetsExplicitReqs(stats, it, statusOK);
-  const byCategory = catLevel >= tier;
-  const byGlobal = gScore >= globalRequiredForTier(tier);
-
-  const unlockable = explicit || byCategory || byGlobal;
+  // Only use explicit stat requirements - no category or global unlocking
+  const unlockable = meetsExplicitReqs(stats, it, statusOK);
 
   // Reasons to show if locked
   const reasons: string[] = [];
   if (!unlockable) {
-    // compute deltas for guidance
+    // Only show stat requirements
     if (stats.INT < it.reqINT) reasons.push(`INT ≥ ${it.reqINT}`);
     if (stats.STR < it.reqSTR) reasons.push(`STR ≥ ${it.reqSTR}`);
     if (stats.VIT < it.reqVIT) reasons.push(`VIT ≥ ${it.reqVIT}`);
     if (stats.AES < it.reqAES) reasons.push(`AES ≥ ${it.reqAES}`);
     if (stats.WLH < it.reqWLH) reasons.push(`WLH ≥ ${it.reqWLH}`);
     if (it.reqStatus) reasons.push(`Status: ${it.reqStatus}`);
-
-    if (catLevel < tier) reasons.push(`${it.category} Level ≥ ${tier}`);
-    const needG = globalRequiredForTier(tier);
-    if (gScore < needG) reasons.push(`Total Stats ≥ ${needG}`);
   }
 
   return { unlockable, reasons };
@@ -94,7 +83,7 @@ export function primaryBonusForCategory(cat: ItemCategory): Partial<Stats> {
   return { [k]: 1 } as Partial<Stats>;
 }
 
-// Wealth bonus from cost
+// Wealth bonus from cost (only for expensive items)
 export function wealthBonusFromCost(cost: number) {
-  return Math.max(1, Math.round(cost / 20)); // e.g., cost 120 -> +6 WLH
+  return cost >= 100 ? Math.round(cost / 20) : 0; // Only items 100+ coins get wealth bonus
 }

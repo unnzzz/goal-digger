@@ -44,6 +44,7 @@ export async function GET() {
       id: it.id,
       name: it.name,
       cost: it.cost,
+      category: it.category,
       boosts: { INT: it.intBoost, STR: it.strBoost, VIT: it.vitBoost, AES: it.aesBoost, WLH: it.wlhBoost },
       owned: ownedSet.has(it.id),
       locked: !unlockable,

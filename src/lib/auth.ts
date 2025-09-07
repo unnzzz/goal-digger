@@ -21,12 +21,10 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // ✅ enforce verified email
-        if (!user.emailVerified) {
-          // Returning null will surface a generic error. Alternatively:
-          // throw new Error("Please verify your email first.");
-          return null;
-        }
+        // Skip email verification for now since we don't have email verification set up
+        // if (!user.emailVerified) {
+        //   return null;
+        // }
 
         return { id: user.id, email: user.email, name: user.name ?? null };
       },

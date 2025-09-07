@@ -52,11 +52,11 @@ export async function POST(req: NextRequest) {
       data: {
         coins: { decrement: it.cost },
 
-        statINT: { increment: it.intBoost + (primaryBonus.INT ?? 0) },
-        statSTR: { increment: it.strBoost + (primaryBonus.STR ?? 0) },
-        statVIT: { increment: it.vitBoost + (primaryBonus.VIT ?? 0) },
-        statAES: { increment: it.aesBoost + (primaryBonus.AES ?? 0) },
-        statWLH: { increment: it.wlhBoost + wealthBonus + (primaryBonus.WLH ?? 0) },
+        statINT: { increment: it.intBoost },
+        statSTR: { increment: it.strBoost },
+        statVIT: { increment: it.vitBoost },
+        statAES: { increment: it.aesBoost },
+        statWLH: { increment: it.wlhBoost + wealthBonus },
       },
     });
 
