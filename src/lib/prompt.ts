@@ -85,3 +85,4 @@ FAIL-SAFE
 - If a resource fails the VALIDATION CHECKLIST after selection, re-search and replace it.
 - If you cannot find a valid video, choose a high-quality article or interactive alternative for that topic.
 - Return ONLY the JSON object after all resources pass validation.
+`;
