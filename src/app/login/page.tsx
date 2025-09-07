@@ -41,7 +41,7 @@ function LoginForm() {
     <div className="auth-layout">
       <div className="auth-container">
         <div className="auth-header">
-          <Image src="/icons/rocket.png" alt="Goal-Digger" width={60} height={60} className="auth-logo" />
+          <Image src="/logo.png" alt="Goal-Digger" width={60} height={60} className="auth-logo" />
           <h1>Welcome Back!</h1>
           <p>Sign in to continue your journey</p>
         </div>

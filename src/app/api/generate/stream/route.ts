@@ -65,35 +65,38 @@ export async function POST(req: Request) {
     let tickTimer: ReturnType<typeof setInterval> | null = null;
     let controllerClosed = false;
     let timeout: ReturnType<typeof setTimeout> | null = null;
+    let controller: ReadableStreamDefaultController<any> | null = null;
+
+    const closeStream = () => {
+      if (controllerClosed || !controller) return;
+      try {
+        controllerClosed = true;
+        if (tickTimer) {
+          clearInterval(tickTimer);
+          tickTimer = null;
+        }
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        controller.close();
+      } catch (error) {
+        console.warn('Close failed:', error);
+      }
+    };
 
     const stream = new ReadableStream({
-      async start(controller) {
+      async start(streamController) {
+        controller = streamController;
+        
         const send = (obj: any) => {
           if (controllerClosed) return;
           try {
-            controller.enqueue(enc(obj));
+            controller!.enqueue(enc(obj));
           } catch (error) {
             // Controller might be closed, ignore the error
             controllerClosed = true;
             console.warn('Send failed:', error);
-          }
-        };
-
-        const closeStream = () => {
-          if (controllerClosed) return;
-          try {
-            controllerClosed = true;
-            if (tickTimer) {
-              clearInterval(tickTimer);
-              tickTimer = null;
-            }
-            if (timeout) {
-              clearTimeout(timeout);
-              timeout = null;
-            }
-            controller.close();
-          } catch (error) {
-            console.warn('Close failed:', error);
           }
         };
 
