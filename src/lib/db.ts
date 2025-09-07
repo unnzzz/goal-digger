@@ -6,7 +6,12 @@ let prisma: PrismaClient;
 
 try {
   prisma = g.prisma ?? new PrismaClient({ 
-    log: ["warn", "error"]
+    log: ["warn", "error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
   });
   if (process.env.NODE_ENV !== "production") g.prisma = prisma;
 } catch (error) {
