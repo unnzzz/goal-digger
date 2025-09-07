@@ -5,14 +5,11 @@ const g = global as unknown as { prisma?: PrismaClient };
 let prisma: PrismaClient;
 
 try {
-  // Use DIRECT_URL to avoid prepared statement conflicts with Supabase pooling
-  const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
-  
   prisma = g.prisma ?? new PrismaClient({ 
     log: ["warn", "error"],
     datasources: {
       db: {
-        url: databaseUrl
+        url: process.env.DATABASE_URL
       }
     }
   });
