@@ -74,7 +74,7 @@ export async function generateRoadmap(params: {
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT },
     { role: "user" as const, content: JSON.stringify(params) },
-  ];
+  ] as const;
 
   const resp = await withRetries(() =>
     client.responses.create({
