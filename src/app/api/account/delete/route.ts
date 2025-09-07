@@ -5,11 +5,6 @@ import { prisma } from "@/lib/db";
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Skip during build time
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-      return NextResponse.json({ error: "Service unavailable during build" }, { status: 503 });
-    }
-
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
