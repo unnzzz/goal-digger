@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && DIRECT_URL=$DATABASE_URL prisma migrate deploy && next build",
     "postinstall": "prisma generate",
     "prisma:deploy": "prisma migrate deploy",
     "start": "next start",
