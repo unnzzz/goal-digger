@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
