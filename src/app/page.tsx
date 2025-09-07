@@ -516,8 +516,10 @@ export default function Home() {
             <ul className="sidebar-list">
               <li>We turn your big goal into a daily roadmap, by finding top rated resources from the internet and reddit</li>
               <li>Each day has 3 parts: Learn, Practice, Reflect.</li>
+              <li>We will send you a reminder email every 2 hours to remind you to complete your daily tasks, until you complete them all.</li>
+              <li> once you complete all the tasks for the day, we will stop spamming you with emails.</li>
               <li>You earn <img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> coins for completing daily tasks.</li>
-              <li><img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>
+              <li>Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>
               <li>Each item boosts stats (Intelligence, Strength, Vitality, Aesthetic, Wealth).</li>
               <li>Higher stats unlock rarer themed items and fun statuses (e.g., Code Scholar, Fitness Freak).</li>
             </ul>

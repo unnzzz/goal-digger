@@ -5,14 +5,40 @@ import AppLayout from "@/components/AppLayout";
 import Image from "next/image";
 
 type Me = {
-  name:string|null; coins:number; avatarKey?:string|null;
+  name:string|null; email:string; coins:number; avatarKey?:string|null;
   stats:{INT:number;STR:number;VIT:number;AES:number;WLH:number};
   primaryStatus?:string|null; badges?:{key:string,label:string}[];
 };
 
 export default function AccountPage(){
   const [me,setMe]=useState<Me|null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   useEffect(()=>{ (async()=>{ const r=await fetch("/api/me",{cache:"no-store"}); if(r.ok){ setMe(await r.json()); } })(); },[]);
+  
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "DELETE",
+      });
+      
+      if (response.ok) {
+        // Redirect to home page after successful deletion
+        window.location.href = "/";
+      } else {
+        alert("Failed to delete account. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("An error occurred while deleting your account.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+  
   if(!me) return <AppLayout activePage="account"><main className="container"><h1>Account</h1><div>Loading…</div></main></AppLayout>;
 
   const avatarSrc = me.avatarKey ? `/avatars/${me.avatarKey}.png` : `/avatars/monkey.png`;
@@ -21,7 +47,7 @@ export default function AccountPage(){
 
   return (
     <AppLayout activePage="account">
-      <main className="container" style={{marginTop:16}}>
+    <main className="container" style={{marginTop:16}}>
         <h1 style={{
           fontSize: '32px',
           fontWeight: '700',
@@ -69,6 +95,14 @@ export default function AccountPage(){
               marginBottom: '8px',
               fontFamily: "'Baloo Bhai', sans-serif"
             }}>{me.name ?? "You"}</h2>
+            <div style={{
+              fontSize: '16px',
+              color: '#6B7280',
+              marginBottom: '8px',
+              fontFamily: "'Baloo Bhai', sans-serif"
+            }}>
+              📧 {me.email}
+            </div>
             <div style={{
               fontSize: '18px',
               color: '#6B7280',
@@ -120,6 +154,10 @@ export default function AccountPage(){
           }}>Stats</h2>
           
           <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
             display: 'flex',
             flexDirection: 'row',
             gap: '12px',
@@ -156,9 +194,105 @@ export default function AccountPage(){
               icon="/icons/diamond.png"
               color="#F59E0B"
             />
-          </div>
+      </div>
         </section>
-      </main>
+
+        {/* Delete Account Section */}
+        <section style={{ marginTop: '32px' }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '32px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            border: '2px solid #FEE2E2'
+          }}>
+            <h2 style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#DC2626',
+              marginBottom: '16px',
+              fontFamily: "'Baloo Bhai', sans-serif"
+            }}>
+              ⚠️ Danger Zone
+            </h2>
+            <p style={{
+              fontSize: '16px',
+              color: '#6B7280',
+              marginBottom: '24px',
+              fontFamily: "'Baloo Bhai', sans-serif"
+            }}>
+              Once you delete your account, there is no going back. This will permanently delete all your data including goals, progress, furniture, and stats.
+            </p>
+            
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EF4444)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: "'Baloo Bhai', sans-serif",
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(220, 38, 38, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                Delete My Account
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  style={{
+                    background: isDeleting ? '#9CA3AF' : 'linear-gradient(45deg, #DC2626, #EF4444)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Baloo Bhai', sans-serif",
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, Delete My Account'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  style={{
+                    background: '#6B7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Baloo Bhai', sans-serif",
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+      </section>
+    </main>
     </AppLayout>
   );
 }

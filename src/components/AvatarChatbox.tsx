@@ -73,3 +73,4 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
     </div>
   );
 }
+

@@ -282,7 +282,7 @@ body{
   max-width: 650px;
   background: transparent;
   color: var(--text-light);
-  padding: 32px 24px;
+  padding: 16px 24px 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 0px;
@@ -314,7 +314,7 @@ body{
   padding: 32px;
   margin-bottom: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  width: 100%;
+  width: 110%;
   max-width: 600px;
 }
 
@@ -519,7 +519,8 @@ body{
 
 /* Sidebar Content */
 .sidebar-section {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+  width: 130%;
   background: var(--what-we-do-box);
   border: 3px solid white;
   border-radius: var(--radius);
@@ -550,7 +551,7 @@ body{
   margin-bottom: 12px;
   padding-left: 20px;
   position: relative;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.5;
 }
 

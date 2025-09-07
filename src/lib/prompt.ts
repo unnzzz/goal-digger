@@ -12,7 +12,7 @@ CONTENT RULES
 - Include enough videos overall.
 - Keep titles concise.
 - Don't repeat resources unless following a SPLITTING RULE. 
-- REFLECT RULES: The reflect questions must be directly related to the specific topics covered in that day's learn and practice resources. Base questions on the actual content titles and topics from the learn/practice sections, not generic cooking concepts.
+- REFLECT RULES: The reflect questions must be creative and directly related to the specific topics covered in that day's learn and practice resources. Base questions on the actual content titles and topics from the learn/practice sections, not generic concepts.
 
 SPLITTING RULES - CRITICAL FOR LARGE RESOURCES:
 - ALWAYS split resources longer than 30 minutes across multiple days
