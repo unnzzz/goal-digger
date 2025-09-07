@@ -28,8 +28,10 @@ export async function POST(req: NextRequest) {
     // Update the user item
     const updatedItem = await prisma.userItem.update({
       where: {
-        id: itemId,
-        userId: user.id
+        userId_itemId: {
+          userId: user.id,
+          itemId: itemId
+        }
       },
       data: {
         placed,
@@ -47,3 +49,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
