@@ -22,7 +22,7 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
         <aside className="sidebar">
           <div className="sidebar-header">
             <a href="/" className="sidebar-logo">
-              🎯 Goal-Digger
+              Goal-Digger
             </a>
           </div>
         </aside>
@@ -41,7 +41,7 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
         <aside className="sidebar">
           <div className="sidebar-header">
             <a href="/" className="sidebar-logo">
-              🎯 Goal-Digger
+              Goal-Digger
             </a>
           </div>
         </aside>
@@ -60,7 +60,7 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
       <aside className="sidebar">
         <div className="sidebar-header">
           <a href="/" className="sidebar-logo">
-            🎯 Goal-Digger
+            Goal-Digger
           </a>
         </div>
         <nav className="sidebar-nav">

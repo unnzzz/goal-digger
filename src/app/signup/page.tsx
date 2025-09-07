@@ -73,7 +73,7 @@ export default function SignupPage() {
     <div className="auth-layout">
       <div className="auth-container">
         <div className="auth-header">
-          <Image src="/icons/rocket.png" alt="Goal-Digger" width={60} height={60} className="auth-logo" />
+          <Image src="/logo.png" alt="Goal-Digger" width={60} height={60} className="auth-logo" />
           <h1>Join Goal-Digger!</h1>
           <p>Start your journey to achieving your dreams</p>
         </div>
