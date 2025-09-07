@@ -66,17 +66,17 @@ export async function generateRoadmap(params: {
   daily_minutes: number;
 }): Promise<RoadmapT> {
   const messages = [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: JSON.stringify(params) },
-  ] as const;
+    { role: "system" as const, content: SYSTEM_PROMPT },
+    { role: "user" as const, content: JSON.stringify(params) },
+  ];
 
   const resp = await withRetries(() =>
     client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5",
+      model: process.env.OPENAI_MODEL || "gpt-4o",
       input: messages,
       tools: [{ type: "web_search" }], // ✅ same browsing
       text: { format: zodTextFormat(Roadmap, "roadmap") }, // ✅ same SO schema
-      tool_choice: "auto",
+      tool_choice: "required",
     })
   );
 
