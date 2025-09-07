@@ -130,8 +130,9 @@ function isValidResourceUrl(url: string, kind: string): boolean {
       }
       // Only allow specific video URLs
       if (kind === "watch") {
+        const videoId = urlObj.searchParams.get('v');
         return pathname.includes('/watch') && urlObj.searchParams.has('v') && 
-               urlObj.searchParams.get('v') && urlObj.searchParams.get('v')!.length > 0;
+               videoId !== null && videoId.length > 0;
       }
     }
     
@@ -149,8 +150,9 @@ function isValidResourceUrl(url: string, kind: string): boolean {
     if (kind === "watch") {
       // Must be a specific video URL
       if (hostname.includes('youtube.com')) {
+        const videoId = urlObj.searchParams.get('v');
         return pathname.includes('/watch') && urlObj.searchParams.has('v') && 
-               urlObj.searchParams.get('v') && urlObj.searchParams.get('v')!.length > 0;
+               videoId !== null && videoId.length > 0;
       }
       if (hostname.includes('vimeo.com')) {
         return pathname.includes('/') && pathname.length > 1 && !pathname.endsWith('/');
