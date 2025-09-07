@@ -8,7 +8,8 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const success = await sendQuestReminderEmail(session.user.id, goalId, today);
+    const success = await sendQuestReminderEmail(userId, goalId, today);
     
     if (success) {
       return NextResponse.json({ 

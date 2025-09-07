@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     const targetDate = dateLabel || today;
 
     // Check if we should send a reminder
-    const shouldSend = await shouldSendReminder(session.user.id, targetDate);
+    const shouldSend = await shouldSendReminder(userId, targetDate);
     if (!shouldSend) {
       return NextResponse.json({ 
         message: "Reminder not needed at this time",
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const success = await sendQuestReminderEmail(session.user.id, goalId, targetDate);
+    const success = await sendQuestReminderEmail(userId, goalId, targetDate);
     
     if (success) {
       return NextResponse.json({ 
