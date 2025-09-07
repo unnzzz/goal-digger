@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-const ALLOWED = new Set(["astronaut","runner","hacker_cat","plant_witch"]);
+const ALLOWED = new Set(["cat","dog","duck","elephant","lion","monkey","owl","penguin","rabbit"]);
 
 export async function POST(req: NextRequest){
   const s = await getServerSession(authOptions);
