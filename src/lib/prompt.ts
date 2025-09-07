@@ -14,21 +14,19 @@ CONTENT RULES
 - For the roadmap:Start with beginner-friendly resources, then ramp up difficulty. Keep it as gradual succession.
 - Include enough videos overall.
 - Keep titles concise.
+- Practice links can also contain exercises on yteh internet, games related to teh goal and/or interactive exercises, both with a linked resource or without.
 - Don't repeat resources unless following a SPLITTING RULE. 
 - REFLECT RULES: The reflect questions must be creative and directly related to the specific topics covered in that day's learn and practice resources. Base questions on the actual content titles and topics from the learn/practice sections, not generic concepts.
 
 SPLITTING RULES - CRITICAL FOR LARGE RESOURCES:
 - ALWAYS split resources longer than 30 minutes across multiple days
 - ALWAYS split courses, long videos, books, or comprehensive tutorials across days
-- When splitting, use the SAME URL but different part_number and range
-- Example: A 2-hour course should be split into 4 parts (30 min each) across 4 days
-- Example: A 45-minute video should be split into 2 parts (22-23 min each) across 2 days
-- Example: A book should be split by chapters across multiple days
-- For each split part, include:
-  - total_parts: total number of parts (e.g., 4)
-  - part_number: which part this is (e.g., 1, 2, 3, 4)
-  - range: specific timestamps or chapter names (e.g., "0:00-22:30", "Chapters 1-3")
-- Do NOT create separate resources for each part - use the SAME resource with different split values
+- When splitting, reuse the SAME \`url\`, and fill:
+  • \`split.total_parts\`
+  • \`split.part_number\`
+  • \`split.range\` (timestamps or chapter names, e.g., "0:00–22:30", "Ch. 1–3").
+- Do NOT create separate URLs for each part—reuse the same URL with different \`split\` fields.
+
 
 OUTPUT SHAPE
 {
