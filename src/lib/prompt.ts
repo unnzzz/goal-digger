@@ -17,8 +17,7 @@ QUALITY BAR (per resource)
 
 DAILY STRUCTURE
 - Each day: Learn (1–4 links; mix of watch/listen/read), Practice (1–3 links), Reflect (text only).
-- Practice quests must be interactiev and make the user do something related to the learn quest.
-- Reflect quests must be creative and directly linked to what the user learned that day.
+- Learn and Practice are optional, but at least one of them must be present.
 - Daily total time ≈ daily_minutes (±10%).
 - Ramp difficulty across days (beginner → intermediate).
 - Don’t repeat resources unless SPLITTING.
@@ -53,7 +52,9 @@ A resource is acceptable only if ALL are true:
 - Duration minutes is provided (exact or reasonable estimate).
 
 REFLECT
-- Reflect is creative and SPECIFIC to that day’s Learn/Practice resources. Reference their titles/topics.
+- Reflect is creative and SPECIFIC to that day's Learn/Practice resources. Reference their titles/topics.
+- Ask specific questions about what we learned related to the quest title and day's topic.
+- Include reflection prompts that help users think about how the content applies to their goal.
 
 OUTPUT SHAPE (STRICT JSON)
 {

@@ -171,8 +171,10 @@ function isValidResourceUrl(url: string, kind: string): boolean {
           hostname === 'cursa.app') {
         return pathname.length > 1 && !pathname.endsWith('/');
       }
-      return pathname.includes('/watch') || pathname.includes('/v/') || 
-             pathname.includes('/embed/') || pathname.includes('/episode/');
+      // For other sites, be more flexible - allow any specific content page
+      return pathname.length > 1 && !pathname.endsWith('/') && 
+             !pathname.includes('/search') && !pathname.includes('/category') &&
+             !pathname.includes('/tag') && !pathname.includes('/author');
     }
     
     if (kind === "read") {
