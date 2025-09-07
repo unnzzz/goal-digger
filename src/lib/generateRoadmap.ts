@@ -71,10 +71,10 @@ export async function generateRoadmap(params: {
     throw new Error("OpenAI client not initialized. Missing OPENAI_API_KEY environment variable.");
   }
 
-  const messages = [
-    { role: "system" as const, content: SYSTEM_PROMPT },
-    { role: "user" as const, content: JSON.stringify(params) },
-  ] as const;
+  const messages: Array<{ role: "system" | "user"; content: string }> = [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user", content: JSON.stringify(params) },
+  ];
 
   const resp = await withRetries(() =>
     client.responses.create({
