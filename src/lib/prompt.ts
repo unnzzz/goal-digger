@@ -23,6 +23,17 @@ VIDEO RESOURCE RULES - CRITICAL:
 - Include accurate video duration in duration_minutes
 - If no exact video found, search for the quest title + "tutorial video" or "how to" + quest title
 
+FORBIDDEN VIDEO URLS - NEVER USE THESE:
+- youtube.com/c/ChannelName (channel URLs)
+- youtube.com/channel/ChannelID (channel URLs)
+- youtube.com/user/Username (user URLs)
+- youtube.com/@Username (channel URLs)
+- youtube.com (homepage)
+- simplyrecipes.com (homepage)
+- chefsteps.com (homepage)
+- Any URL without /watch?v= parameter
+- Empty URLs or malformed URLs
+
 ARTICLE RESOURCE RULES - CRITICAL:
 - "read" resources must be specific articles that match the quest title exactly
 - Search for the EXACT quest title as an article search query
@@ -30,6 +41,14 @@ ARTICLE RESOURCE RULES - CRITICAL:
 - The article title should match or closely match the quest title
 - Verify the article exists and contains the content mentioned in the quest title
 - If no exact article found, search for the quest title + "guide" or "tutorial"
+
+FORBIDDEN ARTICLE URLS - NEVER USE THESE:
+- simplyrecipes.com (homepage)
+- lingopie.com/blog/ (blog listing page)
+- Any URL ending with /blog/ or /category/ or /tag/
+- Any URL ending with /c/ or /channel/
+- Empty URLs or malformed URLs
+- Homepage URLs without specific article paths
 
 PODCAST RESOURCE RULES - CRITICAL:
 - "listen" resources must be specific podcast episodes that match the quest title exactly

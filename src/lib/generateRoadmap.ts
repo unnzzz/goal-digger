@@ -73,6 +73,15 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
         const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
         if (betterResource) {
           Object.assign(resource, betterResource);
+        } else {
+          // If no better resource found, change to read and find an article
+          if (resource.kind === "watch") {
+            resource.kind = "read";
+            const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
+            if (articleResource) {
+              Object.assign(resource, articleResource);
+            }
+          }
         }
       }
     }
@@ -84,6 +93,15 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
         const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
         if (betterResource) {
           Object.assign(resource, betterResource);
+        } else {
+          // If no better resource found, change to read and find an article
+          if (resource.kind === "watch") {
+            resource.kind = "read";
+            const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
+            if (articleResource) {
+              Object.assign(resource, articleResource);
+            }
+          }
         }
       }
     }
@@ -93,44 +111,75 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
 }
 
 function isValidResourceUrl(url: string, kind: string): boolean {
+  // Check for empty or malformed URLs
+  if (!url || url.trim() === '' || url === 'undefined' || url === 'null') {
+    return false;
+  }
+  
   try {
     const urlObj = new URL(url);
-    
-    // Check if it's a homepage URL (bad)
     const hostname = urlObj.hostname.toLowerCase();
-    if (hostname === 'youtube.com' || hostname === 'www.youtube.com' || 
-        hostname === 'coursera.org' || hostname === 'khanacademy.org' ||
-        hostname === 'vimeo.com' || hostname === 'ted.com') {
-      return false; // Homepage URLs are not specific enough
+    const pathname = urlObj.pathname.toLowerCase();
+    
+    // Reject channel URLs, homepage URLs, and generic URLs
+    if (hostname === 'youtube.com' || hostname === 'www.youtube.com') {
+      // Reject channel URLs and homepage
+      if (pathname === '/' || pathname.startsWith('/c/') || pathname.startsWith('/channel/') || 
+          pathname.startsWith('/user/') || pathname.startsWith('/@')) {
+        return false;
+      }
+      // Only allow specific video URLs
+      if (kind === "watch") {
+        return pathname.includes('/watch') && urlObj.searchParams.has('v') && 
+               urlObj.searchParams.get('v') && urlObj.searchParams.get('v')!.length > 0;
+      }
+    }
+    
+    // Reject other platform homepages
+    if (hostname === 'coursera.org' || hostname === 'khanacademy.org' ||
+        hostname === 'vimeo.com' || hostname === 'ted.com' ||
+        hostname === 'simplyrecipes.com' || hostname === 'chefsteps.com' ||
+        hostname === 'lingopie.com') {
+      if (pathname === '/' || pathname === '') {
+        return false;
+      }
     }
     
     // Check for specific content indicators
     if (kind === "watch") {
-      // Should be a specific video URL with watch parameter
-      return (urlObj.pathname.includes('/watch') && urlObj.searchParams.has('v')) || 
-             urlObj.pathname.includes('/v/') || 
-             urlObj.pathname.includes('/embed/') || 
-             urlObj.pathname.includes('/episode/');
+      // Must be a specific video URL
+      if (hostname.includes('youtube.com')) {
+        return pathname.includes('/watch') && urlObj.searchParams.has('v') && 
+               urlObj.searchParams.get('v') && urlObj.searchParams.get('v')!.length > 0;
+      }
+      if (hostname.includes('vimeo.com')) {
+        return pathname.includes('/') && pathname.length > 1 && !pathname.endsWith('/');
+      }
+      return pathname.includes('/watch') || pathname.includes('/v/') || 
+             pathname.includes('/embed/') || pathname.includes('/episode/');
     }
     
     if (kind === "read") {
-      // Should be a specific article URL with meaningful path
-      return urlObj.pathname.length > 1 && 
-             !urlObj.pathname.endsWith('/') &&
-             !urlObj.pathname.includes('/search') &&
-             !urlObj.pathname.includes('/category') &&
-             !urlObj.pathname.includes('/tag');
+      // Must be a specific article URL
+      return pathname.length > 1 && 
+             !pathname.endsWith('/') &&
+             !pathname.includes('/search') &&
+             !pathname.includes('/category') &&
+             !pathname.includes('/tag') &&
+             !pathname.includes('/blog/') && // Reject blog listing pages
+             !pathname.includes('/c/') && // Reject channel pages
+             !pathname.includes('/channel/');
     }
     
     if (kind === "listen") {
-      // Should be a specific episode URL
-      return urlObj.pathname.includes('/episode/') || 
-             urlObj.pathname.includes('/show/') ||
-             urlObj.pathname.includes('/podcast/') ||
-             (urlObj.pathname.includes('/ep/') && urlObj.searchParams.has('id'));
+      // Must be a specific episode URL
+      return pathname.includes('/episode/') || 
+             pathname.includes('/show/') ||
+             pathname.includes('/podcast/') ||
+             (pathname.includes('/ep/') && urlObj.searchParams.has('id'));
     }
     
-    return true;
+    return false; // Reject by default if not explicitly valid
   } catch {
     return false;
   }
