@@ -36,12 +36,14 @@ FORBIDDEN URL PATTERNS
 - Empty or malformed URLs
 
 SEARCH & VALIDATION WORKFLOW (for EACH resource)
-1) Form a specific query from the day’s mini-topic (e.g., "<topic> tutorial" or "<topic> step-by-step").
+1) Form a specific query from the day's mini-topic (e.g., "<topic> tutorial" or "<topic> step-by-step").
 2) Use web_search. Review top results.
 3) Pick candidates that match the required kind (watch/listen/read) and the topic.
 4) Open and verify the URL leads directly to the content page (not search/listing/home).
 5) Extract/estimate duration_minutes.
 6) If no valid result found, refine the query and repeat. Only include resources that pass the VALIDATION CHECKLIST.
+
+CRITICAL: ALWAYS use web_search for EVERY resource. Never generate fake or placeholder URLs.
 
 VALIDATION CHECKLIST (HARD GATE)
 A resource is acceptable only if ALL are true:

@@ -70,18 +70,24 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
       if (!isValidResourceUrl(resource.url, resource.kind)) {
         console.warn(`Invalid ${resource.kind} URL: ${resource.url}`);
         // Try to find a better resource
-        const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
-        if (betterResource) {
-          Object.assign(resource, betterResource);
-        } else {
-          // If no better resource found, change to read and find an article
-          if (resource.kind === "watch") {
-            resource.kind = "read";
-            const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
-            if (articleResource) {
-              Object.assign(resource, articleResource);
+        try {
+          const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
+          if (betterResource) {
+            console.log(`Found better resource for: ${resource.title}`);
+            Object.assign(resource, betterResource);
+          } else {
+            // If no better resource found, change to read and find an article
+            if (resource.kind === "watch") {
+              resource.kind = "read";
+              const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
+              if (articleResource) {
+                console.log(`Found article resource for: ${resource.title}`);
+                Object.assign(resource, articleResource);
+              }
             }
           }
+        } catch (error) {
+          console.error(`Error finding better resource for ${resource.title}:`, error);
         }
       }
     }
@@ -90,18 +96,24 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
     for (const resource of day.practice) {
       if (!isValidResourceUrl(resource.url, resource.kind)) {
         console.warn(`Invalid ${resource.kind} URL: ${resource.url}`);
-        const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
-        if (betterResource) {
-          Object.assign(resource, betterResource);
-        } else {
-          // If no better resource found, change to read and find an article
-          if (resource.kind === "watch") {
-            resource.kind = "read";
-            const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
-            if (articleResource) {
-              Object.assign(resource, articleResource);
+        try {
+          const betterResource = await findBetterResource(resource.title, roadmap.goal, resource.kind);
+          if (betterResource) {
+            console.log(`Found better practice resource for: ${resource.title}`);
+            Object.assign(resource, betterResource);
+          } else {
+            // If no better resource found, change to read and find an article
+            if (resource.kind === "watch") {
+              resource.kind = "read";
+              const articleResource = await findBetterResource(resource.title, roadmap.goal, "read");
+              if (articleResource) {
+                console.log(`Found article practice resource for: ${resource.title}`);
+                Object.assign(resource, articleResource);
+              }
             }
           }
+        } catch (error) {
+          console.error(`Error finding better practice resource for ${resource.title}:`, error);
         }
       }
     }
@@ -386,13 +398,18 @@ export async function generateRoadmap(params: {
   );
 
   const text = (resp as any).output_text ?? "";
+  console.log("Generated roadmap text:", text.substring(0, 500) + "...");
+  
   const roadmap = Roadmap.parse(JSON.parse(text));
+  console.log("Parsed roadmap successfully");
   
   // Validate that all resources have proper URLs
   const validatedRoadmap = await validateRoadmapLinks(roadmap);
+  console.log("Validated roadmap links");
   
   // Post-process to fix any broken YouTube links
   const processedRoadmap = await fixBrokenVideoLinks(validatedRoadmap);
+  console.log("Fixed broken video links");
   
   return processedRoadmap;
 }
