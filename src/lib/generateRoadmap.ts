@@ -171,10 +171,11 @@ function isValidResourceUrl(url: string, kind: string): boolean {
           hostname === 'cursa.app') {
         return pathname.length > 1 && !pathname.endsWith('/');
       }
-      // For other sites, be more flexible - allow any specific content page
-      return pathname.length > 1 && !pathname.endsWith('/') && 
-             !pathname.includes('/search') && !pathname.includes('/category') &&
-             !pathname.includes('/tag') && !pathname.includes('/author');
+    // For other sites, be more flexible - allow any specific content page
+    return pathname.length > 1 && !pathname.endsWith('/') && 
+           !pathname.includes('/search') && !pathname.includes('/category') &&
+           !pathname.includes('/tag') && !pathname.includes('/author') &&
+           !pathname.includes('/results');
     }
     
     if (kind === "read") {
