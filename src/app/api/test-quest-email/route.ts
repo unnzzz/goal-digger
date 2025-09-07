@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (success) {
       return NextResponse.json({ 
         message: "Test quest reminder sent successfully",
-        email: session.user.email
+        email: session?.user?.email
       });
     } else {
       return NextResponse.json({ 
