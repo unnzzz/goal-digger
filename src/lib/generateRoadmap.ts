@@ -3,7 +3,9 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { Roadmap, RoadmapT } from "./schema";
 import { SYSTEM_PROMPT } from "./prompt";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = process.env.OPENAI_API_KEY 
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -65,6 +67,10 @@ export async function generateRoadmap(params: {
   target_date?: string;
   daily_minutes: number;
 }): Promise<RoadmapT> {
+  if (!client) {
+    throw new Error("OpenAI client not initialized. Missing OPENAI_API_KEY environment variable.");
+  }
+
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT },
     { role: "user" as const, content: JSON.stringify(params) },
