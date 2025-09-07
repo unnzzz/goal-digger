@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       message: "Quest reminders processed",
       sent: result.sent,
       errors: result.errors,
+      skipped: result.skipped,
       timestamp: new Date().toISOString()
     });
   } catch (error) {

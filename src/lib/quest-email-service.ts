@@ -189,7 +189,7 @@ export async function sendQuestReminderEmail(userId: string, goalId: string, dat
   }
 }
 
-export async function sendQuestRemindersForAllUsers(): Promise<{ sent: number; errors: number }> {
+export async function sendQuestRemindersForAllUsers(): Promise<{ sent: number; errors: number; skipped: number }> {
   try {
     // Get all active users with goals
     const users = await prisma.user.findMany({
@@ -211,11 +211,20 @@ export async function sendQuestRemindersForAllUsers(): Promise<{ sent: number; e
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     let sent = 0;
     let errors = 0;
+    let skipped = 0;
 
     for (const user of users) {
       if (user.goals.length === 0) continue;
 
       const goal = user.goals[0];
+      
+      // Check if we should send a reminder for this user
+      const shouldSend = await shouldSendReminder(user.id, today);
+      if (!shouldSend) {
+        skipped++;
+        continue;
+      }
+
       const success = await sendQuestReminderEmail(user.id, goal.id, today);
       
       if (success) {
@@ -225,10 +234,10 @@ export async function sendQuestRemindersForAllUsers(): Promise<{ sent: number; e
       }
     }
 
-    return { sent, errors };
+    return { sent, errors, skipped };
   } catch (error) {
     console.error('Error sending quest reminders for all users:', error);
-    return { sent: 0, errors: 1 };
+    return { sent: 0, errors: 1, skipped: 0 };
   }
 }
 
@@ -249,9 +258,10 @@ export async function shouldSendReminder(userId: string, dateLabel: string): Pro
     // If already completed, don't send
     if (reminderState.completed) return false;
 
-    // If last sent more than 2 hours ago, send another
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    return reminderState.lastSentAt ? reminderState.lastSentAt < twoHoursAgo : true;
+    // For Hobby plan: Send reminders every 4 hours instead of 2
+    // This allows for 6 reminders per day (9am, 1pm, 5pm, 9pm, 1am, 5am)
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    return reminderState.lastSentAt ? reminderState.lastSentAt < fourHoursAgo : true;
   } catch (error) {
     console.error('Error checking reminder state:', error);
     return false;
