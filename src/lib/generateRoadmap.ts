@@ -284,7 +284,6 @@ export async function generateRoadmap(params: {
       tools: [{ type: "web_search" }],
       text: { format: zodTextFormat(Roadmap, "roadmap") },
       tool_choice: "required", // Force web search usage
-      max_tokens: 4000, // Allow more tokens for detailed responses
     })
   );
 
