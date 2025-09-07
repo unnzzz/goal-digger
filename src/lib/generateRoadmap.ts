@@ -146,9 +146,17 @@ function isValidResourceUrl(url: string, kind: string): boolean {
       }
     }
     
+    // Allow legitimate cooking and course websites
+    if (hostname === 'seriouseats.com' || hostname === 'thedailymeal.com' ||
+        hostname === 'piattorecipes.com' || hostname === 'foodandwine.com' ||
+        hostname === 'cursa.app') {
+      // These are legitimate content sites, allow them
+      return true;
+    }
+    
     // Check for specific content indicators
     if (kind === "watch") {
-      // Must be a specific video URL
+      // Must be a specific video URL or educational content
       if (hostname.includes('youtube.com')) {
         const videoId = urlObj.searchParams.get('v');
         return pathname.includes('/watch') && urlObj.searchParams.has('v') && 
@@ -156,6 +164,12 @@ function isValidResourceUrl(url: string, kind: string): boolean {
       }
       if (hostname.includes('vimeo.com')) {
         return pathname.includes('/') && pathname.length > 1 && !pathname.endsWith('/');
+      }
+      // Allow educational content sites for "watch" (courses, tutorials, etc.)
+      if (hostname === 'seriouseats.com' || hostname === 'thedailymeal.com' ||
+          hostname === 'piattorecipes.com' || hostname === 'foodandwine.com' ||
+          hostname === 'cursa.app') {
+        return pathname.length > 1 && !pathname.endsWith('/');
       }
       return pathname.includes('/watch') || pathname.includes('/v/') || 
              pathname.includes('/embed/') || pathname.includes('/episode/');
