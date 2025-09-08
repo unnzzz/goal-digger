@@ -16,12 +16,17 @@ QUALITY BAR (per resource)
 - Prefer recent items (≤ 2 years) when possible.
 
 DAILY STRUCTURE
-- Each day: Learn (1–4 links; mix of watch/listen/read), Practice (1–3 links), Reflect (text only).
+- Each day: Learn (2–4 links; prioritize watch resources), Practice (1–3 links), Reflect (text only).
 - Learn and Practice are optional, but at least one of them must be present.
 - Daily total time ≈ daily_minutes (±10%).
 - Ramp difficulty across days (beginner → intermediate).
-- Don’t repeat resources unless SPLITTING.
+- Don't repeat resources unless SPLITTING.
 - Every day must have a practice quest, either with a linked resource or without.
+
+WATCH RESOURCE PRIORITY
+- Prioritize watch resources (videos) over read resources when possible
+- Aim for at least 60% watch resources in Learn section
+- Use specific search queries like "[topic] tutorial video", "[topic] step by step video", "[topic] how to video"
 
 SPLITTING (for long resources)
 - If a single resource > 30 minutes or a multi-chapter course/book:
@@ -36,22 +41,33 @@ FORBIDDEN URL PATTERNS
 - Empty or malformed URLs
 
 SEARCH & VALIDATION WORKFLOW (for EACH resource)
-1) Form a specific query from the day's mini-topic (e.g., "<topic> tutorial" or "<topic> step-by-step").
-2) Use web_search. Review top results.
-3) Pick candidates that match the required kind (watch/listen/read) and the topic.
+1) Form a HIGHLY SPECIFIC query from the day's mini-topic:
+   - For watch: "[exact topic] tutorial video", "[exact topic] how to video", "[exact topic] step by step"
+   - For read: "[exact topic] guide", "[exact topic] tutorial", "[exact topic] complete guide"
+   - For listen: "[exact topic] podcast", "[exact topic] audio guide"
+2) Use web_search with the specific query. Review top results carefully.
+3) Pick candidates that DIRECTLY match the day's mini-topic (not just related topics).
 4) Open and verify the URL leads directly to the content page (not search/listing/home).
 5) Extract/estimate duration_minutes.
-6) If no valid result found, refine the query and repeat. Only include resources that pass the VALIDATION CHECKLIST.
+6) If no valid result found, refine the query with more specific terms and repeat.
+
+RELEVANCE REQUIREMENTS
+- Resource title must contain key words from the day's mini-topic
+- Content must be directly about the specific topic, not just related
+- Avoid generic resources that could apply to any topic
+- Prefer resources that mention the exact topic in the title
 
 CRITICAL: ALWAYS use web_search for EVERY resource. Never generate fake or placeholder URLs.
 
 VALIDATION CHECKLIST (HARD GATE)
 A resource is acceptable only if ALL are true:
 - Direct content page (not search/listing/home).
-- Topic match is clear (title and/or page content strongly reflect the mini-topic).
+- STRICT topic match: title contains key words from the day's mini-topic.
+- Content is directly about the specific topic, not just related.
 - Kind matches (watch/listen/read).
 - For YouTube, URL contains /watch or is youtu.be/* and is public.
 - Duration minutes is provided (exact or reasonable estimate).
+- Resource is recent (≤ 2 years) when possible.
 
 REFLECT
 - Reflect is creative and SPECIFIC to that day's Learn/Practice resources. Reference their titles/topics.

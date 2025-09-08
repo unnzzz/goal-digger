@@ -220,12 +220,35 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
   if (!client) return null;
   
   try {
-    // Search for the exact quest title first
-    const searchQuery = `"${title}" ${kind === 'watch' ? 'video' : kind === 'read' ? 'article' : 'podcast episode'}`;
+    // Create more specific search queries based on kind
+    let searchQuery: string;
+    if (kind === 'watch') {
+      searchQuery = `"${title}" tutorial video OR "${title}" how to video OR "${title}" step by step video`;
+    } else if (kind === 'read') {
+      searchQuery = `"${title}" guide OR "${title}" tutorial OR "${title}" complete guide`;
+    } else {
+      searchQuery = `"${title}" podcast OR "${title}" audio guide`;
+    }
     
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4o",
-      input: [{ role: "user", content: `Find a specific ${kind} resource with the EXACT title: "${title}". Search for: ${searchQuery}. The content must match the title exactly. Return only the URL and title.` }],
+      input: [{ 
+        role: "user", 
+        content: `Find a specific ${kind} resource that EXACTLY matches this title: "${title}". 
+        
+        Search query: ${searchQuery}
+        
+        Requirements:
+        - Title must contain key words from "${title}"
+        - Content must be directly about the specific topic
+        - Must be a working, accessible URL
+        - For videos: must be YouTube /watch URLs or similar video platforms
+        - For articles: must be specific article pages, not homepage or category pages
+        
+        Return only the URL and title in this format:
+        URL: [working url]
+        Title: [exact title]` 
+      }],
       tools: [{ type: "web_search" }],
       tool_choice: "required",
     });
@@ -382,8 +405,31 @@ export async function generateRoadmap(params: {
     throw new Error("OpenAI client not initialized. Missing OPENAI_API_KEY environment variable.");
   }
 
+  // Enhanced prompt with specific instructions for relevance and watch resources
+  const enhancedPrompt = SYSTEM_PROMPT + `
+
+ADDITIONAL INSTRUCTIONS FOR THIS REQUEST:
+- Goal: "${params.goal}"
+- Daily minutes: ${params.daily_minutes}
+- Total days: ${params.total_days || 'calculated from target date'}
+
+SPECIFIC REQUIREMENTS:
+1. Each day's mini-topic must be DIRECTLY related to "${params.goal}"
+2. Prioritize watch resources (videos) - aim for 60%+ watch resources in Learn sections
+3. Use highly specific search queries that include the exact day's mini-topic
+4. Ensure resource titles contain key words from the day's mini-topic
+5. Avoid generic resources that could apply to any goal
+6. Focus on practical, actionable content that builds toward the goal
+
+EXAMPLE SEARCH QUERIES:
+- For "Learn basic Italian phrases": search "basic Italian phrases tutorial video"
+- For "Master pasta making": search "pasta making step by step video tutorial"
+- For "Understand Italian grammar": search "Italian grammar complete guide"
+
+Remember: Every resource must be directly relevant to the specific day's mini-topic, not just the general goal.`;
+
   const messages: Array<{ role: "system" | "user"; content: string }> = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: enhancedPrompt },
     { role: "user", content: JSON.stringify(params) },
   ];
 
