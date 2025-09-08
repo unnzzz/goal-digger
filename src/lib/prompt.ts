@@ -27,6 +27,8 @@ WATCH RESOURCE PRIORITY
 - Prioritize watch resources (videos) over read resources when possible
 - Aim for at least 60% watch resources in Learn section
 - Use specific search queries like "[topic] tutorial video", "[topic] step by step video", "[topic] how to video"
+- Accept ANY video platform: YouTube, Vimeo, educational sites, course platforms, etc.
+- For watch resources, prefer video content over text content
 
 SPLITTING (for long resources)
 - If a single resource > 30 minutes or a multi-chapter course/book:

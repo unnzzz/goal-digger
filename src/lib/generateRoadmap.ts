@@ -162,7 +162,10 @@ function isValidResourceUrl(url: string, kind: string): boolean {
     // Allow legitimate cooking and course websites
     if (hostname === 'seriouseats.com' || hostname === 'thedailymeal.com' ||
         hostname === 'piattorecipes.com' || hostname === 'foodandwine.com' ||
-        hostname === 'cursa.app') {
+        hostname === 'cursa.app' || hostname === 'udemy.com' ||
+        hostname === 'coursera.org' || hostname === 'khanacademy.org' ||
+        hostname === 'ted.com' || hostname === 'skillshare.com' ||
+        hostname === 'masterclass.com' || hostname === 'linkedin.com') {
       // These are legitimate content sites, allow them
       return true;
     }
@@ -184,11 +187,21 @@ function isValidResourceUrl(url: string, kind: string): boolean {
           hostname === 'cursa.app') {
         return pathname.length > 1 && !pathname.endsWith('/');
       }
-    // For other sites, be more flexible - allow any specific content page
-    return pathname.length > 1 && !pathname.endsWith('/') && 
-           !pathname.includes('/search') && !pathname.includes('/category') &&
-           !pathname.includes('/tag') && !pathname.includes('/author') &&
-           !pathname.includes('/results') && !pathname.includes('/home');
+      
+      // For watch resources, be much more permissive - allow any content page
+      // that could contain videos, tutorials, or educational content
+      const isValidWatch = pathname.length > 1 && !pathname.endsWith('/') && 
+             !pathname.includes('/search') && !pathname.includes('/category') &&
+             !pathname.includes('/tag') && !pathname.includes('/author') &&
+             !pathname.includes('/results') && !pathname.includes('/home');
+      
+      if (isValidWatch) {
+        console.log(`Accepted watch URL: ${url}`);
+      } else {
+        console.log(`Rejected watch URL: ${url} - pathname: ${pathname}`);
+      }
+      
+      return isValidWatch;
     }
     
     if (kind === "read") {
