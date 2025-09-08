@@ -125,6 +125,7 @@ async function validateRoadmapLinks(roadmap: RoadmapT): Promise<RoadmapT> {
 function isValidResourceUrl(url: string, kind: string): boolean {
   // Check for empty or malformed URLs
   if (!url || url.trim() === '' || url === 'undefined' || url === 'null') {
+    console.log(`Rejected empty/malformed URL: ${url}`);
     return false;
   }
   
@@ -187,19 +188,18 @@ function isValidResourceUrl(url: string, kind: string): boolean {
     return pathname.length > 1 && !pathname.endsWith('/') && 
            !pathname.includes('/search') && !pathname.includes('/category') &&
            !pathname.includes('/tag') && !pathname.includes('/author') &&
-           !pathname.includes('/results');
+           !pathname.includes('/results') && !pathname.includes('/home');
     }
     
     if (kind === "read") {
-      // Must be a specific article URL
+      // Must be a specific article URL - be more permissive
       return pathname.length > 1 && 
              !pathname.endsWith('/') &&
              !pathname.includes('/search') &&
              !pathname.includes('/category') &&
              !pathname.includes('/tag') &&
-             !pathname.includes('/blog/') && // Reject blog listing pages
-             !pathname.includes('/c/') && // Reject channel pages
-             !pathname.includes('/channel/');
+             !pathname.includes('/results') &&
+             !pathname.includes('/home');
     }
     
     if (kind === "listen") {
@@ -210,7 +210,18 @@ function isValidResourceUrl(url: string, kind: string): boolean {
              (pathname.includes('/ep/') && urlObj.searchParams.has('id'));
     }
     
-    return false; // Reject by default if not explicitly valid
+    // Fallback: if it's a valid URL with content, allow it
+    const isValid = pathname.length > 1 && !pathname.endsWith('/') && 
+           !pathname.includes('/search') && !pathname.includes('/category') &&
+           !pathname.includes('/tag') && !pathname.includes('/results');
+    
+    if (isValid) {
+      console.log(`Accepted URL (fallback): ${url}`);
+    } else {
+      console.log(`Rejected URL (fallback): ${url} - pathname: ${pathname}`);
+    }
+    
+    return isValid;
   } catch {
     return false;
   }
