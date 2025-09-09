@@ -20,12 +20,12 @@ export default function MobileTopBar() {
             <span>{userData?.coins || 0}</span>
           </div>
           <div className="stat-item">
-            <Image src="/icons/trophy.png" alt="Level" width={20} height={20} />
-            <span>{userData?.level || 1}</span>
+            <Image src="/icons/trophy.png" alt="INT" width={20} height={20} />
+            <span>{userData?.stats?.INT || 0}</span>
           </div>
           <div className="stat-item">
-            <Image src="/icons/fire.png" alt="Streak" width={20} height={20} />
-            <span>{userData?.streak || 0}</span>
+            <Image src="/icons/fire.png" alt="STR" width={20} height={20} />
+            <span>{userData?.stats?.STR || 0}</span>
           </div>
         </div>
       </div>
