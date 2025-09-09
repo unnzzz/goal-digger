@@ -21,7 +21,7 @@ export default function LandingPage() {
           
           <div className="hero-actions">
             <Link href="/signup" className="btn btn-primary btn-large">
-              Get Started Free
+              Get Started for Free
             </Link>
             <Link href="/login" className="btn btn-secondary btn-large">
               Sign In
@@ -30,31 +30,6 @@ export default function LandingPage() {
         </div>
         
         <div className="hero-visual">
-          <div className="avatar-showcase">
-            <div className="avatar-grid">
-              <div className="avatar-item">
-                <Image src="/avatars/cat.png" alt="Cat Avatar" width={60} height={60} className="avatar-img" />
-                <span className="avatar-name">Alex</span>
-              </div>
-              <div className="avatar-item">
-                <Image src="/avatars/lion.png" alt="Lion Avatar" width={60} height={60} className="avatar-img" />
-                <span className="avatar-name">Sarah</span>
-              </div>
-              <div className="avatar-item">
-                <Image src="/avatars/owl.png" alt="Owl Avatar" width={60} height={60} className="avatar-img" />
-                <span className="avatar-name">Mike</span>
-              </div>
-              <div className="avatar-item">
-                <Image src="/avatars/elephant.png" alt="Elephant Avatar" width={60} height={60} className="avatar-img" />
-                <span className="avatar-name">Emma</span>
-              </div>
-            </div>
-            <div className="testimonial-bubble">
-              <p>"I learned Python in 30 days with Goal-Digger!"</p>
-              <span className="testimonial-author">- Alex, Developer</span>
-            </div>
-          </div>
-          
           <div className="feature-cards">
             <div className="feature-card">
               <div className="feature-icon">📚</div>
