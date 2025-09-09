@@ -268,13 +268,15 @@ body{
 }
 
 .content-main {
-  flex: 1.2;
+  flex: 1;
   padding: 20px;
   background: transparent;
   display: flex;
   flex-direction: column;
   gap: 25px;
   min-width: 0;
+  width: 100%;
+  max-width: none;
 }
 
 .content-sidebar {
@@ -402,6 +404,7 @@ body{
 
 .slider {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: var(--track-h);
   border-radius: 999px;
@@ -414,6 +417,7 @@ body{
 /* WebKit/Chromium thumb */
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: var(--thumb);
   height: var(--thumb);
   border-radius: 50%;
@@ -810,8 +814,9 @@ body{
 .bento-grid{
   display:grid; gap:24px;
   grid-template-columns: 1fr 1fr;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
+  padding: 0 20px;
 }
 
 @media (max-width: 768px) {
@@ -1591,6 +1596,15 @@ a:hover {
 
 .auth-form {
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-form .btn-primary {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .form-group {
@@ -1874,7 +1888,7 @@ a:hover {
 /* Large Desktop (1200px and up) */
 @media (min-width: 1200px) {
   .content-main {
-    max-width: 1000px;
+    max-width: none;
   }
   
   .page-layout {
@@ -1885,7 +1899,7 @@ a:hover {
 /* Desktop (992px to 1199px) */
 @media (max-width: 1199px) {
   .content-main {
-    max-width: 800px;
+    max-width: none;
   }
 }
 
@@ -2478,8 +2492,9 @@ a:hover {
 }
 
 .bento[data-title="Daily quests"] {
-  width: 160% !important;
+  width: 100% !important;
   max-width: none !important;
+  grid-column: 1 / -1 !important;
 }
 
 /* Responsive Avatar and Chatbox */

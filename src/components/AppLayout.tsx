@@ -202,15 +202,17 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
         </div>
       </main>
 
-      {/* Avatar Chatbox */}
-      <AvatarChatbox
-        message={currentMessage}
-        isVisible={isVisible}
-        onClose={hideMessage}
-      />
+      {/* Avatar Chatbox - Only show on room page */}
+      {activePage === 'room' && (
+        <AvatarChatbox
+          message={currentMessage}
+          isVisible={isVisible}
+          onClose={hideMessage}
+        />
+      )}
 
-      {/* Static Avatar */}
-      {userData?.avatarKey && (
+      {/* Static Avatar - Only show on room page */}
+      {activePage === 'room' && userData?.avatarKey && (
         <div className="avatar-container">
           <Image
             src={`/avatars/full-body/${userData.avatarKey}.png`}
