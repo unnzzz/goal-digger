@@ -349,7 +349,7 @@ export default function RoomPage() {
         onClick={() => setSelectedItem(null)}
       >
         {/* Central Room View - ENTIRE PAGE */}
-        <div style={{ 
+        <div className="room-container" style={{ 
           flex: 1, 
           background: "transparent", 
           borderRadius: "20px", 
@@ -365,7 +365,7 @@ export default function RoomPage() {
           flexDirection: "column"
         }}>
           {/* Room Title - Above Picture */}
-          <div style={{ 
+          <div className="room-title" style={{ 
             textAlign: "center", 
             color: "#2d3748",
             marginBottom: "10px",
@@ -394,7 +394,7 @@ export default function RoomPage() {
             </p>
             
             {/* Save/Edit Room Buttons */}
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div className="room-buttons" style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               {isEditing ? (
                 <button
                   onClick={handleSaveRoom}

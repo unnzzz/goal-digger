@@ -2671,6 +2671,13 @@ a:hover {
   margin: 0 4px;
 }
 
+.mobile-nav-item:hover {
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
 .mobile-nav-item span {
   font-size: 10px;
   font-weight: 600;
@@ -2710,18 +2717,40 @@ a:hover {
 
 .mobile-stats {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: center;
+  overflow-x: auto;
+  padding: 4px 0;
 }
 
 .stat-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   font-family: 'Baloo Bhai', sans-serif;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.stat-item.coins {
+  background: rgba(139, 92, 246, 0.3);
+  padding: 4px 8px;
+  border-radius: 20px;
+  flex-direction: row;
+  gap: 4px;
+  min-width: auto;
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Mobile Layout Adjustments */
@@ -2798,6 +2827,72 @@ a:hover {
   .btn {
     width: 100%;
     max-width: none;
+  }
+  
+  /* Fix page layout for mobile - reorder content */
+  .page-layout {
+    flex-direction: column;
+  }
+  
+  .content-main {
+    order: 1;
+  }
+  
+  .content-sidebar {
+    order: 2;
+    width: 100%;
+    max-width: none;
+  }
+  
+  /* Diary page mobile responsiveness */
+  .diary-page .card {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+  
+  .diary-page aside {
+    order: 2;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  .diary-page main {
+    order: 1;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 16px !important;
+  }
+  
+  /* Room page mobile responsiveness */
+  .room-page .room-container {
+    min-width: 100% !important;
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding: 16px !important;
+    height: auto !important;
+  }
+  
+  .room-page .room-title {
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .room-page .room-title h1 {
+    font-size: 20px !important;
+  }
+  
+  .room-page .room-title p {
+    font-size: 12px !important;
+  }
+  
+  .room-page .room-buttons {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .room-page .room-buttons button {
+    width: 100% !important;
   }
 }
 
