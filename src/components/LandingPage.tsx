@@ -30,6 +30,31 @@ export default function LandingPage() {
         </div>
         
         <div className="hero-visual">
+          <div className="avatar-showcase">
+            <div className="avatar-grid">
+              <div className="avatar-item">
+                <Image src="/avatars/cat.png" alt="Cat Avatar" width={60} height={60} className="avatar-img" />
+                <span className="avatar-name">Alex</span>
+              </div>
+              <div className="avatar-item">
+                <Image src="/avatars/lion.png" alt="Lion Avatar" width={60} height={60} className="avatar-img" />
+                <span className="avatar-name">Sarah</span>
+              </div>
+              <div className="avatar-item">
+                <Image src="/avatars/owl.png" alt="Owl Avatar" width={60} height={60} className="avatar-img" />
+                <span className="avatar-name">Mike</span>
+              </div>
+              <div className="avatar-item">
+                <Image src="/avatars/elephant.png" alt="Elephant Avatar" width={60} height={60} className="avatar-img" />
+                <span className="avatar-name">Emma</span>
+              </div>
+            </div>
+            <div className="testimonial-bubble">
+              <p>"I learned Python in 30 days with Goal-Digger!"</p>
+              <span className="testimonial-author">- Alex, Developer</span>
+            </div>
+          </div>
+          
           <div className="feature-cards">
             <div className="feature-card">
               <div className="feature-icon">📚</div>
@@ -50,6 +75,30 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Stats Section */}
+      <div className="stats-section">
+        <div className="container">
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-number">10,000+</div>
+              <div className="stat-label">Goals Achieved</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number">50,000+</div>
+              <div className="stat-label">Learning Hours</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number">95%</div>
+              <div className="stat-label">Success Rate</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number">4.9/5</div>
+              <div className="stat-label">User Rating</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Features Section */}
       <div className="features-section">
         <div className="container">
@@ -59,37 +108,84 @@ export default function LandingPage() {
             <div className="feature-item">
               <div className="feature-icon-large">🎯</div>
               <h3>AI-Powered Roadmaps</h3>
-              <p>Our AI creates personalized learning paths based on your specific goals, time constraints, and skill level.</p>
+              <p>Our advanced AI creates personalized learning paths based on your specific goals, time constraints, and skill level. No more generic courses!</p>
             </div>
             
             <div className="feature-item">
               <div className="feature-icon-large">📱</div>
-              <h3>Daily Reminders</h3>
-              <p>Get gentle daily reminders to keep you on track with your learning journey.</p>
+              <h3>Smart Daily Reminders</h3>
+              <p>Get intelligent daily reminders that adapt to your schedule. We stop bothering you once you complete your tasks for the day.</p>
             </div>
             
             <div className="feature-item">
               <div className="feature-icon-large">🏆</div>
-              <h3>Gamified Progress</h3>
-              <p>Earn coins for completing tasks and unlock rewards in your virtual room.</p>
+              <h3>Gamified Learning</h3>
+              <p>Earn coins for completing tasks, unlock achievements, and decorate your virtual study room. Make learning fun and rewarding!</p>
             </div>
             
             <div className="feature-item">
               <div className="feature-icon-large">🌐</div>
               <h3>Curated Resources</h3>
-              <p>Access the best learning materials from YouTube, Coursera, Khan Academy, and more.</p>
+              <p>Access the best learning materials from YouTube, Coursera, Khan Academy, TED Talks, and more. All handpicked for quality.</p>
             </div>
             
             <div className="feature-item">
               <div className="feature-icon-large">📊</div>
-              <h3>Progress Tracking</h3>
-              <p>Visualize your progress with detailed analytics and achievement tracking.</p>
+              <h3>Progress Analytics</h3>
+              <p>Track your learning journey with detailed analytics, streak counters, and visual progress indicators. See how far you've come!</p>
             </div>
             
             <div className="feature-item">
               <div className="feature-icon-large">🎨</div>
-              <h3>Personalized Avatar</h3>
-              <p>Customize your learning companion and decorate your virtual study space.</p>
+              <h3>Personalized Experience</h3>
+              <p>Choose from 9 adorable avatars and customize your virtual study space. Your learning companion grows with you!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="testimonials-section">
+        <div className="container">
+          <h2 className="section-title">What Our Users Say</h2>
+          <div className="testimonials-grid">
+            <div className="testimonial-card">
+              <div className="testimonial-avatar">
+                <Image src="/avatars/monkey.png" alt="User Avatar" width={50} height={50} />
+              </div>
+              <div className="testimonial-content">
+                <p>"Goal-Digger helped me learn React in just 3 weeks! The daily structure kept me motivated."</p>
+                <div className="testimonial-author">
+                  <strong>Jessica Chen</strong>
+                  <span>Frontend Developer</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="testimonial-card">
+              <div className="testimonial-avatar">
+                <Image src="/avatars/penguin.png" alt="User Avatar" width={50} height={50} />
+              </div>
+              <div className="testimonial-content">
+                <p>"I finally learned Spanish after years of trying! The gamification made it addictive."</p>
+                <div className="testimonial-author">
+                  <strong>Marcus Rodriguez</strong>
+                  <span>Marketing Manager</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="testimonial-card">
+              <div className="testimonial-avatar">
+                <Image src="/avatars/rabbit.png" alt="User Avatar" width={50} height={50} />
+              </div>
+              <div className="testimonial-content">
+                <p>"The AI-generated roadmaps are incredible. It found resources I never would have discovered."</p>
+                <div className="testimonial-author">
+                  <strong>Sarah Kim</strong>
+                  <span>Data Scientist</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
