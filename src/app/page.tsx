@@ -5,6 +5,7 @@ import { useUserData } from '@/hooks/useUserData';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '../components/AppLayout';
+import LandingPage from '../components/LandingPage';
 import { useAvatar } from '../contexts/AvatarContext';
 import { getMessageForAction } from '../lib/avatarMessages';
 
@@ -49,14 +50,13 @@ export default function Home() {
   const router = useRouter();
 
 
-  // Redirect to login if not authenticated
+  // Show landing page if not authenticated
   if (status === "loading") {
     return <div className="loading-screen">Loading...</div>;
   }
 
   if (status === "unauthenticated") {
-    router.push("/login");
-    return null;
+    return <LandingPage />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -516,7 +516,7 @@ export default function Home() {
             <ul className="sidebar-list">
               <li>We turn your big goal into a daily roadmap, by finding top rated resources from the internet and reddit</li>
               <li>Each day has 3 parts: Learn, Practice, Reflect.</li>
-              <li>We will send you a reminder email every 2 hours to remind you to complete your daily tasks, until you complete them all.</li>
+              <li>We will send you a reminder email daily to remind you to complete your daily tasks, until you complete them all.</li>
               <li> once you complete all the tasks for the day, we will stop spamming you with emails.</li>
               <li>You earn <img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> coins for completing daily tasks.</li>
               <li>Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>

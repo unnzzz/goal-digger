@@ -188,9 +188,6 @@ export default function SignupPage() {
         <div className="verification-info">
           <h3>📧 Email Verification Required</h3>
           <p>After signing up, you'll receive a verification email. Click the link in the email to activate your account, then you can sign in.</p>
-          <div className="dev-note">
-            <strong>Development Note:</strong> Check the console where the dev server is running for the Ethereal email preview URL.
-          </div>
           <div className="verification-steps">
             <div className="step">
               <span className="step-number">1</span>

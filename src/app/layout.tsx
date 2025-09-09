@@ -7,6 +7,11 @@ import { AvatarProvider } from "@/contexts/AvatarContext";
 export const metadata: Metadata = {
   title: "Goal-Digger",
   description: "Goal → daily roadmap with Learn / Practice / Reflect",
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

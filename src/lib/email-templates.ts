@@ -309,7 +309,8 @@ export function generateQuestReminderEmail(data: QuestReminderData): string {
         </div>
         
         <div class="footer">
-            <p>This is an automated reminder from Goal Digger. You'll receive updates every 2 hours until all quests are completed.</p>
+            <p>This is an automated reminder from Goal Digger. You'll receive updates daily until all quests are completed.</p>
+            <p><a href="${process.env.NEXTAUTH_URL || 'https://goal-digger.vercel.app'}/dashboard" style="background: linear-gradient(45deg, #8B5CF6, #A78BFA); color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: 600; display: inline-block; margin: 16px 0;">Complete Your Quests</a></p>
             <p>Keep up the great work, ${userName}! 🚀</p>
         </div>
     </div>
@@ -430,6 +431,7 @@ export function generateQuestCompletionEmail(data: QuestReminderData): string {
         
         <div class="footer">
             <p>Great job on completing today's quests for <strong>${goalTitle}</strong>!</p>
+            <p><a href="${process.env.NEXTAUTH_URL || 'https://goal-digger.vercel.app'}/dashboard" style="background: linear-gradient(45deg, #10B981, #059669); color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: 600; display: inline-block; margin: 16px 0;">View Your Progress</a></p>
             <p>Check back tomorrow for your next set of challenges. Keep up the momentum! 🚀</p>
         </div>
     </div>
