@@ -75,29 +75,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="stats-section">
-        <div className="container">
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-number">10,000+</div>
-              <div className="stat-label">Goals Achieved</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">50,000+</div>
-              <div className="stat-label">Learning Hours</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">95%</div>
-              <div className="stat-label">Success Rate</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">4.9/5</div>
-              <div className="stat-label">User Rating</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Features Section */}
       <div className="features-section">

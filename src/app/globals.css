@@ -2415,6 +2415,236 @@ a:hover {
 }
 
 /* ========================================
+   AVATAR AND CHATBOX RESPONSIVE DESIGN
+   ======================================== */
+
+/* Avatar Container */
+.avatar-container {
+  position: fixed;
+  left: 20px;
+  bottom: 0px;
+  z-index: 50;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.avatar-image {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  transition: all 0.3s ease;
+}
+
+/* Avatar Chatbox */
+.avatar-chatbox {
+  position: fixed;
+  left: 20px;
+  bottom: 200px;
+  z-index: 60;
+  max-width: 200px;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.avatar-chatbox-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 20px 20px 20px 4px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  font-size: 14px;
+  font-family: 'Baloo Bhai', sans-serif;
+  font-weight: 500;
+  line-height: 1.4;
+  position: relative;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+
+.avatar-chatbox-tail {
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #667eea;
+  transition: all 0.3s ease;
+}
+
+/* Daily Quests Tab - Increase width by 60% */
+.bento {
+  width: 100%;
+}
+
+.bento[data-title="Daily quests"] {
+  width: 160% !important;
+  max-width: none !important;
+}
+
+/* Responsive Avatar and Chatbox */
+@media (max-width: 991px) {
+  .avatar-container {
+    left: 15px;
+    bottom: 10px;
+  }
+  
+  .avatar-image {
+    width: 80px !important;
+    height: 120px !important;
+  }
+  
+  .avatar-chatbox {
+    left: 15px;
+    bottom: 140px;
+    max-width: 180px;
+  }
+  
+  .avatar-chatbox-content {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .avatar-chatbox-tail {
+    left: 18px;
+  }
+  
+  .bento[data-title="Daily quests"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .avatar-container {
+    left: 10px;
+    bottom: 15px;
+  }
+  
+  .avatar-image {
+    width: 60px !important;
+    height: 90px !important;
+  }
+  
+  .avatar-chatbox {
+    left: 10px;
+    bottom: 115px;
+    max-width: 160px;
+  }
+  
+  .avatar-chatbox-content {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 15px 15px 15px 3px;
+  }
+  
+  .avatar-chatbox-tail {
+    left: 15px;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #667eea;
+  }
+  
+  .bento[data-title="Daily quests"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 575px) {
+  .avatar-container {
+    left: 8px;
+    bottom: 20px;
+  }
+  
+  .avatar-image {
+    width: 50px !important;
+    height: 75px !important;
+  }
+  
+  .avatar-chatbox {
+    left: 8px;
+    bottom: 100px;
+    max-width: 140px;
+  }
+  
+  .avatar-chatbox-content {
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 12px 12px 12px 2px;
+  }
+  
+  .avatar-chatbox-tail {
+    left: 12px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #667eea;
+  }
+  
+  .bento[data-title="Daily quests"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .avatar-container {
+    left: 5px;
+    bottom: 25px;
+  }
+  
+  .avatar-image {
+    width: 40px !important;
+    height: 60px !important;
+  }
+  
+  .avatar-chatbox {
+    left: 5px;
+    bottom: 85px;
+    max-width: 120px;
+  }
+  
+  .avatar-chatbox-content {
+    padding: 5px 8px;
+    font-size: 10px;
+    border-radius: 10px 10px 10px 2px;
+  }
+  
+  .avatar-chatbox-tail {
+    left: 10px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #667eea;
+  }
+  
+  .bento[data-title="Daily quests"] {
+    width: 100% !important;
+  }
+}
+
+/* Ensure chatbox doesn't overlap with sign out button */
+@media (max-width: 991px) {
+  .avatar-chatbox {
+    bottom: 120px; /* Higher up to avoid sign out button */
+  }
+}
+
+@media (max-width: 767px) {
+  .avatar-chatbox {
+    bottom: 100px; /* Even higher on mobile */
+  }
+}
+
+@media (max-width: 575px) {
+  .avatar-chatbox {
+    bottom: 80px; /* Much higher on small mobile */
+  }
+}
+
+@media (max-width: 375px) {
+  .avatar-chatbox {
+    bottom: 70px; /* Highest on very small screens */
+  }
+}
+
+/* ========================================
    LANDING PAGE STYLES
    ======================================== */
 
@@ -2502,17 +2732,18 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+  background: linear-gradient(45deg, #8B5CF6, #A78BFA);
   color: white;
   border: none;
-  box-shadow: 0 8px 32px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
   font-weight: 700;
+  width: 200px;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(255, 107, 107, 0.5);
-  background: linear-gradient(45deg, #FF5252, #FF7979);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
+  background: linear-gradient(45deg, #7C3AED, #9333EA);
 }
 
 .btn-secondary {
@@ -2521,6 +2752,7 @@ a:hover {
   border: none;
   box-shadow: 0 8px 32px rgba(78, 205, 196, 0.4);
   font-weight: 700;
+  width: 200px;
 }
 
 .btn-secondary:hover {
@@ -2671,37 +2903,6 @@ a:hover {
   color: #C7D2FE;
 }
 
-/* Stats Section */
-.stats-section {
-  padding: 80px 0;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 40px;
-  text-align: center;
-}
-
-.stat-item {
-  padding: 20px;
-}
-
-.stat-number {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #FFD700;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.stat-label {
-  font-size: 1.1rem;
-  color: #E0E7FF;
-  font-weight: 600;
-}
 
 /* Features Section */
 .features-section {
@@ -2966,11 +3167,6 @@ a:hover {
     max-width: 400px;
   }
   
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
-  }
-  
   .testimonials-grid {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -3032,15 +3228,6 @@ a:hover {
   .testimonial-bubble {
     max-width: 200px;
     padding: 15px;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  
-  .stat-number {
-    font-size: 2rem;
   }
   
   .testimonials-grid {

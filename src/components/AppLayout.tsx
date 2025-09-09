@@ -211,23 +211,13 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
 
       {/* Static Avatar */}
       {userData?.avatarKey && (
-        <div
-          style={{
-            position: "fixed",
-            left: "20px",
-            bottom: "0px",
-            zIndex: 50,
-            pointerEvents: "none"
-          }}
-        >
+        <div className="avatar-container">
           <Image
             src={`/avatars/full-body/${userData.avatarKey}.png`}
             alt="Avatar"
             width={120}
             height={180}
-            style={{
-              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
-            }}
+            className="avatar-image"
             onError={(e) => {
               // Fallback to regular avatar if full-body doesn't exist
               const target = e.target as HTMLImageElement;
