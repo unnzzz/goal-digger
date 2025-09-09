@@ -2445,6 +2445,8 @@ a:hover {
 .avatar-image {
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
   transition: all 0.3s ease;
+  width: 150px !important;
+  height: 200px !important;
 }
 
 /* Avatar Chatbox */
@@ -2505,14 +2507,14 @@ a:hover {
   }
   
   .avatar-image {
-    width: 80px !important;
-    height: 120px !important;
+    width: 120px !important;
+    height: 160px !important;
   }
   
   .avatar-chatbox {
     left: 15px;
-    bottom: 140px;
-    max-width: 180px;
+    bottom: 180px;
+    max-width: 200px;
   }
   
   .avatar-chatbox-content {
@@ -2536,14 +2538,14 @@ a:hover {
   }
   
   .avatar-image {
-    width: 60px !important;
-    height: 90px !important;
+    width: 100px !important;
+    height: 130px !important;
   }
   
   .avatar-chatbox {
     left: 10px;
-    bottom: 115px;
-    max-width: 160px;
+    bottom: 155px;
+    max-width: 180px;
   }
   
   .avatar-chatbox-content {
@@ -2571,14 +2573,14 @@ a:hover {
   }
   
   .avatar-image {
-    width: 50px !important;
-    height: 75px !important;
+    width: 80px !important;
+    height: 110px !important;
   }
   
   .avatar-chatbox {
     left: 8px;
-    bottom: 100px;
-    max-width: 140px;
+    bottom: 140px;
+    max-width: 160px;
   }
   
   .avatar-chatbox-content {
@@ -2606,14 +2608,14 @@ a:hover {
   }
   
   .avatar-image {
-    width: 40px !important;
-    height: 60px !important;
+    width: 70px !important;
+    height: 95px !important;
   }
   
   .avatar-chatbox {
     left: 5px;
-    bottom: 85px;
-    max-width: 120px;
+    bottom: 125px;
+    max-width: 140px;
   }
   
   .avatar-chatbox-content {
@@ -2631,6 +2633,196 @@ a:hover {
   
   .bento[data-title="Daily quests"] {
     width: 100% !important;
+  }
+}
+
+/* Mobile Navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: #6B7280;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-height: 60px;
+}
+
+.mobile-nav-item.active {
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
+.mobile-nav-item span {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 4px;
+  font-family: 'Baloo Bhai', sans-serif;
+}
+
+/* Mobile Top Bar */
+.mobile-top-bar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, var(--gradient-start) 0%, var(--gradient-mid1) 41%, var(--gradient-mid2) 78%, var(--gradient-end) 100%);
+  padding: 12px 16px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100%;
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Baloo Bhai', sans-serif;
+}
+
+.mobile-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: 'Baloo Bhai', sans-serif;
+}
+
+/* Mobile Layout Adjustments */
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex;
+  }
+  
+  .mobile-top-bar {
+    display: block;
+  }
+  
+  /* Hide sidebar on mobile */
+  .sidebar {
+    display: none;
+  }
+  
+  /* Adjust main content for mobile */
+  .main-content {
+    margin-left: 0;
+    padding-top: 60px; /* Account for top bar */
+    padding-bottom: 80px; /* Account for bottom nav */
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Adjust content main for mobile */
+  .content-main {
+    padding: 16px;
+    width: 100%;
+    max-width: none;
+    overflow-x: hidden;
+  }
+  
+  /* Hide avatar on mobile (only show in room) */
+  .avatar-container {
+    display: none;
+  }
+  
+  .avatar-chatbox {
+    display: none;
+  }
+  
+  /* Prevent horizontal scrolling */
+  body {
+    overflow-x: hidden;
+  }
+  
+  .app-layout {
+    overflow-x: hidden;
+  }
+  
+  /* Adjust bento grid for mobile */
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  /* Make cards full width on mobile */
+  .bento {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Adjust form elements for mobile */
+  .form-container {
+    width: 100%;
+    max-width: none;
+    padding: 16px;
+  }
+  
+  /* Adjust buttons for mobile */
+  .btn {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Show avatar only in room on mobile */
+@media (max-width: 768px) {
+  .room-page .avatar-container {
+    display: block;
+    position: fixed;
+    left: 10px;
+    bottom: 90px; /* Above mobile nav */
+    z-index: 50;
+  }
+  
+  .room-page .avatar-image {
+    width: 80px !important;
+    height: 110px !important;
+  }
+  
+  .room-page .avatar-chatbox {
+    display: block;
+    position: fixed;
+    left: 10px;
+    bottom: 210px;
+    z-index: 60;
+    max-width: 160px;
   }
 }
 

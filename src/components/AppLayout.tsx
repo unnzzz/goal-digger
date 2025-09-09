@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useUserData } from "../hooks/useUserData";
 import { useAvatar } from "../contexts/AvatarContext";
 import AvatarChatbox from "./AvatarChatbox";
+import MobileNavigation from "./MobileNavigation";
+import MobileTopBar from "./MobileTopBar";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -55,7 +57,10 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
   }
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${activePage === 'room' ? 'room-page' : ''}`}>
+      {/* Mobile Top Bar */}
+      <MobileTopBar />
+      
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -228,6 +233,9 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
           />
         </div>
       )}
+      
+      {/* Mobile Navigation */}
+      <MobileNavigation activePage={activePage} />
     </div>
   );
 }
