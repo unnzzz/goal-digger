@@ -339,6 +339,7 @@ export default function RoomPage() {
   return (
     <AppLayout activePage="room">
       <div 
+        className="room-page-container"
         style={{ 
           display: "flex", 
           height: "calc(100vh - 80px)", 

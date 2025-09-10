@@ -1569,7 +1569,7 @@ a:hover {
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   text-align: center;
 }
 
@@ -2936,6 +2936,13 @@ a:hover {
   }
   
   /* Room page mobile responsiveness */
+  .room-page .room-page-container {
+    height: auto !important;
+    min-height: calc(100vh - 80px) !important;
+    flex-direction: column !important;
+    display: flex !important;
+  }
+  
   .room-page .room-container {
     min-width: 100% !important;
     margin-left: 0 !important;
@@ -2943,6 +2950,18 @@ a:hover {
     padding: 16px !important;
     height: auto !important;
     flex-direction: column !important;
+  }
+  
+  .room-page .room-container > div[ref] {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+  
+  .room-page .room-container img {
+    max-width: 40px !important;
+    max-height: 40px !important;
+    width: auto !important;
+    height: auto !important;
   }
   
   .room-page .room-title {
@@ -2975,6 +2994,10 @@ a:hover {
     width: 100% !important;
     margin-top: 20px !important;
     order: 3 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
   }
   
   .room-page .inventory-carousel {
