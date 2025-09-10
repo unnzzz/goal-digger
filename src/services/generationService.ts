@@ -221,7 +221,7 @@ export const generationService = (() => {
     console.log('Creating new GenerationService instance');
     generationServiceInstance = new GenerationService();
   } else {
-    console.log('Using existing GenerationService instance, current state:', generationServiceInstance?.getState());
+    console.log('Using existing GenerationService instance, current state:', generationServiceInstance!.getState());
   }
   return generationServiceInstance;
 })();
