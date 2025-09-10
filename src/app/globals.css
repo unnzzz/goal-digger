@@ -2854,16 +2854,65 @@ a:hover {
   /* Fix sidebar sections on mobile */
   .sidebar-section {
     margin-bottom: 20px !important;
+    width: 100% !important;
+    max-width: none !important;
   }
   
   .sidebar-list {
     padding-left: 16px !important;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
   }
   
   .sidebar-list li {
     margin-bottom: 8px !important;
     font-size: 14px !important;
     line-height: 1.4 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+  }
+  
+  /* Fix generator page mobile layout */
+  .generator-page .content-main {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 16px !important;
+    overflow-x: hidden !important;
+  }
+  
+  .generator-page .form-container {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 16px !important;
+  }
+  
+  .generator-page .form-box {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Fix dashboard page mobile layout */
+  .dashboard-page .bento-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 0 16px !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  .dashboard-page .bento {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  
+  .dashboard-page .content-main {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 16px !important;
+    overflow-x: hidden !important;
   }
   
   /* Diary page mobile responsiveness */
@@ -2918,13 +2967,33 @@ a:hover {
   }
   
   /* Fix inventory section on mobile */
-  .room-page .inventory-sidebar {
+  .room-page .inventory-section {
     position: relative !important;
     top: auto !important;
     right: auto !important;
     width: 100% !important;
     margin-top: 20px !important;
     order: 3 !important;
+  }
+  
+  .room-page .inventory-carousel {
+    overflow-x: auto !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #8B5CF6 #f1f1f1 !important;
+  }
+  
+  .room-page .inventory-carousel::-webkit-scrollbar {
+    height: 6px !important;
+  }
+  
+  .room-page .inventory-carousel::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 3px !important;
+  }
+  
+  .room-page .inventory-carousel::-webkit-scrollbar-thumb {
+    background: #8B5CF6 !important;
+    border-radius: 3px !important;
   }
 }
 

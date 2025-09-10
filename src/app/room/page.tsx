@@ -660,19 +660,15 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Inventory Sidebar - Absolute Overlay */}
-        <div className="inventory-sidebar" style={{ 
-          position: "absolute",
-          top: "100px",
-          right: "20px",
-          width: "180px", 
+        {/* Inventory Section - Below Room */}
+        <div className="inventory-section" style={{ 
+          width: "100%",
           background: "rgba(255, 255, 255, 0.95)", 
           borderRadius: "15px", 
-          padding: "10px",
-          boxShadow: "0 0 20px rgba(0,0,0,0.2)",
-          overflowY: "auto",
+          padding: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
           backdropFilter: "blur(10px)",
-          zIndex: 20
+          marginTop: "20px"
         }}>
           <div style={{ marginBottom: "10px" }}>
             <h2 style={{ 
@@ -716,7 +712,15 @@ export default function RoomPage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="inventory-carousel" style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              gap: "12px",
+              overflowX: "auto",
+              padding: "8px 0",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#8B5CF6 #f1f1f1"
+            }}>
               {inventoryItems.map(item => (
                 <div 
                   key={item.id} 
@@ -724,12 +728,15 @@ export default function RoomPage() {
                   onDragStart={isEditing ? (e) => handleDragStart(e, item) : undefined}
                   style={{
                     background: "#f8f9fa",
-                    borderRadius: "6px",
-                    padding: "8px",
+                    borderRadius: "8px",
+                    padding: "12px",
                     border: "1px solid #e2e8f0",
                     transition: "all 0.2s ease",
                     cursor: isEditing ? "grab" : "default",
-                    opacity: isEditing ? 1 : 0.6
+                    opacity: isEditing ? 1 : 0.6,
+                    minWidth: "120px",
+                    flexShrink: 0,
+                    textAlign: "center"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#ffffff";
@@ -742,21 +749,21 @@ export default function RoomPage() {
                     e.currentTarget.style.transform = "translateX(0)";
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
                     <img
                       src={getFurnitureImagePath(item.item.name)}
                       alt={item.item.name}
-                      width={20}
-                      height={20}
-                      style={{ borderRadius: "3px", display: 'block' }}
+                      width={40}
+                      height={40}
+                      style={{ borderRadius: "6px", display: 'block' }}
                       draggable={false}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ width: "100%" }}>
                       <div style={{
-                        fontSize: "11px",
+                        fontSize: "12px",
                         fontWeight: "600",
                         color: "#2d3748",
-                        marginBottom: "1px",
+                        marginBottom: "4px",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis"
@@ -764,7 +771,7 @@ export default function RoomPage() {
                         {item.item.name}
                       </div>
                       <div style={{
-                        fontSize: "9px",
+                        fontSize: "10px",
                         color: "#718096",
                         textTransform: "uppercase",
                         letterSpacing: "0.5px"

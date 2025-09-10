@@ -224,7 +224,8 @@ export default function Home() {
 
   return (
     <AppLayout activePage="generator">
-      <div className="page-layout">
+      <div className="generator-page">
+        <div className="page-layout">
         <div className="content-main">
           <div className="form-container">
             <form onSubmit={handleSubmit}>
@@ -617,6 +618,7 @@ export default function Home() {
           </div>
           </div>
       )}
+        </div>
     </AppLayout>
   );
 }
