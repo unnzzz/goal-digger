@@ -268,8 +268,8 @@ export default function DiaryDatesPage() {
   return (
     <AppLayout activePage="diary">
       <div className="diary-page">
-        <main style={{ width: '100%', maxWidth: 'none', padding: '20px' }}>
-          <div className="card" style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: 20, padding: '20px', width: '100%', maxWidth: 'none' }}>
+        <main style={{ width: '100%', maxWidth: 'none', padding: '0px', margin: '0px' }}>
+          <div className="card" style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 20, padding: '20px', width: '100%', maxWidth: 'none', margin: '0px' }}>
         {/* LEFT: Calendar view */}
         <aside style={{ 
           background: 'linear-gradient(135deg, #6A3EE8 0%, #9C27B0 100%)', 

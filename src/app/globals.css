@@ -2945,7 +2945,15 @@ a:hover {
   .diary-page main {
     width: 100% !important;
     max-width: none !important;
-    padding: 20px !important;
+    padding: 0px !important;
+    margin: 0px !important;
+  }
+  
+  .diary-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0px !important;
+    padding: 0px !important;
   }
   
   /* Room page mobile responsiveness */
@@ -2956,6 +2964,21 @@ a:hover {
     display: flex !important;
     gap: 0 !important;
     padding: 16px !important;
+  }
+  
+  /* Room page desktop full width */
+  .room-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0px !important;
+    padding: 0px !important;
+  }
+  
+  .room-page .room-page-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0px !important;
+    padding: 0px !important;
   }
   
   .room-page .inventory-sidebar {

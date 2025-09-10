@@ -229,12 +229,14 @@ export default function RoomPage() {
   };
 
   const handleScale = async (itemId: string, direction: 'in' | 'out') => {
+    console.log('handleScale called:', itemId, direction);
     const scaleDelta = direction === 'in' ? 0.1 : -0.1;
     const updatedItems = items.map(item => 
       item.id === itemId 
         ? { ...item, scale: Math.max(0.3, Math.min(10, item.scale + scaleDelta)) }
         : item
     );
+    console.log('Updated items:', updatedItems);
     setItems(updatedItems);
 
     // Only save to server if it's not the default table
@@ -344,8 +346,10 @@ export default function RoomPage() {
           display: "flex", 
           height: "calc(100vh - 80px)", 
           gap: "20px", 
-          padding: "20px",
-          background: "transparent"
+          padding: "0px",
+          margin: "0px",
+          background: "transparent",
+          width: "100%"
         }}
         onClick={() => setSelectedItem(null)}
       >
@@ -510,7 +514,8 @@ export default function RoomPage() {
                     borderRadius: "8px",
                     zIndex: 200,
                     marginLeft: "10px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                    minWidth: "120px"
                   }}>
                     <button
                       onClick={(e) => {
@@ -526,12 +531,14 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px",
-                        touchAction: "manipulation"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Rotate Left"
                     >
@@ -551,12 +558,14 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px",
-                        touchAction: "manipulation"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Make Smaller"
                     >
@@ -576,12 +585,14 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px",
-                        touchAction: "manipulation"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Make Bigger"
                     >
@@ -601,12 +612,14 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px",
-                        touchAction: "manipulation"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Rotate Right"
                     >
@@ -622,9 +635,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
@@ -642,9 +655,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
@@ -662,9 +675,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
