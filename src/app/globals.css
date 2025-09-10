@@ -288,6 +288,8 @@ body{
   display: flex;
   flex-direction: column;
   gap: 0px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Form Styles */
@@ -524,11 +526,12 @@ body{
 /* Sidebar Content */
 .sidebar-section {
   margin-bottom: 12px;
-  width: 130%;
+  width: 100%;
   background: var(--what-we-do-box);
   border: 3px solid white;
   border-radius: var(--radius);
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .sidebar-section:last-child {
@@ -557,6 +560,9 @@ body{
   position: relative;
   font-size: 12px;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .sidebar-list li::before {
@@ -2880,6 +2886,18 @@ a:hover {
     max-width: none !important;
     padding: 16px !important;
     overflow-x: hidden !important;
+  }
+  
+  /* Fix sidebar overflow on generator page */
+  .generator-page .content-sidebar {
+    overflow: hidden !important;
+    max-height: calc(100vh - 200px) !important;
+  }
+  
+  .generator-page .sidebar-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
   
   .generator-page .form-container {
