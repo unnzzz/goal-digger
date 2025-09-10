@@ -7,6 +7,7 @@ import { useAvatar } from "../contexts/AvatarContext";
 import AvatarChatbox from "./AvatarChatbox";
 import MobileNavigation from "./MobileNavigation";
 import MobileTopBar from "./MobileTopBar";
+import GlobalGenerationStatus from "./GlobalGenerationStatus";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -236,6 +237,9 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
       
       {/* Mobile Navigation */}
       <MobileNavigation activePage={activePage} />
+      
+      {/* Global Generation Status */}
+      <GlobalGenerationStatus />
     </div>
   );
 }

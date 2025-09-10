@@ -7,23 +7,37 @@ import { useRouter } from 'next/navigation';
 import AppLayout from '../components/AppLayout';
 import LandingPage from '../components/LandingPage';
 import { useAvatar } from '../contexts/AvatarContext';
+import { useRoadmapGeneration } from '../contexts/RoadmapGenerationContext';
 import { getMessageForAction } from '../lib/avatarMessages';
 
 export default function Home() {
   const [goal, setGoal] = useState("");
   const [dailyMinutes, setDailyMinutes] = useState(30);
   const [totalDays, setTotalDays] = useState(10);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [goalName, setGoalName] = useState("");
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { showMessage } = useAvatar();
   const [savedGoals, setSavedGoals] = useState<any[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(false);
+  
+  // Use the global generation context
+  const { 
+    generationState, 
+    startGeneration, 
+    clearGeneration, 
+    goalName, 
+    setGoalName,
+    setData
+  } = useRoadmapGeneration();
+  
+  // Destructure for easier access
+  const { 
+    isGenerating: loading, 
+    data, 
+    error, 
+    progress, 
+    statusMessage 
+  } = generationState;
 
   // Show avatar message when roadmap generator page loads
   useEffect(() => {
@@ -61,69 +75,7 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setProgress(0);
-    setStatusMessage("Starting generation...");
-
-    const requestData = {
-      goal,
-      daily_minutes: dailyMinutes,
-      total_days: totalDays,
-    };
-
-    try {
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      let buffer = "";
-      let result: any = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += new TextDecoder().decode(value);
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.type === "progress") {
-              setProgress(parsed.percent || 0);
-              setStatusMessage(parsed.message || "Processing...");
-            } else if (parsed.type === "result") {
-              result = parsed.data;
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
-            }
-          } catch (e) {
-            console.warn("Failed to parse line:", line, e);
-          }
-        }
-      }
-
-      setData(result);
-      setGoalName(result.title || goal);
-      setStatusMessage("Complete!");
-    } catch (e: any) {
-      setError(e?.message || "Generation failed");
-    } finally {
-      setLoading(false);
-    }
+    await startGeneration(goal, dailyMinutes, totalDays);
   };
 
   const handleSaveGoal = async (startGoal = false) => {
@@ -213,6 +165,7 @@ export default function Home() {
       if (response.ok) {
         const result = await response.json();
         const roadmapData = result.goal.roadmapJson;
+        // Update the context with loaded data
         setData(roadmapData);
         setGoalName(result.goal.title);
         setIsEditing(false);
@@ -330,13 +283,8 @@ export default function Home() {
                       <button 
                         className="btn-ghost regenerate-btn"
                         onClick={() => {
-                          setData(null);
-                          setGoalName("");
+                          clearGeneration();
                           setIsEditing(false);
-                          setLoading(false);
-                          setError(null);
-                          setProgress(0);
-                          setStatusMessage(null);
                         }}
                       >
                         Regenerate

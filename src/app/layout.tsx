@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Provider from "@/components/SessionProvider";
 import NavBar from "@/components/NavBar";
 import { AvatarProvider } from "@/contexts/AvatarContext";
+import { RoadmapGenerationProvider } from "@/contexts/RoadmapGenerationContext";
 
 export const metadata: Metadata = {
   title: "Goal-Digger",
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Provider>
           <AvatarProvider>
-            {children}
+            <RoadmapGenerationProvider>
+              {children}
+            </RoadmapGenerationProvider>
           </AvatarProvider>
         </Provider>
       </body>
