@@ -2700,9 +2700,10 @@ a:hover {
 
 .mobile-top-bar-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   max-width: 100%;
+  width: 100%;
 }
 
 .mobile-logo {
@@ -2765,6 +2766,11 @@ a:hover {
   
   /* Hide sidebar on mobile */
   .sidebar {
+    display: none;
+  }
+  
+  /* Hide regular topbar on mobile */
+  .topbar {
     display: none;
   }
   
@@ -2842,6 +2848,22 @@ a:hover {
     order: 2;
     width: 100%;
     max-width: none;
+    padding: 16px !important;
+  }
+  
+  /* Fix sidebar sections on mobile */
+  .sidebar-section {
+    margin-bottom: 20px !important;
+  }
+  
+  .sidebar-list {
+    padding-left: 16px !important;
+  }
+  
+  .sidebar-list li {
+    margin-bottom: 8px !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
   }
   
   /* Diary page mobile responsiveness */
@@ -2893,6 +2915,16 @@ a:hover {
   
   .room-page .room-buttons button {
     width: 100% !important;
+  }
+  
+  /* Fix inventory section on mobile */
+  .room-page .inventory-sidebar {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    margin-top: 20px !important;
+    order: 3 !important;
   }
 }
 

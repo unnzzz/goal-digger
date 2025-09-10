@@ -9,11 +9,6 @@ export default function MobileTopBar() {
   return (
     <div className="mobile-top-bar">
       <div className="mobile-top-bar-content">
-        <div className="mobile-logo">
-          <Image src="/logo.png" alt="Goal-Digger" width={32} height={32} />
-          <span>Goal-Digger</span>
-        </div>
-        
         <div className="mobile-stats">
           <div className="stat-item coins">
             <Image src="/icons/coin.png" alt="Coins" width={20} height={20} />

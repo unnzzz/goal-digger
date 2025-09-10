@@ -661,7 +661,7 @@ export default function RoomPage() {
         </div>
 
         {/* Inventory Sidebar - Absolute Overlay */}
-        <div style={{ 
+        <div className="inventory-sidebar" style={{ 
           position: "absolute",
           top: "100px",
           right: "20px",
