@@ -117,8 +117,9 @@ export default function ShopPage() {
       setMsg("Purchased!");
       setCoins(j.coins ?? 0);
       await load();
-      // Let the navbar refresh coins
+      // Let the navbar refresh coins and stats
       window.dispatchEvent(new Event("coins:refresh"));
+      window.dispatchEvent(new Event("stats:refresh"));
       
       // Avatar messages removed - only show in room tab
     } catch (e: any) {
