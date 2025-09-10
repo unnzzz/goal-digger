@@ -49,7 +49,9 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
       setGoalName(state.goalName);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const startGeneration = useCallback(async (goal: string, dailyMinutes: number, totalDays: number) => {
