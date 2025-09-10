@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useUserData } from "@/hooks/useUserData";
 
 interface MobileNavigationProps {
   activePage?: string;
 }
 
 export default function MobileNavigation({ activePage = "" }: MobileNavigationProps) {
+  const { userData } = useUserData();
   return (
     <div className="mobile-nav">
       <Link href="/" className={`mobile-nav-item ${activePage === 'generator' ? 'active' : ''}`}>
@@ -31,7 +33,17 @@ export default function MobileNavigation({ activePage = "" }: MobileNavigationPr
         <span>Shop</span>
       </Link>
       <Link href="/account" className={`mobile-nav-item ${activePage === 'account' ? 'active' : ''}`}>
-        <Image src="/icons/profile.png" alt="Account" width={24} height={24} />
+        {userData?.avatarKey ? (
+          <Image 
+            src={`/avatars/${userData.avatarKey}.png`} 
+            alt="Account" 
+            width={24} 
+            height={24}
+            style={{ borderRadius: "50%" }}
+          />
+        ) : (
+          <Image src="/icons/profile.png" alt="Account" width={24} height={24} />
+        )}
         <span>Account</span>
       </Link>
     </div>

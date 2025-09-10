@@ -351,7 +351,7 @@ export default function RoomPage() {
       >
         {/* Central Room View - Main Area */}
         <div className="room-container" style={{ 
-          flex: 2, 
+          flex: 5, 
           background: "transparent", 
           borderRadius: "20px", 
           padding: "0px",
@@ -662,6 +662,7 @@ export default function RoomPage() {
         {/* Inventory Sidebar - Desktop */}
         <div className="inventory-sidebar" style={{ 
           flex: 1,
+          maxWidth: "250px",
           background: "rgba(255, 255, 255, 0.95)", 
           borderRadius: "15px", 
           padding: "16px",
@@ -714,8 +715,8 @@ export default function RoomPage() {
           ) : (
             <div className="inventory-grid" style={{ 
               display: "grid", 
-              gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", 
-              gap: "12px",
+              gridTemplateColumns: "1fr", 
+              gap: "8px",
               padding: "8px 0",
               maxHeight: "calc(100vh - 200px)",
               overflowY: "auto"
@@ -728,16 +729,17 @@ export default function RoomPage() {
                   style={{
                     background: "#f8f9fa",
                     borderRadius: "8px",
-                    padding: "12px",
+                    padding: "8px",
                     border: "1px solid #e2e8f0",
                     transition: "all 0.2s ease",
                     cursor: isEditing ? "grab" : "default",
                     opacity: isEditing ? 1 : 0.6,
                     textAlign: "center",
                     display: "flex",
-                    flexDirection: "column",
+                    flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center"
+                    justifyContent: "flex-start",
+                    gap: "8px"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#ffffff";
