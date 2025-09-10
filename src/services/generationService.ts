@@ -74,103 +74,86 @@ class GenerationService {
       total_days: totalDays,
     };
 
-    // Use a more robust approach with keepalive and no signal
-    this.performGeneration(requestData);
+    // Use polling approach for more reliable generation
+    this.performGenerationWithPolling(requestData);
   }
 
-  // Separate method for the actual generation to avoid cancellation
-  private async performGeneration(requestData: any) {
+  // Polling-based generation approach
+  private async performGenerationWithPolling(requestData: any) {
     try {
-      console.log('GenerationService: Making API request...');
+      console.log('GenerationService: Starting generation with polling...');
 
-      // Use a more robust approach - create a new XMLHttpRequest that persists
-      const xhr = new XMLHttpRequest();
-      
-      return new Promise<void>((resolve, reject) => {
-        xhr.open('POST', '/api/generate/stream', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        
-        let buffer = '';
-        let result: any = null;
+      // Start the generation job
+      const startResponse = await fetch('/api/generate/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
 
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-              console.log('GenerationService: Generation completed successfully');
-              this.data = result;
-              this.statusMessage = "Complete!";
-              this.isGenerating = false;
-              this.goalName = result?.title || '';
-              this.notify();
-              resolve();
-            } else {
-              console.error('GenerationService: Generation failed with status:', xhr.status);
-              this.error = `HTTP ${xhr.status}: ${xhr.statusText}`;
-              this.isGenerating = false;
-              this.notify();
-              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
-            }
+      if (!startResponse.ok) {
+        throw new Error(`Failed to start generation: ${startResponse.statusText}`);
+      }
+
+      const { jobId } = await startResponse.json();
+      console.log('GenerationService: Job started with ID:', jobId);
+
+      // Poll for status updates
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/generate/start?jobId=${jobId}`);
+          
+          if (!statusResponse.ok) {
+            throw new Error(`Failed to get status: ${statusResponse.statusText}`);
           }
-        };
 
-        xhr.onprogress = (event) => {
-          if (xhr.responseText) {
-            const newData = xhr.responseText.slice(buffer.length);
-            buffer += newData;
-            
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            
-            for (const line of lines) {
-              if (line.trim() === '') continue;
-              try {
-                const parsed = JSON.parse(line);
-                if (parsed.type === 'progress') {
-                  this.progress = parsed.percent || 0;
-                  this.statusMessage = parsed.message || 'Processing...';
-                  console.log('GenerationService: Progress update:', this.progress + '%');
-                  this.notify();
-                } else if (parsed.type === 'result') {
-                  result = parsed.data;
-                  console.log('GenerationService: Result received');
-                } else if (parsed.type === 'error') {
-                  throw new Error(parsed.message);
-                }
-              } catch (e) {
-                console.warn('Failed to parse line:', line, e);
-              }
-            }
-          }
-        };
+          const status = await statusResponse.json();
+          console.log('GenerationService: Status update:', status);
 
-        xhr.onerror = () => {
-          console.error('GenerationService: Network error');
-          this.error = 'Network error';
-          this.isGenerating = false;
-          this.notify();
-          reject(new Error('Network error'));
-        };
+          this.progress = status.progress || 0;
+          this.statusMessage = status.message || 'Processing...';
 
-        xhr.send(JSON.stringify(requestData));
-        
-        // Store the xhr for potential cancellation
-        this.controller = {
-          abort: () => {
-            xhr.abort();
+          if (status.status === 'completed') {
+            console.log('GenerationService: Generation completed successfully');
+            this.data = status.result;
+            this.statusMessage = "Complete!";
             this.isGenerating = false;
-            this.statusMessage = "Generation cancelled";
+            this.goalName = status.result?.title || '';
+            this.notify();
+            clearInterval(pollInterval);
+          } else if (status.status === 'failed') {
+            console.error('GenerationService: Generation failed:', status.error);
+            this.error = status.error || 'Generation failed';
+            this.isGenerating = false;
+            this.notify();
+            clearInterval(pollInterval);
+          } else {
+            // Still running, update progress
             this.notify();
           }
-        } as any;
-      });
-      
+        } catch (error) {
+          console.error('GenerationService: Polling error:', error);
+          this.error = 'Failed to check generation status';
+          this.isGenerating = false;
+          this.notify();
+          clearInterval(pollInterval);
+        }
+      }, 1000); // Poll every second
+
+      // Store the interval for potential cancellation
+      this.controller = {
+        abort: () => {
+          clearInterval(pollInterval);
+          this.isGenerating = false;
+          this.statusMessage = "Generation cancelled";
+          this.notify();
+        }
+      } as any;
+
     } catch (e: any) {
       console.error('GenerationService: Generation failed:', e);
       this.error = e?.message || "Generation failed";
       this.isGenerating = false;
       this.notify();
-    } finally {
-      this.controller = null;
     }
   }
 
@@ -238,7 +221,12 @@ export const generationService = (() => {
     console.log('Creating new GenerationService instance');
     generationServiceInstance = new GenerationService();
   } else {
-    console.log('Using existing GenerationService instance');
+    console.log('Using existing GenerationService instance, current state:', generationServiceInstance.getState());
   }
   return generationServiceInstance;
 })();
+
+// Store the service globally to prevent garbage collection
+if (typeof window !== 'undefined') {
+  (window as any).generationService = generationService;
+}
