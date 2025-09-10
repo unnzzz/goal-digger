@@ -12,6 +12,7 @@ class GenerationService {
   private goalName = '';
   
   private listeners: Set<() => void> = new Set();
+  private isDestroyed = false;
 
   // Subscribe to state changes
   subscribe(listener: () => void) {
@@ -21,7 +22,14 @@ class GenerationService {
 
   // Notify all listeners of state changes
   private notify() {
-    this.listeners.forEach(listener => listener());
+    if (this.isDestroyed) return;
+    this.listeners.forEach(listener => {
+      try {
+        listener();
+      } catch (error) {
+        console.error('Error in generation service listener:', error);
+      }
+    });
   }
 
   // Get current state
@@ -41,8 +49,11 @@ class GenerationService {
 
   // Start generation
   async startGeneration(goal: string, dailyMinutes: number, totalDays: number) {
+    console.log('GenerationService: Starting generation for goal:', goal);
+    
     // Cancel any existing generation
     if (this.controller) {
+      console.log('GenerationService: Cancelling existing generation');
       this.controller.abort();
     }
 
@@ -65,6 +76,7 @@ class GenerationService {
 
     try {
       this.controller = new AbortController();
+      console.log('GenerationService: Making API request...');
 
       const res = await fetch("/api/generate/stream", {
         method: "POST",
@@ -72,6 +84,8 @@ class GenerationService {
         body: JSON.stringify(requestData),
         signal: this.controller.signal,
       });
+
+      console.log('GenerationService: API response received:', res.status);
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -84,9 +98,14 @@ class GenerationService {
       let buffer = "";
       let result: any = null;
 
+      console.log('GenerationService: Starting to read stream...');
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log('GenerationService: Stream reading complete');
+          break;
+        }
 
         buffer += new TextDecoder().decode(value);
         const lines = buffer.split("\n");
@@ -99,9 +118,11 @@ class GenerationService {
             if (parsed.type === "progress") {
               this.progress = parsed.percent || 0;
               this.statusMessage = parsed.message || "Processing...";
+              console.log('GenerationService: Progress update:', this.progress + '%');
               this.notify();
             } else if (parsed.type === "result") {
               result = parsed.data;
+              console.log('GenerationService: Result received');
             } else if (parsed.type === "error") {
               throw new Error(parsed.message);
             }
@@ -115,14 +136,16 @@ class GenerationService {
       this.statusMessage = "Complete!";
       this.isGenerating = false;
       this.goalName = result?.title || '';
+      console.log('GenerationService: Generation completed successfully');
       this.notify();
       
     } catch (e: any) {
       if (e.name === 'AbortError') {
-        console.log('Generation was cancelled');
+        console.log('GenerationService: Generation was cancelled');
         this.isGenerating = false;
         this.statusMessage = "Generation cancelled";
       } else {
+        console.error('GenerationService: Generation failed:', e);
         this.error = e?.message || "Generation failed";
         this.isGenerating = false;
       }
@@ -171,7 +194,32 @@ class GenerationService {
     this.error = null;
     this.notify();
   }
+
+  // Check if service is still active
+  isActive() {
+    return !this.isDestroyed;
+  }
+
+  // Destroy the service (cleanup)
+  destroy() {
+    this.isDestroyed = true;
+    if (this.controller) {
+      this.controller.abort();
+      this.controller = null;
+    }
+    this.listeners.clear();
+  }
 }
 
-// Create singleton instance
-export const generationService = new GenerationService();
+// Create singleton instance - ensure it persists across module reloads
+let generationServiceInstance: GenerationService | null = null;
+
+export const generationService = (() => {
+  if (!generationServiceInstance) {
+    console.log('Creating new GenerationService instance');
+    generationServiceInstance = new GenerationService();
+  } else {
+    console.log('Using existing GenerationService instance');
+  }
+  return generationServiceInstance;
+})();

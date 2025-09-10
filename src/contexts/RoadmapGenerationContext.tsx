@@ -43,18 +43,24 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
 
   // Subscribe to service updates
   useEffect(() => {
+    console.log('RoadmapGenerationContext: Setting up subscription');
+    
     const unsubscribe = generationService.subscribe(() => {
+      console.log('RoadmapGenerationContext: Received update from service');
       const state = generationService.getState();
+      console.log('RoadmapGenerationContext: New state:', state);
       setGenerationState(state);
       setGoalName(state.goalName);
     });
 
     return () => {
+      console.log('RoadmapGenerationContext: Cleaning up subscription');
       unsubscribe();
     };
   }, []);
 
   const startGeneration = useCallback(async (goal: string, dailyMinutes: number, totalDays: number) => {
+    console.log('RoadmapGenerationContext: startGeneration called with:', { goal, dailyMinutes, totalDays });
     await generationService.startGeneration(goal, dailyMinutes, totalDays);
   }, []);
 
