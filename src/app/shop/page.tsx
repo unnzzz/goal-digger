@@ -128,7 +128,7 @@ export default function ShopPage() {
 
   return (
     <AppLayout activePage="shop">
-      <div className="content-main" style={{ padding: "32px", width: "100%", maxWidth: "none" }}>
+      <div className="content-main" style={{ padding: "32px 48px", width: "100%", maxWidth: "none" }}>
 
       {loading && <div>Loading…</div>}
 
@@ -197,7 +197,7 @@ npx prisma db seed`}
           {msg && <div className="success" style={{ marginBottom: 20 }}>{msg}</div>}
 
           {Object.entries(groupItemsByCategory(items)).map(([category, categoryItems]) => (
-            <div key={category} style={{ marginBottom: '32px' }}>
+            <div key={category} style={{ marginBottom: '48px' }}>
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: '700',
@@ -211,7 +211,7 @@ npx prisma db seed`}
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '20px',
+                gap: '30px',
                 width: '100%'
               }}>
                 {categoryItems.map((it) => (
