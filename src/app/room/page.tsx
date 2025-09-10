@@ -343,25 +343,23 @@ export default function RoomPage() {
         style={{ 
           display: "flex", 
           height: "calc(100vh - 80px)", 
-          gap: "0px", 
-          padding: "0px",
+          gap: "20px", 
+          padding: "20px",
           background: "transparent"
         }}
         onClick={() => setSelectedItem(null)}
       >
-        {/* Central Room View - ENTIRE PAGE */}
+        {/* Central Room View - Main Area */}
         <div className="room-container" style={{ 
-          flex: 1, 
+          flex: 2, 
           background: "transparent", 
           borderRadius: "20px", 
           padding: "0px",
           position: "relative",
           overflow: "visible",
           boxShadow: "none",
-          minWidth: "100%",
+          minWidth: "0",
           height: "100%",
-          marginLeft: "20px",
-          marginTop: "20px",
           display: "flex",
           flexDirection: "column"
         }}>
@@ -661,15 +659,16 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Inventory Section - Below Room */}
-        <div className="inventory-section" style={{ 
-          width: "100%",
+        {/* Inventory Sidebar - Desktop */}
+        <div className="inventory-sidebar" style={{ 
+          flex: 1,
           background: "rgba(255, 255, 255, 0.95)", 
           borderRadius: "15px", 
           padding: "16px",
           boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
           backdropFilter: "blur(10px)",
-          marginTop: "20px"
+          height: "100%",
+          overflowY: "auto"
         }}>
           <div style={{ marginBottom: "10px" }}>
             <h2 style={{ 
@@ -713,14 +712,13 @@ export default function RoomPage() {
               </div>
             </div>
           ) : (
-            <div className="inventory-carousel" style={{ 
-              display: "flex", 
-              flexDirection: "row", 
+            <div className="inventory-grid" style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", 
               gap: "12px",
-              overflowX: "auto",
               padding: "8px 0",
-              scrollbarWidth: "thin",
-              scrollbarColor: "#8B5CF6 #f1f1f1"
+              maxHeight: "calc(100vh - 200px)",
+              overflowY: "auto"
             }}>
               {inventoryItems.map(item => (
                 <div 
@@ -735,9 +733,11 @@ export default function RoomPage() {
                     transition: "all 0.2s ease",
                     cursor: isEditing ? "grab" : "default",
                     opacity: isEditing ? 1 : 0.6,
-                    minWidth: "120px",
-                    flexShrink: 0,
-                    textAlign: "center"
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#ffffff";

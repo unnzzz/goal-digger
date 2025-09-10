@@ -2941,6 +2941,29 @@ a:hover {
     min-height: calc(100vh - 80px) !important;
     flex-direction: column !important;
     display: flex !important;
+    gap: 0 !important;
+    padding: 16px !important;
+  }
+  
+  .room-page .inventory-sidebar {
+    order: 2 !important;
+    flex: none !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-top: 20px !important;
+  }
+  
+  .room-page .inventory-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    max-height: none !important;
+    padding: 8px 0 !important;
+  }
+  
+  .room-page .inventory-grid > div {
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
   }
   
   .room-page .room-container {
