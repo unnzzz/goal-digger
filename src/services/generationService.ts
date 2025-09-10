@@ -74,81 +74,100 @@ class GenerationService {
       total_days: totalDays,
     };
 
+    // Use a more robust approach with keepalive and no signal
+    this.performGeneration(requestData);
+  }
+
+  // Separate method for the actual generation to avoid cancellation
+  private async performGeneration(requestData: any) {
     try {
-      this.controller = new AbortController();
       console.log('GenerationService: Making API request...');
 
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-        signal: this.controller.signal,
-      });
+      // Use a more robust approach - create a new XMLHttpRequest that persists
+      const xhr = new XMLHttpRequest();
+      
+      return new Promise<void>((resolve, reject) => {
+        xhr.open('POST', '/api/generate/stream', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        let buffer = '';
+        let result: any = null;
 
-      console.log('GenerationService: API response received:', res.status);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      let buffer = "";
-      let result: any = null;
-
-      console.log('GenerationService: Starting to read stream...');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('GenerationService: Stream reading complete');
-          break;
-        }
-
-        buffer += new TextDecoder().decode(value);
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.type === "progress") {
-              this.progress = parsed.percent || 0;
-              this.statusMessage = parsed.message || "Processing...";
-              console.log('GenerationService: Progress update:', this.progress + '%');
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              console.log('GenerationService: Generation completed successfully');
+              this.data = result;
+              this.statusMessage = "Complete!";
+              this.isGenerating = false;
+              this.goalName = result?.title || '';
               this.notify();
-            } else if (parsed.type === "result") {
-              result = parsed.data;
-              console.log('GenerationService: Result received');
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
+              resolve();
+            } else {
+              console.error('GenerationService: Generation failed with status:', xhr.status);
+              this.error = `HTTP ${xhr.status}: ${xhr.statusText}`;
+              this.isGenerating = false;
+              this.notify();
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
             }
-          } catch (e) {
-            console.warn("Failed to parse line:", line, e);
           }
-        }
-      }
+        };
 
-      this.data = result;
-      this.statusMessage = "Complete!";
-      this.isGenerating = false;
-      this.goalName = result?.title || '';
-      console.log('GenerationService: Generation completed successfully');
-      this.notify();
+        xhr.onprogress = (event) => {
+          if (xhr.responseText) {
+            const newData = xhr.responseText.slice(buffer.length);
+            buffer += newData;
+            
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+              if (line.trim() === '') continue;
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.type === 'progress') {
+                  this.progress = parsed.percent || 0;
+                  this.statusMessage = parsed.message || 'Processing...';
+                  console.log('GenerationService: Progress update:', this.progress + '%');
+                  this.notify();
+                } else if (parsed.type === 'result') {
+                  result = parsed.data;
+                  console.log('GenerationService: Result received');
+                } else if (parsed.type === 'error') {
+                  throw new Error(parsed.message);
+                }
+              } catch (e) {
+                console.warn('Failed to parse line:', line, e);
+              }
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          console.error('GenerationService: Network error');
+          this.error = 'Network error';
+          this.isGenerating = false;
+          this.notify();
+          reject(new Error('Network error'));
+        };
+
+        xhr.send(JSON.stringify(requestData));
+        
+        // Store the xhr for potential cancellation
+        this.controller = {
+          abort: () => {
+            xhr.abort();
+            this.isGenerating = false;
+            this.statusMessage = "Generation cancelled";
+            this.notify();
+          }
+        } as any;
+      });
       
     } catch (e: any) {
-      if (e.name === 'AbortError') {
-        console.log('GenerationService: Generation was cancelled');
-        this.isGenerating = false;
-        this.statusMessage = "Generation cancelled";
-      } else {
-        console.error('GenerationService: Generation failed:', e);
-        this.error = e?.message || "Generation failed";
-        this.isGenerating = false;
-      }
+      console.error('GenerationService: Generation failed:', e);
+      this.error = e?.message || "Generation failed";
+      this.isGenerating = false;
       this.notify();
     } finally {
       this.controller = null;
