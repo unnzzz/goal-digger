@@ -216,15 +216,17 @@ class GenerationService {
 // Create singleton instance - ensure it persists across module reloads
 let generationServiceInstance: GenerationService | null = null;
 
-export const generationService = (() => {
+function getGenerationService(): GenerationService {
   if (!generationServiceInstance) {
     console.log('Creating new GenerationService instance');
     generationServiceInstance = new GenerationService();
   } else {
-    console.log('Using existing GenerationService instance, current state:', generationServiceInstance!.getState());
+    console.log('Using existing GenerationService instance, current state:', generationServiceInstance.getState());
   }
   return generationServiceInstance;
-})();
+}
+
+export const generationService = getGenerationService();
 
 // Store the service globally to prevent garbage collection
 if (typeof window !== 'undefined') {
