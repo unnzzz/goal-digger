@@ -2935,6 +2935,19 @@ a:hover {
     padding: 16px !important;
   }
   
+  /* Diary page desktop improvements */
+  .diary-page .card {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  
+  .diary-page main {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 20px !important;
+  }
+  
   /* Room page mobile responsiveness */
   .room-page .room-page-container {
     height: auto !important;
@@ -3007,6 +3020,19 @@ a:hover {
   
   .room-page .room-buttons button {
     width: 100% !important;
+  }
+  
+  /* Make furniture controls larger on mobile */
+  .room-page .room-container button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 8px !important;
+    font-size: 14px !important;
+    touch-action: manipulation !important;
+  }
+  
+  .room-page .room-container button:hover {
+    transform: scale(1.1) !important;
   }
   
   /* Fix inventory section on mobile */

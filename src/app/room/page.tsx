@@ -517,6 +517,10 @@ export default function RoomPage() {
                         e.stopPropagation();
                         handleRotate(item.id, 'left');
                       }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        handleRotate(item.id, 'left');
+                      }}
                       style={{
                         background: "#667eea",
                         color: "white",
@@ -526,7 +530,8 @@ export default function RoomPage() {
                         cursor: "pointer",
                         fontSize: "12px",
                         minWidth: "32px",
-                        height: "32px"
+                        height: "32px",
+                        touchAction: "manipulation"
                       }}
                       title="Rotate Left"
                     >
@@ -534,6 +539,10 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        handleScale(item.id, 'out');
+                      }}
+                      onTouchEnd={(e) => {
                         e.stopPropagation();
                         handleScale(item.id, 'out');
                       }}
@@ -546,7 +555,8 @@ export default function RoomPage() {
                         cursor: "pointer",
                         fontSize: "12px",
                         minWidth: "32px",
-                        height: "32px"
+                        height: "32px",
+                        touchAction: "manipulation"
                       }}
                       title="Make Smaller"
                     >
@@ -554,6 +564,10 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        handleScale(item.id, 'in');
+                      }}
+                      onTouchEnd={(e) => {
                         e.stopPropagation();
                         handleScale(item.id, 'in');
                       }}
@@ -566,7 +580,8 @@ export default function RoomPage() {
                         cursor: "pointer",
                         fontSize: "12px",
                         minWidth: "32px",
-                        height: "32px"
+                        height: "32px",
+                        touchAction: "manipulation"
                       }}
                       title="Make Bigger"
                     >
@@ -574,6 +589,10 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotate(item.id, 'right');
+                      }}
+                      onTouchEnd={(e) => {
                         e.stopPropagation();
                         handleRotate(item.id, 'right');
                       }}
@@ -586,7 +605,8 @@ export default function RoomPage() {
                         cursor: "pointer",
                         fontSize: "12px",
                         minWidth: "32px",
-                        height: "32px"
+                        height: "32px",
+                        touchAction: "manipulation"
                       }}
                       title="Rotate Right"
                     >
