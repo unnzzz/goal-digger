@@ -357,7 +357,7 @@ export default function RoomPage() {
           position: "relative",
           overflow: "visible",
           boxShadow: "none",
-          minWidth: "1116px", // Increased from 1110px by 0.5%
+          minWidth: "100%",
           height: "100%",
           marginLeft: "20px",
           marginTop: "20px",

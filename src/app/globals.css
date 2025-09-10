@@ -2942,6 +2942,7 @@ a:hover {
     margin-top: 0 !important;
     padding: 16px !important;
     height: auto !important;
+    flex-direction: column !important;
   }
   
   .room-page .room-title {
@@ -3061,7 +3062,7 @@ a:hover {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 40px;
 }
 
 /* Hero Section */
@@ -3069,7 +3070,7 @@ a:hover {
   display: flex;
   align-items: center;
   min-height: 100vh;
-  padding: 60px 20px;
+  padding: 60px 40px;
   gap: 60px;
 }
 
@@ -3551,11 +3552,11 @@ a:hover {
 
 @media (max-width: 575px) {
   .hero-section {
-    padding: 40px 15px;
+    padding: 40px 20px;
   }
   
   .container {
-    padding: 0 15px;
+    padding: 0 20px;
   }
   
   .hero-title {
