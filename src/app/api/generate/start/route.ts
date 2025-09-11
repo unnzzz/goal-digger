@@ -20,6 +20,9 @@ const generationJobs = new Map<string, {
   createdAt: Date;
 }>();
 
+// Export for use by status endpoint
+export { generationJobs as jobs };
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

@@ -13,6 +13,7 @@ class GenerationService {
   
   private listeners: Set<() => void> = new Set();
   private isDestroyed = false;
+  private jobId: string | null = null;
 
   // Subscribe to state changes
   subscribe(listener: () => void) {
@@ -74,79 +75,94 @@ class GenerationService {
       total_days: totalDays,
     };
 
-  // Use simple fetch approach that works
-  this.performSimpleGeneration(requestData);
+  // Use server-side job approach for true persistence
+  this.performServerSideGeneration(requestData);
   }
 
-  // Simple generation approach that works
-  private async performSimpleGeneration(requestData: any) {
+  // Server-side job approach for true persistence
+  private async performServerSideGeneration(requestData: any) {
     try {
-      console.log('GenerationService: Starting simple generation...');
+      console.log('GenerationService: Starting server-side generation...');
 
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // Start the generation job
+      const startResponse = await fetch('/api/generate/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
       });
 
-      console.log('GenerationService: API response received:', res.status);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
+      if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        throw new Error(`Failed to start generation: ${startResponse.statusText} - ${errorText}`);
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
+      const { jobId } = await startResponse.json();
+      console.log('GenerationService: Job started with ID:', jobId);
 
-      let buffer = "";
-      let result: any = null;
+      // Store job ID for persistence
+      this.jobId = jobId;
 
-      console.log('GenerationService: Starting to read stream...');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('GenerationService: Stream reading complete');
-          break;
-        }
-
-        buffer += new TextDecoder().decode(value);
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.type === "progress") {
-              this.progress = parsed.percent || 0;
-              this.statusMessage = parsed.message || "Processing...";
-              console.log('GenerationService: Progress update:', this.progress + '%');
-              this.notify();
-            } else if (parsed.type === "result") {
-              result = parsed.data;
-              console.log('GenerationService: Result received');
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
-            }
-          } catch (e) {
-            console.warn("Failed to parse line:", line, e);
+      // Poll for status updates
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/generate/status?jobId=${jobId}`);
+          
+          if (!statusResponse.ok) {
+            throw new Error(`Failed to get status: ${statusResponse.statusText}`);
           }
-        }
-      }
 
-      this.data = result;
-      this.statusMessage = "Complete!";
-      this.isGenerating = false;
-      this.goalName = result?.title || '';
-      console.log('GenerationService: Generation completed successfully');
-      this.notify();
-      
+          const status = await statusResponse.json();
+          console.log('GenerationService: Status update:', status);
+
+          this.progress = status.progress || 0;
+          this.statusMessage = status.message || 'Processing...';
+
+          if (status.status === 'completed') {
+            console.log('GenerationService: Generation completed successfully');
+            this.data = status.result;
+            this.statusMessage = "Complete!";
+            this.isGenerating = false;
+            this.goalName = status.result?.title || '';
+            this.jobId = null;
+            this.notify();
+            clearInterval(pollInterval);
+          } else if (status.status === 'failed') {
+            console.error('GenerationService: Generation failed:', status.error);
+            this.error = status.error || 'Generation failed';
+            this.isGenerating = false;
+            this.jobId = null;
+            this.notify();
+            clearInterval(pollInterval);
+          } else {
+            // Still running, update progress
+            this.notify();
+          }
+        } catch (error) {
+          console.error('GenerationService: Polling error:', error);
+          this.error = 'Failed to check generation status';
+          this.isGenerating = false;
+          this.jobId = null;
+          this.notify();
+          clearInterval(pollInterval);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Store the interval for potential cancellation
+      this.controller = {
+        abort: () => {
+          clearInterval(pollInterval);
+          this.isGenerating = false;
+          this.statusMessage = "Generation cancelled";
+          this.jobId = null;
+          this.notify();
+        }
+      } as any;
+
     } catch (e: any) {
       console.error('GenerationService: Generation failed:', e);
       this.error = e?.message || "Generation failed";
       this.isGenerating = false;
+      this.jobId = null;
       this.notify();
     }
   }

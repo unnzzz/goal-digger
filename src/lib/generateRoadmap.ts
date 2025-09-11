@@ -11,6 +11,22 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// Test if a URL is actually accessible
+async function testUrlAccessibility(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { 
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; GoalDigger/1.0)'
+      }
+    });
+    return response.ok;
+  } catch (error) {
+    console.log(`URL not accessible: ${url}`, error);
+    return false;
+  }
+}
+
 function parseRetryAfter(err: any): number | null {
   try {
     const h = err?.headers;
@@ -281,11 +297,15 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
     const urlMatch = text.match(/https?:\/\/[^\s]+/);
     
     if (urlMatch && isValidResourceUrl(urlMatch[0], kind)) {
-      return {
-        url: urlMatch[0],
-        title: title,
-        source: getSourceFromUrl(urlMatch[0])
-      };
+      // Test if the URL is actually accessible
+      const isAccessible = await testUrlAccessibility(urlMatch[0]);
+      if (isAccessible) {
+        return {
+          url: urlMatch[0],
+          title: title,
+          source: getSourceFromUrl(urlMatch[0])
+        };
+      }
     }
     
     // If exact match not found, try with "tutorial" or "guide"
@@ -302,11 +322,15 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
     const fallbackUrlMatch = fallbackText.match(/https?:\/\/[^\s]+/);
     
     if (fallbackUrlMatch && isValidResourceUrl(fallbackUrlMatch[0], kind)) {
-      return {
-        url: fallbackUrlMatch[0],
-        title: title,
-        source: getSourceFromUrl(fallbackUrlMatch[0])
-      };
+      // Test if the URL is actually accessible
+      const isAccessible = await testUrlAccessibility(fallbackUrlMatch[0]);
+      if (isAccessible) {
+        return {
+          url: fallbackUrlMatch[0],
+          title: title,
+          source: getSourceFromUrl(fallbackUrlMatch[0])
+        };
+      }
     }
   } catch (error) {
     console.error("Error finding better resource:", error);

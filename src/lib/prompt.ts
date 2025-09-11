@@ -57,10 +57,11 @@ SEARCH WORKFLOW (for EACH resource)
    - Podcast → "[topic] podcast episode".
 2. Use web_search with that query.
 3. Select only direct matches to the day's mini-topic.
-4. Verify URL leads to the exact content page.
+4. CRITICAL: Verify URL leads to the exact content page and is actually accessible (not 404).
 5. Extract or estimate duration_minutes.
 6. DEDUP: Ensure the candidate's URL and title are unique across ALL previously chosen resources unless SPLITTING.
 7. If no valid match, refine query and repeat.
+8. ALWAYS test URLs before including them - reject any that return 404 or are inaccessible.
 
 REFLECT
 - Must be specific to that day's Learn/Practice resources.
