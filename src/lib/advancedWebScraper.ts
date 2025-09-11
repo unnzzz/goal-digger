@@ -146,10 +146,11 @@ class AdvancedWebScraper {
     throw lastError;
   }
 
-  // Search YouTube for videos
+  // Search YouTube for videos using multiple methods
   async searchYouTube(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
+    // Method 1: Try YouTube search directly
     try {
       const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
       
@@ -179,7 +180,7 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10) // Random duration
+                duration_minutes: 15 + Math.floor(Math.random() * 10)
               });
             }
           }
@@ -189,30 +190,96 @@ class AdvancedWebScraper {
       }
       
     } catch (error) {
-      console.error('YouTube search error:', error);
+      console.error('YouTube direct search error:', error);
+    }
+    
+    // Method 2: If direct search failed, try alternative search engines
+    if (results.length === 0) {
+      try {
+        // Try searching via Startpage (privacy-focused search engine)
+        const startpageUrl = `https://www.startpage.com/sp/search?query=${encodeURIComponent(query + ' site:youtube.com')}`;
+        const response = await this.makeRequest(startpageUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href*="youtube.com/watch"]').each((index, element) => {
+          if (results.length >= 5) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).text().trim();
+          
+          if (href && title && href.includes('/watch?v=') && title.length > 5) {
+            const videoId = href.split('v=')[1]?.split('&')[0];
+            if (videoId && videoId.length === 11) {
+              results.push({
+                title: title.substring(0, 100),
+                url: `https://www.youtube.com/watch?v=${videoId}`,
+                source: 'YouTube',
+                duration_minutes: 15 + Math.floor(Math.random() * 10)
+              });
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('Startpage YouTube search error:', error);
+      }
+    }
+    
+    // Method 3: If still no results, try Bing search
+    if (results.length === 0) {
+      try {
+        const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query + ' site:youtube.com')}`;
+        const response = await this.makeRequest(bingUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href*="youtube.com/watch"]').each((index, element) => {
+          if (results.length >= 5) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).text().trim();
+          
+          if (href && title && href.includes('/watch?v=') && title.length > 5) {
+            const videoId = href.split('v=')[1]?.split('&')[0];
+            if (videoId && videoId.length === 11) {
+              results.push({
+                title: title.substring(0, 100),
+                url: `https://www.youtube.com/watch?v=${videoId}`,
+                source: 'YouTube',
+                duration_minutes: 15 + Math.floor(Math.random() * 10)
+              });
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('Bing YouTube search error:', error);
+      }
     }
     
     return results;
   }
 
-  // Search for articles using DuckDuckGo
+  // Search for articles using multiple methods
   async searchArticles(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
+    // Educational domains to prioritize
+    const educationalDomains = [
+      'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
+      'w3schools.com', 'mdn.mozilla.org', 'stackoverflow.com',
+      'github.com', 'docs.python.org', 'nodejs.org', 'reactjs.org',
+      'studiobinder.com', 'premiumbeat.com', 'masterclass.com',
+      'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com',
+      'skillshare.com', 'udemy.com', 'coursera.org', 'edx.org',
+      'khanacademy.org', 'codecademy.com', 'pluralsight.com'
+    ];
+    
+    // Method 1: Try DuckDuckGo
     try {
       const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
       
       const response = await this.makeRequest(searchUrl);
       const $ = cheerio.load(response.data);
-      
-      // Educational domains to prioritize
-      const educationalDomains = [
-        'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
-        'w3schools.com', 'mdn.mozilla.org', 'stackoverflow.com',
-        'github.com', 'docs.python.org', 'nodejs.org', 'reactjs.org',
-        'studiobinder.com', 'premiumbeat.com', 'masterclass.com',
-        'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com'
-      ];
       
       // Multiple selectors for DuckDuckGo results
       const selectors = [
@@ -254,7 +321,87 @@ class AdvancedWebScraper {
       }
       
     } catch (error) {
-      console.error('Article search error:', error);
+      console.error('DuckDuckGo search error:', error);
+    }
+    
+    // Method 2: If no results, try Startpage
+    if (results.length === 0) {
+      try {
+        const searchUrl = `https://www.startpage.com/sp/search?query=${encodeURIComponent(query)}`;
+        
+        const response = await this.makeRequest(searchUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href^="http"]').each((index, element) => {
+          if (results.length >= 5) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).text().trim();
+          
+          if (href && title && title.length > 10) {
+            try {
+              const url = new URL(href);
+              const isEducational = educationalDomains.some(domain => 
+                url.hostname.includes(domain)
+              );
+              
+              if (isEducational) {
+                results.push({
+                  title: title.substring(0, 100),
+                  url: href,
+                  source: url.hostname,
+                  duration_minutes: 10 + Math.floor(Math.random() * 8)
+                });
+              }
+            } catch (e) {
+              // Skip invalid URLs
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('Startpage search error:', error);
+      }
+    }
+    
+    // Method 3: If still no results, try Bing
+    if (results.length === 0) {
+      try {
+        const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+        
+        const response = await this.makeRequest(searchUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href^="http"]').each((index, element) => {
+          if (results.length >= 5) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).text().trim();
+          
+          if (href && title && !href.includes('bing.com') && title.length > 10) {
+            try {
+              const url = new URL(href);
+              const isEducational = educationalDomains.some(domain => 
+                url.hostname.includes(domain)
+              );
+              
+              if (isEducational) {
+                results.push({
+                  title: title.substring(0, 100),
+                  url: href,
+                  source: url.hostname,
+                  duration_minutes: 10 + Math.floor(Math.random() * 8)
+                });
+              }
+            } catch (e) {
+              // Skip invalid URLs
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('Bing search error:', error);
+      }
     }
     
     return results;

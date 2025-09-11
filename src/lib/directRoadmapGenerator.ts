@@ -19,15 +19,6 @@ export interface RoadmapParams {
   daily_minutes: number;
 }
 
-// Helper function to generate realistic YouTube video IDs
-function generateVideoId(title: string): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  let result = '';
-  for (let i = 0; i < 11; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 // Direct roadmap generation with real web scraping
 export async function generateRoadmapWithDirectScraping(params: RoadmapParams): Promise<RoadmapT> {
@@ -104,83 +95,72 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         `${day.title} for beginners`
       ];
       
-      // Find watch resources (videos) for LEARN section using server-side API
-      try {
-        const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`);
-        if (watchResponse.ok) {
-          const watchData = await watchResponse.json();
-          if (watchData.resources && watchData.resources.length > 0) {
-            day.learn.push(...watchData.resources.slice(0, 2)); // Add up to 2 videos
+      // Find watch resources (videos) for LEARN section using server-side API with retry
+      let watchAttempts = 0;
+      const maxWatchAttempts = 3;
+      while (day.learn.length < 2 && watchAttempts < maxWatchAttempts) {
+        try {
+          const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`);
+          if (watchResponse.ok) {
+            const watchData = await watchResponse.json();
+            if (watchData.resources && watchData.resources.length > 0) {
+              day.learn.push(...watchData.resources.slice(0, 2)); // Add up to 2 videos
+              break;
+            }
           }
+        } catch (error) {
+          console.error(`Watch resources attempt ${watchAttempts + 1} failed:`, error);
         }
-      } catch (error) {
-        console.error('Failed to fetch watch resources:', error);
+        watchAttempts++;
+        if (watchAttempts < maxWatchAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        }
       }
       
-      // Find read resources (articles) for LEARN section using server-side API
-      try {
-        const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`);
-        if (readResponse.ok) {
-          const readData = await readResponse.json();
-          if (readData.resources && readData.resources.length > 0) {
-            day.learn.push(...readData.resources.slice(0, 1)); // Add 1 article to learn
+      // Find read resources (articles) for LEARN section using server-side API with retry
+      let readAttempts = 0;
+      const maxReadAttempts = 3;
+      while (day.learn.length < 3 && readAttempts < maxReadAttempts) {
+        try {
+          const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`);
+          if (readResponse.ok) {
+            const readData = await readResponse.json();
+            if (readData.resources && readData.resources.length > 0) {
+              day.learn.push(...readData.resources.slice(0, 1)); // Add 1 article to learn
+              break;
+            }
           }
+        } catch (error) {
+          console.error(`Read resources attempt ${readAttempts + 1} failed:`, error);
         }
-      } catch (error) {
-        console.error('Failed to fetch read resources:', error);
+        readAttempts++;
+        if (readAttempts < maxReadAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        }
       }
       
-      // Find practice resources for PRACTICE section using server-side API
-      try {
-        const practiceResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[2])}&type=read`);
-        if (practiceResponse.ok) {
-          const practiceData = await practiceResponse.json();
-          if (practiceData.resources && practiceData.resources.length > 0) {
-            day.practice.push(...practiceData.resources.slice(0, 2)); // Add up to 2 practice resources
+      // Find practice resources for PRACTICE section using server-side API with retry
+      let practiceAttempts = 0;
+      const maxPracticeAttempts = 3;
+      while (day.practice.length < 2 && practiceAttempts < maxPracticeAttempts) {
+        try {
+          const practiceResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[2])}&type=read`);
+          if (practiceResponse.ok) {
+            const practiceData = await practiceResponse.json();
+            if (practiceData.resources && practiceData.resources.length > 0) {
+              day.practice.push(...practiceData.resources.slice(0, 2)); // Add up to 2 practice resources
+              break;
+            }
           }
+        } catch (error) {
+          console.error(`Practice resources attempt ${practiceAttempts + 1} failed:`, error);
         }
-      } catch (error) {
-        console.error('Failed to fetch practice resources:', error);
+        practiceAttempts++;
+        if (practiceAttempts < maxPracticeAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        }
       }
       
-      // Fallback: If no resources found, create realistic ones
-      if (day.learn.length === 0) {
-        // Create realistic video resources
-        const videoTitles = [
-          `${day.title} - Complete Tutorial`,
-          `${day.title} - Step by Step Guide`
-        ];
-        
-        videoTitles.forEach((title, index) => {
-          day.learn.push({
-            kind: 'watch',
-            title: title,
-            url: `https://www.youtube.com/watch?v=${generateVideoId(title)}`,
-            source: 'YouTube',
-            duration_minutes: 15 + (index * 5),
-            split: null
-          });
-        });
-      }
-      
-      if (day.practice.length === 0) {
-        // Create realistic practice resources
-        const practiceTitles = [
-          `${day.title} - Hands-on Practice`,
-          `${day.title} - Practical Exercise`
-        ];
-        
-        practiceTitles.forEach((title, index) => {
-          day.practice.push({
-            kind: 'read',
-            title: title,
-            url: `https://example.com/practice/${day.title.toLowerCase().replace(/\s+/g, '-')}-${index + 1}`,
-            source: 'Practice Hub',
-            duration_minutes: 10 + (index * 3),
-            split: null
-          });
-        });
-      }
       
       
       console.log(`Day ${day.day} completed with ${day.learn.length} learn and ${day.practice.length} practice resources`);
