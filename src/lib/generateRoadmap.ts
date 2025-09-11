@@ -255,7 +255,7 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
     }
     
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       input: [{ 
         role: "user", 
         content: `Find a specific ${kind} resource that EXACTLY matches this title: "${title}". 
@@ -292,7 +292,7 @@ async function findBetterResource(title: string, goal: string, kind: string): Pr
     const fallbackQuery = `"${title}" ${kind === 'watch' ? 'tutorial video' : kind === 'read' ? 'guide article' : 'podcast episode'}`;
     
     const fallbackResponse = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       input: [{ role: "user", content: `Find a ${kind} resource about: "${title}". Search for: ${fallbackQuery}. Return only the URL and title.` }],
       tools: [{ type: "web_search" }],
       tool_choice: "required",
@@ -391,7 +391,7 @@ async function findAlternativeVideo(title: string, goal: string): Promise<{ url:
     const searchQuery = `${title} ${goal} tutorial video site:vimeo.com OR site:coursera.org OR site:khanacademy.org OR site:ted.com`;
     
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       input: [{ role: "user", content: `Find a working video alternative for: "${title}" related to "${goal}". Search for: ${searchQuery}` }],
       tools: [{ type: "web_search" }],
       tool_choice: "required",
@@ -429,37 +429,14 @@ export async function generateRoadmap(params: {
     throw new Error("OpenAI client not initialized. Missing OPENAI_API_KEY environment variable.");
   }
 
-  // Enhanced prompt with specific instructions for relevance and watch resources
-  const enhancedPrompt = SYSTEM_PROMPT + `
-
-ADDITIONAL INSTRUCTIONS FOR THIS REQUEST:
-- Goal: "${params.goal}"
-- Daily minutes: ${params.daily_minutes}
-- Total days: ${params.total_days || 'calculated from target date'}
-
-SPECIFIC REQUIREMENTS:
-1. Each day's mini-topic must be DIRECTLY related to "${params.goal}"
-2. Prioritize watch resources (videos) - aim for 60%+ watch resources in Learn sections
-3. Use highly specific search queries that include the exact day's mini-topic
-4. Ensure resource titles contain key words from the day's mini-topic
-5. Avoid generic resources that could apply to any goal
-6. Focus on practical, actionable content that builds toward the goal
-
-EXAMPLE SEARCH QUERIES:
-- For "Learn basic Italian phrases": search "basic Italian phrases tutorial video"
-- For "Master pasta making": search "pasta making step by step video tutorial"
-- For "Understand Italian grammar": search "Italian grammar complete guide"
-
-Remember: Every resource must be directly relevant to the specific day's mini-topic, not just the general goal.`;
-
   const messages: Array<{ role: "system" | "user"; content: string }> = [
-    { role: "system", content: enhancedPrompt },
+    { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: JSON.stringify(params) },
   ];
 
   const resp = await withRetries(() =>
     client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       input: messages,
       tools: [{ type: "web_search" }],
       text: { format: zodTextFormat(Roadmap, "roadmap") },
