@@ -115,13 +115,28 @@ function generateBasicTopics(goal: string, totalDays: number): string[] {
 }
 
 // Generate creative practice exercises for each day
-function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
+function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, goal: string): any[] {
   const exercises: any[] = [];
   
-  // Generate 2 creative practice exercises based on the day's topic
+  // Generate creative practice exercises based on the day's topic and overall goal
+  let exercise1Title = `Hands-on Exercise: ${dayTitle} Practice`;
+  let exercise2Title = `Creative Challenge: Apply ${dayTitle} Skills`;
+  
+  // Make exercises more specific based on the goal
+  if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
+    exercise1Title = `Practice: Create a ${dayTitle.toLowerCase()} exercise`;
+    exercise2Title = `Project: Apply ${dayTitle} to a short film scene`;
+  } else if (goal.toLowerCase().includes('programming') || goal.toLowerCase().includes('coding')) {
+    exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example`;
+    exercise2Title = `Project: Create a program using ${dayTitle}`;
+  } else if (goal.toLowerCase().includes('language') || goal.toLowerCase().includes('spanish') || goal.toLowerCase().includes('french')) {
+    exercise1Title = `Practice: Use ${dayTitle.toLowerCase()} in conversation`;
+    exercise2Title = `Challenge: Write a story using ${dayTitle}`;
+  }
+  
   const exercise1 = {
     kind: 'read',
-    title: `Hands-on Exercise: ${dayTitle} Practice`,
+    title: exercise1Title,
     url: null, // No URL for practice exercises
     source: 'Practice Hub',
     duration_minutes: 15 + (dayNumber * 2),
@@ -130,7 +145,7 @@ function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
   
   const exercise2 = {
     kind: 'read', 
-    title: `Creative Challenge: Apply ${dayTitle} Skills`,
+    title: exercise2Title,
     url: null, // No URL for practice exercises
     source: 'Skill Builder',
     duration_minutes: 20 + (dayNumber * 2),
@@ -141,41 +156,6 @@ function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
   return exercises;
 }
 
-// Generate fallback learn resources for each day
-function generateFallbackLearnResources(dayTitle: string, dayNumber: number): any[] {
-  const resources: any[] = [];
-  
-  // Generate 2-3 fallback learn resources based on the day's topic
-  const resource1 = {
-    kind: 'watch',
-    title: `Video Tutorial: ${dayTitle} - Day ${dayNumber}`,
-    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(dayTitle)}`,
-    source: 'YouTube',
-    duration_minutes: 15 + (dayNumber * 2),
-    split: null
-  };
-  
-  const resource2 = {
-    kind: 'watch',
-    title: `Advanced Guide: ${dayTitle} Techniques`,
-    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(dayTitle + ' tutorial')}`,
-    source: 'YouTube',
-    duration_minutes: 20 + (dayNumber * 2),
-    split: null
-  };
-  
-  const resource3 = {
-    kind: 'read',
-    title: `Complete Guide: ${dayTitle} Fundamentals`,
-    url: `https://www.google.com/search?q=${encodeURIComponent(dayTitle + ' guide')}`,
-    source: 'Learning Hub',
-    duration_minutes: 12 + (dayNumber * 2),
-    split: null
-  };
-  
-  resources.push(resource1, resource2, resource3);
-  return resources;
-}
 
 
 // Direct roadmap generation with real web scraping
@@ -303,9 +283,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       
       // Create specific search terms for this day with unique modifiers
       const searchTerms = [
-        `${day.title} tutorial day ${day.day}`,
-        `${day.title} guide step ${day.day}`,
-        `${day.title} for beginners lesson ${day.day}`
+        `${day.title} tutorial`,
+        `${day.title} guide`,
+        `${day.title} for beginners`,
+        `learn ${day.title}`,
+        `${day.title} basics`,
+        `${day.title} fundamentals`
       ];
       
       // Find watch resources (videos) for LEARN section - single attempt with timeout
@@ -489,14 +472,98 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         console.error(`Practice resources failed:`, error);
       }
       
-      // MANDATORY FALLBACK: Ensure every day has at least 2 learn and 2 practice resources
-      if (day.learn.length === 0) {
-        const fallbackLearn = generateFallbackLearnResources(day.title, day.day);
-        day.learn.push(...fallbackLearn);
+      // MANDATORY: Ensure every day has at least 2 learn resources - try more search terms if needed
+      if (day.learn.length < 2) {
+        // Try additional search terms for better results
+        const additionalSearchTerms = [
+          `${day.title} tutorial`,
+          `${day.title} guide`,
+          `${day.title} basics`,
+          `${day.title} fundamentals`,
+          `learn ${day.title}`,
+          `${day.title} for beginners`
+        ];
+        
+        for (const searchTerm of additionalSearchTerms) {
+          if (day.learn.length >= 2) break;
+          
+          try {
+            // Try watch resources first
+            const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerm)}&type=watch`, {
+              signal: AbortSignal.timeout(5000)
+            });
+            if (watchResponse.ok) {
+              const watchData = await watchResponse.json();
+              if (watchData.resources && watchData.resources.length > 0) {
+                const newResources = watchData.resources.filter((resource: any) => {
+                  if (usedResourceUrls.has(resource.url)) return false;
+                  const baseUrl = resource.url.split('?')[0].split('#')[0];
+                  for (const usedUrl of usedResourceUrls) {
+                    const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                    if (baseUrl === usedBaseUrl) return false;
+                  }
+                  const title = resource.title?.toLowerCase() || '';
+                  if (usedResourceTitles.has(title)) return false;
+                  const existingUrls = day.learn.map((r: any) => r.url);
+                  if (existingUrls.includes(resource.url)) return false;
+                  return true;
+                });
+                
+                const resourcesToAdd = newResources.slice(0, 2 - day.learn.length);
+                resourcesToAdd.forEach((resource: any) => {
+                  if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
+                    resource.title = `Video Tutorial: ${day.title}`;
+                  }
+                  usedResourceUrls.add(resource.url);
+                  usedResourceTitles.add(resource.title.toLowerCase());
+                  day.learn.push(resource);
+                });
+              }
+            }
+            
+            // Try read resources if still need more
+            if (day.learn.length < 2) {
+              const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerm)}&type=read`, {
+                signal: AbortSignal.timeout(5000)
+              });
+              if (readResponse.ok) {
+                const readData = await readResponse.json();
+                if (readData.resources && readData.resources.length > 0) {
+                  const newResources = readData.resources.filter((resource: any) => {
+                    if (usedResourceUrls.has(resource.url)) return false;
+                    const baseUrl = resource.url.split('?')[0].split('#')[0];
+                    for (const usedUrl of usedResourceUrls) {
+                      const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                      if (baseUrl === usedBaseUrl) return false;
+                    }
+                    const title = resource.title?.toLowerCase() || '';
+                    if (usedResourceTitles.has(title)) return false;
+                    const existingUrls = day.learn.map((r: any) => r.url);
+                    if (existingUrls.includes(resource.url)) return false;
+                    return true;
+                  });
+                  
+                  const resourcesToAdd = newResources.slice(0, 2 - day.learn.length);
+                  resourcesToAdd.forEach((resource: any) => {
+                    if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
+                      resource.title = `Guide: ${day.title}`;
+                    }
+                    usedResourceUrls.add(resource.url);
+                    usedResourceTitles.add(resource.title.toLowerCase());
+                    day.learn.push(resource);
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Additional search failed for "${searchTerm}":`, error);
+          }
+        }
       }
       
-      if (day.practice.length === 0) {
-        const practiceExercises = generatePracticeExercises(day.title, day.day);
+      // MANDATORY: Ensure every day has at least 2 practice resources
+      if (day.practice.length < 2) {
+        const practiceExercises = generateCreativePracticeExercises(day.title, day.day, params.goal);
         day.practice.push(...practiceExercises);
       }
       

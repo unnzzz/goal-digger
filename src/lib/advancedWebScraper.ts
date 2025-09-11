@@ -150,9 +150,13 @@ class AdvancedWebScraper {
   async searchYouTube(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
+    // Clean up the query to be more specific
+    const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
+    const enhancedQuery = `${cleanQuery} tutorial guide`;
+    
     // Method 1: Try YouTube search directly
     try {
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(enhancedQuery)}`;
       
       const response = await this.makeRequest(searchUrl);
       const $ = cheerio.load(response.data);
@@ -295,6 +299,10 @@ class AdvancedWebScraper {
   async searchArticles(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
+    // Clean up the query to be more specific
+    const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
+    const enhancedQuery = `${cleanQuery} guide tutorial`;
+    
     // Educational domains to prioritize
     const educationalDomains = [
       'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
@@ -308,7 +316,7 @@ class AdvancedWebScraper {
     
     // Method 1: Try DuckDuckGo
     try {
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(enhancedQuery)}`;
       
       const response = await this.makeRequest(searchUrl);
       const $ = cheerio.load(response.data);
