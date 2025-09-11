@@ -174,13 +174,14 @@ class AdvancedWebScraper {
           let title = titleElement.text().trim();
           
           // Clean up title - remove CSS classes and ensure it's actual text
-          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5) {
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5 || title.includes('http')) {
             // Try alternative title extraction
             const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).text().trim();
-            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 5) {
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && altTitle.length > 5) {
               title = altTitle;
             } else {
-              return; // Skip this result if title is invalid
+              // Generate a meaningful title based on the query
+              title = `Video Tutorial: ${query}`;
             }
           }
           
@@ -328,12 +329,13 @@ class AdvancedWebScraper {
           let title = $(element).text().trim();
           
           // Clean up title - remove CSS classes and ensure it's actual text
-          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10) {
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http')) {
             const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
-            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 10) {
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && altTitle.length > 10) {
               title = altTitle;
             } else {
-              return; // Skip this result if title is invalid
+              // Generate a meaningful title based on the query
+              title = `Guide: ${query}`;
             }
           }
           

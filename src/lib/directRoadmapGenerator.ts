@@ -122,7 +122,7 @@ function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
   const exercise1 = {
     kind: 'read',
     title: `Hands-on Exercise: ${dayTitle} Practice`,
-    url: `https://example.com/practice/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-exercise-1`,
+    url: null, // No URL for practice exercises
     source: 'Practice Hub',
     duration_minutes: 15 + (dayNumber * 2),
     split: null
@@ -131,7 +131,7 @@ function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
   const exercise2 = {
     kind: 'read', 
     title: `Creative Challenge: Apply ${dayTitle} Skills`,
-    url: `https://example.com/challenge/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-challenge`,
+    url: null, // No URL for practice exercises
     source: 'Skill Builder',
     duration_minutes: 20 + (dayNumber * 2),
     split: null
@@ -167,7 +167,7 @@ function generateFallbackLearnResources(dayTitle: string, dayNumber: number): an
   const resource3 = {
     kind: 'read',
     title: `Complete Guide: ${dayTitle} Fundamentals`,
-    url: `https://example.com/guide/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-day-${dayNumber}`,
+    url: null, // No URL for fallback resources
     source: 'Learning Hub',
     duration_minutes: 12 + (dayNumber * 2),
     split: null
@@ -325,6 +325,10 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
               // Check title
               const title = resource.title?.toLowerCase() || '';
               if (usedResourceTitles.has(title)) return false;
+              
+              // Check for duplicate titles within the same day
+              const existingTitles = day.learn.map((r: any) => r.title?.toLowerCase() || '');
+              if (existingTitles.includes(title)) return false;
               
               return true;
             });
