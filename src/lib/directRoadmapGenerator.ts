@@ -19,6 +19,101 @@ export interface RoadmapParams {
   daily_minutes: number;
 }
 
+// Fallback roadmap generator when Gemini fails
+function createFallbackRoadmap(params: RoadmapParams): RoadmapT {
+  const totalDays = params.total_days || 10;
+  const goal = params.goal.toLowerCase();
+  
+  // Generate basic daily topics based on the goal
+  const topics = generateBasicTopics(goal, totalDays);
+  
+  const roadmap: RoadmapT = {
+    goal: params.goal,
+    total_days: totalDays,
+    daily_minutes: params.daily_minutes,
+    days: topics.map((topic, index) => ({
+      day: index + 1,
+      title: topic,
+      minutes: params.daily_minutes,
+      learn: [],
+      practice: [],
+      reflect: `What did you learn about ${topic.toLowerCase()} today?`
+    }))
+  };
+  
+  return roadmap;
+}
+
+// Generate basic topics based on the goal
+function generateBasicTopics(goal: string, totalDays: number): string[] {
+  const topics: string[] = [];
+  
+  // Common learning progressions for different goals
+  if (goal.includes('filmmaking') || goal.includes('film')) {
+    const filmmakingTopics = [
+      'Understanding Camera Basics and Settings',
+      'Framing and Composition Techniques',
+      'Lighting Fundamentals and Setup',
+      'Audio Recording and Microphone Placement',
+      'Storyboarding and Shot Planning',
+      'Camera Movement and Stabilization',
+      'Color Theory and Visual Aesthetics',
+      'Post-Production Editing Basics',
+      'Sound Design and Audio Editing',
+      'Final Project and Portfolio Creation'
+    ];
+    return filmmakingTopics.slice(0, totalDays);
+  }
+  
+  if (goal.includes('programming') || goal.includes('coding') || goal.includes('code')) {
+    const programmingTopics = [
+      'Programming Fundamentals and Syntax',
+      'Variables, Data Types, and Operators',
+      'Control Structures and Loops',
+      'Functions and Methods',
+      'Object-Oriented Programming Concepts',
+      'Data Structures and Algorithms',
+      'Error Handling and Debugging',
+      'Version Control and Git',
+      'Testing and Quality Assurance',
+      'Project Development and Deployment'
+    ];
+    return programmingTopics.slice(0, totalDays);
+  }
+  
+  if (goal.includes('language') || goal.includes('spanish') || goal.includes('french')) {
+    const languageTopics = [
+      'Basic Vocabulary and Common Phrases',
+      'Pronunciation and Phonetics',
+      'Grammar Fundamentals and Sentence Structure',
+      'Present Tense and Basic Conjugations',
+      'Past Tense and Time Expressions',
+      'Future Tense and Conditional Forms',
+      'Conversation and Speaking Practice',
+      'Reading Comprehension and Text Analysis',
+      'Listening Skills and Audio Practice',
+      'Cultural Context and Real-world Application'
+    ];
+    return languageTopics.slice(0, totalDays);
+  }
+  
+  // Generic fallback topics
+  const genericTopics = [
+    'Introduction and Fundamentals',
+    'Basic Concepts and Terminology',
+    'Core Principles and Theory',
+    'Practical Applications and Examples',
+    'Advanced Techniques and Methods',
+    'Problem-Solving and Critical Thinking',
+    'Best Practices and Industry Standards',
+    'Tools and Resources',
+    'Project-Based Learning',
+    'Review and Mastery'
+  ];
+  
+  return genericTopics.slice(0, totalDays);
+}
+
 
 // Direct roadmap generation with real web scraping
 export async function generateRoadmapWithDirectScraping(params: RoadmapParams): Promise<RoadmapT> {
@@ -65,8 +160,44 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
   ]
 }`;
 
-    const structureResult = await model.generateContent(structurePrompt);
-    const structureText = structureResult.response.text();
+    // Retry mechanism for Gemini API calls
+    let structureResult;
+    let structureText;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        structureResult = await model.generateContent(structurePrompt);
+        structureText = structureResult.response.text();
+        break; // Success, exit retry loop
+      } catch (error: any) {
+        retryCount++;
+        console.error(`Gemini API attempt ${retryCount} failed:`, error.message);
+        
+        if (error.message.includes('503') || error.message.includes('overloaded')) {
+          // Service overloaded - wait longer
+          const waitTime = Math.pow(2, retryCount) * 2000; // Exponential backoff: 4s, 8s, 16s
+          console.log(`Service overloaded, waiting ${waitTime}ms before retry ${retryCount + 1}`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else if (retryCount >= maxRetries) {
+          // Max retries reached, throw error
+          throw error;
+        } else {
+          // Other error - wait shorter time
+          const waitTime = 1000 * retryCount;
+          console.log(`API error, waiting ${waitTime}ms before retry ${retryCount + 1}`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    
+    if (!structureText) {
+      console.log('Gemini failed, using fallback roadmap structure');
+      // Fallback: Create a basic roadmap structure
+      const fallbackRoadmap = createFallbackRoadmap(params);
+      return fallbackRoadmap;
+    }
     
     console.log('Generated roadmap structure:', structureText.substring(0, 200) + '...');
 
@@ -78,7 +209,17 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       roadmapJson = structureText.split('```')[1].split('```')[0].trim();
     }
 
-    const roadmap: RoadmapT = JSON.parse(roadmapJson);
+    // Parse the JSON with error handling
+    let roadmap: RoadmapT;
+    try {
+      roadmap = JSON.parse(roadmapJson);
+    } catch (parseError) {
+      console.error('Failed to parse roadmap JSON:', parseError);
+      console.log('Using fallback roadmap structure due to JSON parsing error');
+      // Use fallback if JSON parsing fails
+      const fallbackRoadmap = createFallbackRoadmap(params);
+      return fallbackRoadmap;
+    }
     
     // Step 2: Find real resources for each day
     console.log('Finding real resources for each day...');
