@@ -215,30 +215,21 @@ Return a JSON object with:
     const content = JSON.parse(jsonText);
     const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
     
-    // Ensure content has the correct structure
-    const normalizedContent = {
-      title: content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
-      content: content.content || content.podcast_script || content.article || 'Content not available',
-      duration_minutes: content.duration_minutes || (contentType === 'podcast' ? 20 : 15),
-      source: content.source || 'AI Generated',
-      type: contentType
-    };
-    
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(normalizedContent));
+      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(content));
     }
     
     return {
       kind: contentType === 'podcast' ? 'listen' : 'read',
-      title: normalizedContent.title,
+      title: content.title,
       url: `/ai-content/${slug}`,
-      source: normalizedContent.source,
-      duration_minutes: normalizedContent.duration_minutes,
+      source: content.source,
+      duration_minutes: content.duration_minutes,
       split: null,
       isAIGenerated: true,
       contentType: contentType,
-      content: normalizedContent.content
+      content: content.content
     };
   } catch (error) {
     console.error('Gemini content generation failed:', error);
