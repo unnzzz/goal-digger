@@ -241,8 +241,12 @@ Return a JSON object with:
     };
     
     // Remove any problematic keys that might cause React errors
-    delete normalizedContent.podcast_script;
-    delete normalizedContent.article;
+    if ('podcast_script' in normalizedContent) {
+      delete (normalizedContent as any).podcast_script;
+    }
+    if ('article' in normalizedContent) {
+      delete (normalizedContent as any).article;
+    }
     
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
@@ -457,8 +461,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       const searchResults = await Promise.allSettled(searchPromises);
       
       // Process all watch results
-      const watchResources = [];
-      const readResources = [];
+      const watchResources: any[] = [];
+      const readResources: any[] = [];
       
       searchResults.forEach((result) => {
         if (result.status === 'fulfilled') {

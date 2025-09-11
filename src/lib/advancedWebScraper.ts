@@ -168,15 +168,15 @@ class AdvancedWebScraper {
         const response = await this.makeRequest(searchUrl);
         const $ = cheerio.load(response.data);
       
-      // Multiple selectors for different YouTube layouts
-      const selectors = [
-        'a[href*="/watch?v="]',
-        'a[href*="youtube.com/watch"]',
-        '.ytd-video-renderer a[href*="/watch?v="]',
-        '#contents a[href*="/watch?v="]'
-      ];
-      
-      for (const selector of selectors) {
+        // Multiple selectors for different YouTube layouts
+        const selectors = [
+          'a[href*="/watch?v="]',
+          'a[href*="youtube.com/watch"]',
+          '.ytd-video-renderer a[href*="/watch?v="]',
+          '#contents a[href*="/watch?v="]'
+        ];
+        
+        for (const selector of selectors) {
         $(selector).each((index, element) => {
           if (results.length >= 5) return false; // Limit results
           
@@ -210,10 +210,16 @@ class AdvancedWebScraper {
         });
         
         if (results.length > 0) break; // Stop if we found results
+        }
+        
+        // If we found results, break out of the outer loop
+        if (results.length > 0) {
+          break;
+        }
+      } catch (error) {
+        console.error(`YouTube search failed for "${searchTerm}":`, error);
+        continue; // Try next search term
       }
-      
-    } catch (error) {
-      console.error('YouTube direct search error:', error);
     }
     
     // Method 2: If direct search failed, try alternative search engines
