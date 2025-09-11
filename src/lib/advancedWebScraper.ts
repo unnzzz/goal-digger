@@ -476,20 +476,39 @@ class AdvancedWebScraper {
     
     let results: ScrapingResult[] = [];
     
-    if (type === 'watch') {
-      results = await this.searchYouTube(query);
-    } else if (type === 'read') {
-      results = await this.searchArticles(query);
-    } else if (type === 'listen') {
-      // For now, generate podcast-style results
-      results = [
-        {
-          title: `${query} Podcast Episode`,
-          url: `https://spotify.com/search/${encodeURIComponent(query)}`,
-          source: 'Spotify',
-          duration_minutes: 20
+    try {
+      if (type === 'watch') {
+        results = await this.searchYouTube(query);
+        console.log(`YouTube search found ${results.length} results`);
+        
+        // If YouTube fails, try alternative video sources
+        if (results.length === 0) {
+          console.log('YouTube search failed, trying alternative video sources...');
+          results = await this.searchAlternativeVideos(query);
         }
-      ];
+      } else if (type === 'read') {
+        results = await this.searchArticles(query);
+        console.log(`Article search found ${results.length} results`);
+        
+        // If article search fails, try alternative sources
+        if (results.length === 0) {
+          console.log('Article search failed, trying alternative sources...');
+          results = await this.searchAlternativeArticles(query);
+        }
+      } else if (type === 'listen') {
+        // For now, generate podcast-style results
+        results = [
+          {
+            title: `${query} Podcast Episode`,
+            url: `https://spotify.com/search/${encodeURIComponent(query)}`,
+            source: 'Spotify',
+            duration_minutes: 20
+          }
+        ];
+      }
+    } catch (error) {
+      console.error(`Error in ${type} search:`, error);
+      results = [];
     }
     
     // Convert to ResourceT format
@@ -501,6 +520,74 @@ class AdvancedWebScraper {
       duration_minutes: result.duration_minutes || 15,
       split: null
     }));
+  }
+
+  // Alternative video search when YouTube fails
+  async searchAlternativeVideos(query: string): Promise<ScrapingResult[]> {
+    const results: ScrapingResult[] = [];
+    
+    try {
+      // Try Vimeo search
+      const vimeoUrl = `https://vimeo.com/search?q=${encodeURIComponent(query)}`;
+      const response = await this.makeRequest(vimeoUrl);
+      const $ = cheerio.load(response.data);
+      
+      $('a[href*="/videos/"]').each((index, element) => {
+        if (results.length >= 3) return false;
+        
+        const href = $(element).attr('href');
+        const title = $(element).find('h3, .title').text().trim();
+        
+        if (href && title && !title.includes('http')) {
+          results.push({
+            title: title,
+            url: href.startsWith('http') ? href : `https://vimeo.com${href}`,
+            source: 'Vimeo',
+            duration_minutes: 15
+          });
+        }
+      });
+      
+      console.log(`Vimeo search found ${results.length} results`);
+    } catch (error) {
+      console.error('Vimeo search failed:', error);
+    }
+    
+    return results;
+  }
+  
+  // Alternative article search when primary fails
+  async searchAlternativeArticles(query: string): Promise<ScrapingResult[]> {
+    const results: ScrapingResult[] = [];
+    
+    try {
+      // Try Medium search
+      const mediumUrl = `https://medium.com/search?q=${encodeURIComponent(query)}`;
+      const response = await this.makeRequest(mediumUrl);
+      const $ = cheerio.load(response.data);
+      
+      $('a[href*="/@"]').each((index, element) => {
+        if (results.length >= 3) return false;
+        
+        const href = $(element).attr('href');
+        const title = $(element).find('h3, .title').text().trim();
+        
+        if (href && title && !title.includes('http')) {
+          results.push({
+            title: title,
+            url: href.startsWith('http') ? href : `https://medium.com${href}`,
+            source: 'Medium',
+            duration_minutes: 10
+          });
+        }
+      });
+      
+      console.log(`Medium search found ${results.length} results`);
+    } catch (error) {
+      console.error('Medium search failed:', error);
+    }
+    
+    return results;
   }
 
   // Get scraping statistics

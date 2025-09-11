@@ -204,7 +204,7 @@ Return a JSON object with:
     const response = await result.response;
     const text = response.text();
     
-    // Extract JSON from response
+    // Extract JSON from response with better parsing
     let jsonText = text;
     if (text.includes('```json')) {
       jsonText = text.split('```json')[1].split('```')[0].trim();
@@ -212,7 +212,23 @@ Return a JSON object with:
       jsonText = text.split('```')[1].split('```')[0].trim();
     }
     
-    const content = JSON.parse(jsonText);
+    // Clean up the JSON text
+    jsonText = jsonText.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    let content;
+    try {
+      content = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error('JSON parsing failed for AI content, using fallback structure');
+      content = {
+        title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
+        content: `This ${contentType} about "${dayTitle}" is being generated. Please try again later.`,
+        duration_minutes: contentType === 'podcast' ? 20 : 15,
+        source: 'AI Generated (Fallback)',
+        type: contentType
+      };
+    }
+    
     const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
     
     // Ensure content has the correct structure
@@ -292,7 +308,7 @@ Return a JSON array of questions:
     const response = await result.response;
     const text = response.text();
     
-    // Extract JSON from response
+    // Extract JSON from response with better parsing
     let jsonText = text;
     if (text.includes('```json')) {
       jsonText = text.split('```json')[1].split('```')[0].trim();
@@ -300,7 +316,28 @@ Return a JSON array of questions:
       jsonText = text.split('```')[1].split('```')[0].trim();
     }
     
-    const quiz = JSON.parse(jsonText);
+    // Clean up the JSON text
+    jsonText = jsonText.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    let quiz;
+    try {
+      quiz = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error('JSON parsing failed for quiz, using fallback quiz');
+      quiz = [
+        {
+          question: `What did you learn about ${dayTitle} today?`,
+          options: {
+            "A": "Basic concepts",
+            "B": "Advanced techniques", 
+            "C": "Both A and B",
+            "D": "Nothing"
+          },
+          correct: "C",
+          explanation: "You should have learned both basic concepts and some advanced techniques."
+        }
+      ];
+    }
     return quiz;
   } catch (error) {
     console.error('Quiz generation failed:', error);
