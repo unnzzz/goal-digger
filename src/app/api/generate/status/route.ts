@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jobs } from '../start/route';
+import { generationJobs } from '@/lib/jobStorage';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Job ID required' }, { status: 400 });
   }
 
-  const job = jobs.get(jobId);
+  const job = generationJobs.get(jobId);
   if (!job) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }

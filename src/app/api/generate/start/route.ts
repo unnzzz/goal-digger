@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateRoadmap } from "@/lib/generateRoadmap";
 import { checkGoalSafety } from "@/lib/goalGuard";
+import { generationJobs } from "@/lib/jobStorage";
 import { z } from "zod";
 
 const Input = z.object({
@@ -8,20 +9,6 @@ const Input = z.object({
   total_days: z.number().int().optional(),
   daily_minutes: z.number().int(),
 });
-
-// Store generation jobs in memory (in production, use Redis or database)
-const generationJobs = new Map<string, {
-  id: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number;
-  message: string;
-  result?: any;
-  error?: string;
-  createdAt: Date;
-}>();
-
-// Export for use by status endpoint
-export { generationJobs as jobs };
 
 export async function POST(req: NextRequest) {
   try {
