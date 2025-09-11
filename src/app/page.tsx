@@ -10,6 +10,15 @@ import { useAvatar } from '../contexts/AvatarContext';
 import { useRoadmapGeneration } from '../contexts/RoadmapGenerationContext';
 import { getMessageForAction } from '../lib/avatarMessages';
 
+// Temporary diagnostic helper to catch object rendering
+function Show({ v, label }: { v: any; label: string }) {
+  if (v && typeof v === "object" && !Array.isArray(v) && !("$$typeof" in v)) {
+    console.warn("Rendered object at:", label, v);
+    return <pre style={{color:"crimson"}}>{JSON.stringify(v, null, 2)}</pre>;
+  }
+  return <>{v}</>;
+}
+
 export default function Home() {
   const [goal, setGoal] = useState("");
   const [dailyMinutes, setDailyMinutes] = useState(30);
@@ -366,8 +375,8 @@ export default function Home() {
                               {Array.isArray(day.learn) ? (
                                 day.learn.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title || 'Resource'}</h6>
-                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
+                                    <h6><Show v={item.title} label={`Learn Resource ${idx} title`} /></h6>
+                                    <p><Show v={typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'} label={`Learn Resource ${idx} description`} /></p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>
@@ -396,8 +405,8 @@ export default function Home() {
                               {Array.isArray(day.practice) ? (
                                 day.practice.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title || 'Resource'}</h6>
-                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
+                                    <h6><Show v={item.title} label={`Practice Resource ${idx} title`} /></h6>
+                                    <p><Show v={typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'} label={`Practice Resource ${idx} description`} /></p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>
@@ -426,8 +435,8 @@ export default function Home() {
                               {Array.isArray(day.reflect) ? (
                                 day.reflect.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title || 'Resource'}</h6>
-                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
+                                    <h6><Show v={item.title} label={`Reflect Resource ${idx} title`} /></h6>
+                                    <p><Show v={typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'} label={`Reflect Resource ${idx} description`} /></p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>

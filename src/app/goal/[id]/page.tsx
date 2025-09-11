@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "../../../components/AppLayout";
 
+// Temporary diagnostic helper to catch object rendering
+function Show({ v, label }: { v: any; label: string }) {
+  if (v && typeof v === "object" && !Array.isArray(v) && !("$$typeof" in v)) {
+    console.warn("Rendered object at:", label, v);
+    return <pre style={{color:"crimson"}}>{JSON.stringify(v, null, 2)}</pre>;
+  }
+  return <>{v}</>;
+}
+
 const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
 
 type Resource = {
@@ -690,7 +699,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                               color: '#1F2937',
                               lineHeight: '1.4'
                             }}>
-                            {r.title}
+                            <Show v={r.title} label={`Goal Resource title`} />
                             </div>
                           </div>
                           
@@ -913,7 +922,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                               color: '#1F2937',
                               lineHeight: '1.4'
                             }}>
-                            {r.title}
+                            <Show v={r.title} label={`Goal Resource title`} />
                             </div>
                           </div>
                           
