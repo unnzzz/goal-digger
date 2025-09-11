@@ -138,7 +138,7 @@ export default function Home() {
         isStartGoal: startGoal
       });
       setShowSaveModal(true);
-    } finally {
+            } finally {
       setSaving(false);
     }
   };
@@ -367,7 +367,7 @@ export default function Home() {
                                 day.learn.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
                                     <h6>{item.title || 'Resource'}</h6>
-                                    <p>{item.description || item.content}</p>
+                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>
@@ -384,7 +384,7 @@ export default function Home() {
                                   </div>
                                 ))
                               ) : (
-                                <p>{typeof day.learn === 'string' ? day.learn : JSON.stringify(day.learn)}</p>
+                                <p>{typeof day.learn === 'string' ? day.learn : 'No learning resources available'}</p>
                               )}
                             </div>
                           </div>
@@ -397,7 +397,7 @@ export default function Home() {
                                 day.practice.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
                                     <h6>{item.title || 'Resource'}</h6>
-                                    <p>{item.description || item.content}</p>
+                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>
@@ -414,7 +414,7 @@ export default function Home() {
                                   </div>
                                 ))
                               ) : (
-                                <p>{typeof day.practice === 'string' ? day.practice : JSON.stringify(day.practice)}</p>
+                                <p>{typeof day.practice === 'string' ? day.practice : 'No practice resources available'}</p>
                               )}
                             </div>
                           </div>
@@ -427,7 +427,7 @@ export default function Home() {
                                 day.reflect.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
                                     <h6>{item.title || 'Resource'}</h6>
-                                    <p>{item.description || item.content}</p>
+                                    <p>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : 'No description available'}</p>
                                     <div className="task-meta">
                                       {item.kind && (
                                         <span className={`resource-badge ${item.kind}`}>
