@@ -274,11 +274,15 @@ Return a JSON object with:
     
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
-      // Clean the content before storing to prevent React errors
-      const cleanStoredContent = JSON.parse(JSON.stringify(normalizedContent));
-      delete (cleanStoredContent as any).podcast_script;
-      delete (cleanStoredContent as any).article;
-      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(cleanStoredContent));
+      // Store clean content structure for the AI content page
+      const contentToStore = {
+        title: normalizedContent.title,
+        content: normalizedContent.content,
+        duration_minutes: normalizedContent.duration_minutes,
+        source: normalizedContent.source,
+        type: contentType
+      };
+      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(contentToStore));
     }
     
     // Return clean structure without problematic keys
@@ -469,7 +473,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       for (let i = 0; i < Math.min(6, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
-            signal: AbortSignal.timeout(20000) // 20 second timeout per search
+            signal: AbortSignal.timeout(30000) // 30 second timeout per search
           }).then(async (response) => {
             if (response.ok) {
               const data = await response.json();
@@ -484,7 +488,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       for (let i = 0; i < Math.min(4, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
-            signal: AbortSignal.timeout(20000) // 20 second timeout per search
+            signal: AbortSignal.timeout(30000) // 30 second timeout per search
           }).then(async (response) => {
             if (response.ok) {
               const data = await response.json();
@@ -581,18 +585,22 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         console.log(`No read resources found for day ${day.day}`);
       }
       
-      // Generate AI content if no real resources found
-      if (day.learn.length === 0) {
-        console.log(`No real resources found for day ${day.day}, generating AI content...`);
+      // Generate AI content if fewer than 2 learn resources found
+      if (day.learn.length < 2) {
+        const neededResources = 2 - day.learn.length;
+        console.log(`Only ${day.learn.length} real resources found for day ${day.day}, generating ${neededResources} AI content...`);
         try {
-          const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
-          const geminiPodcast = await generateGeminiContent(day.title, day.day, params.goal, 'podcast');
-          
-          if (geminiArticle) {
-            day.learn.push(geminiArticle);
+          if (neededResources >= 1) {
+            const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+            if (geminiArticle) {
+              day.learn.push(geminiArticle);
+            }
           }
-          if (geminiPodcast) {
-            day.learn.push(geminiPodcast);
+          if (neededResources >= 2) {
+            const geminiPodcast = await generateGeminiContent(day.title, day.day, params.goal, 'podcast');
+            if (geminiPodcast) {
+              day.learn.push(geminiPodcast);
+            }
           }
         } catch (error) {
           console.error(`AI content generation failed for day ${day.day}:`, error);
