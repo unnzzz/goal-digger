@@ -12,75 +12,36 @@ export interface RoadmapParams {
   daily_minutes: number;
 }
 
-// Web scraping function to find real resources
+// Web scraping function to find real resources using server-side approach
 async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'listen'): Promise<ResourceT[]> {
   const resources: ResourceT[] = [];
   
   try {
     console.log(`Searching for ${kind} resources: ${topic}`);
     
-    // For now, let's create realistic placeholder resources based on the topic
-    // This ensures we always have content while we work on improving web scraping
+    // Use a server-side proxy to avoid CORS issues
+    const searchQuery = encodeURIComponent(`${topic} ${kind === 'watch' ? 'tutorial video' : kind === 'read' ? 'guide tutorial' : 'podcast episode'}`);
     
-    if (kind === 'watch') {
-      // Create YouTube-style resources
-      const videoTopics = [
-        `${topic} tutorial`,
-        `${topic} basics`,
-        `${topic} for beginners`,
-        `${topic} step by step`,
-        `${topic} complete guide`
-      ];
-      
-      videoTopics.forEach((videoTopic, index) => {
-        if (index >= 2) return; // Limit to 2 videos
-        
-        resources.push({
-          kind: 'watch',
-          title: `${videoTopic} - Learn ${topic}`,
-          url: `https://www.youtube.com/watch?v=placeholder${index + 1}`,
-          source: 'YouTube',
-          duration_minutes: 15 + (index * 5),
-          split: null
-        });
-      });
-    } else if (kind === 'read') {
-      // Create article-style resources
-      const articleTopics = [
-        `${topic} guide`,
-        `${topic} tutorial`,
-        `${topic} tips`,
-        `${topic} fundamentals`
-      ];
-      
-      articleTopics.forEach((articleTopic, index) => {
-        if (index >= 2) return; // Limit to 2 articles
-        
-        resources.push({
-          kind: 'read',
-          title: `${articleTopic} - Complete Guide`,
-          url: `https://example.com/${topic.toLowerCase().replace(/\s+/g, '-')}-${index + 1}`,
-          source: 'Learning Hub',
-          duration_minutes: 10 + (index * 3),
-          split: null
-        });
-      });
+    // Call our server-side scraping API
+    const response = await fetch(`/api/scrape-resources?q=${searchQuery}&type=${kind}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.resources && Array.isArray(data.resources)) {
+        resources.push(...data.resources.slice(0, 3)); // Limit to 3 resources
+        console.log(`Found ${resources.length} real ${kind} resources for topic: ${topic}`);
+      }
     } else {
-      // Create podcast-style resources
-      resources.push({
-        kind: 'listen',
-        title: `${topic} Podcast Episode`,
-        url: `https://example.com/podcast/${topic.toLowerCase().replace(/\s+/g, '-')}`,
-        source: 'Learning Podcast',
-        duration_minutes: 20,
-        split: null
-      });
+      console.error(`Failed to fetch ${kind} resources:`, response.statusText);
     }
     
-    console.log(`Created ${resources.length} ${kind} resources for topic: ${topic}`);
-    
   } catch (error) {
-    console.error(`Error creating ${kind} resources for ${topic}:`, error);
+    console.error(`Error finding ${kind} resources for ${topic}:`, error);
   }
   
   return resources;
@@ -180,29 +141,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         }
       }
       
-      // Ensure we have at least some resources in each section
-      if (day.learn.length === 0) {
-        day.learn.push({
-          kind: 'read',
-          title: `${day.title} - Learning Guide`,
-          url: `https://example.com/${day.title.toLowerCase().replace(/\s+/g, '-')}-learn`,
-          source: 'Learning Hub',
-          duration_minutes: 15,
-          split: null
-        });
-      }
-      
-      if (day.practice.length === 0) {
-        day.practice.push({
-          kind: 'read',
-          title: `${day.title} - Practice Exercise`,
-          url: `https://example.com/${day.title.toLowerCase().replace(/\s+/g, '-')}-practice`,
-          source: 'Practice Hub',
-          duration_minutes: 10,
-          split: null
-        });
-      }
-      
+      // Only use real resources - no fallbacks
       console.log(`Day ${day.day} completed with ${day.learn.length} learn and ${day.practice.length} practice resources`);
     }
     
