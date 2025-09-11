@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import { RoadmapT, ResourceT, DayT } from './schema';
 
 const genAI = new GoogleGenerativeAI('AIzaSyBQseIm2Zs6bBGeKeDkKvkjw4B4Q0X9Q6o');
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -11,38 +12,9 @@ export interface RoadmapParams {
   daily_minutes: number;
 }
 
-export interface Resource {
-  kind: 'watch' | 'read' | 'listen';
-  title: string;
-  url: string;
-  source: string | null;
-  duration_minutes: number | null;
-  split?: {
-    total_parts: number;
-    part_number: number;
-    range: string;
-  } | null;
-}
-
-export interface Day {
-  day: number;
-  title: string;
-  minutes: number;
-  learn: Resource[];
-  practice: Resource[];
-  reflect: string;
-}
-
-export interface Roadmap {
-  goal: string;
-  total_days: number;
-  daily_minutes: number;
-  days: Day[];
-}
-
 // Web scraping function to find real resources
-async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'listen'): Promise<Resource[]> {
-  const resources: Resource[] = [];
+async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'listen'): Promise<ResourceT[]> {
+  const resources: ResourceT[] = [];
   
   try {
     // Create search queries based on kind
@@ -87,7 +59,8 @@ async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'li
               title: title.substring(0, 100),
               url: `https://www.youtube.com/watch?v=${videoId}`,
               source: 'YouTube',
-              duration_minutes: 15 // Default duration
+              duration_minutes: 15, // Default duration
+              split: null
             });
           }
         }
@@ -106,7 +79,8 @@ async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'li
             title: title.substring(0, 100),
             url: href,
             source: new URL(href).hostname,
-            duration_minutes: kind === 'read' ? 10 : 20
+            duration_minutes: kind === 'read' ? 10 : 20,
+            split: null
           });
         }
       });
@@ -122,7 +96,7 @@ async function findResourcesForTopic(topic: string, kind: 'watch' | 'read' | 'li
 }
 
 // Generate roadmap using Gemini
-export async function generateRoadmapWithGemini(params: RoadmapParams): Promise<Roadmap> {
+export async function generateRoadmapWithGemini(params: RoadmapParams): Promise<RoadmapT> {
   try {
     console.log('Generating roadmap with Gemini for:', params.goal);
     
@@ -158,7 +132,7 @@ Return ONLY valid JSON in this format:
     
     console.log('Generated roadmap structure:', structureText.substring(0, 200) + '...');
     
-    let roadmap: Roadmap;
+    let roadmap: RoadmapT;
     try {
       roadmap = JSON.parse(structureText);
     } catch (e) {
@@ -193,7 +167,8 @@ Return ONLY valid JSON in this format:
           title: `${day.title} - Learning Guide`,
           url: `https://example.com/${day.title.toLowerCase().replace(/\s+/g, '-')}`,
           source: 'Example Site',
-          duration_minutes: 15
+          duration_minutes: 15,
+          split: null
         });
       }
       
