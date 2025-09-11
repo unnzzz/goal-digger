@@ -481,6 +481,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
 
 // OPTIMIZED: Fast roadmap generation with parallel processing
 export async function generateRoadmapWithDirectScraping(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void, abortSignal?: AbortSignal): Promise<RoadmapT> {
+  let roadmap: RoadmapT | undefined;
+  
   try {
     console.log('Generating FAST roadmap with direct scraping for:', params.goal);
     
@@ -608,8 +610,13 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Check if it's a timeout error (not user abortion)
     if (error instanceof Error && error.name === 'TimeoutError') {
       console.log('Roadmap generation timed out, but continuing with available resources');
-      // Don't throw, just return what we have
-      return roadmap;
+      // Don't throw, just return what we have if roadmap exists
+      if (roadmap) {
+        return roadmap;
+      }
+      // If no roadmap exists, create a fallback
+      const fallbackRoadmap = createFallbackRoadmap(params);
+      return fallbackRoadmap;
     }
     
     console.error('Fast roadmap generation failed:', error);
