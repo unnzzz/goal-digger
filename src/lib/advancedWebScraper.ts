@@ -150,18 +150,28 @@ class AdvancedWebScraper {
   async searchYouTube(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
-    // Clean up the query to be more specific and add more search terms
+    // Clean up the query and create comprehensive search variations
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
     const searchVariations = [
       `${cleanQuery} tutorial`,
       `${cleanQuery} how to`,
       `${cleanQuery} step by step`,
       `${cleanQuery} beginner`,
-      `${cleanQuery} learn`
+      `${cleanQuery} learn`,
+      `${cleanQuery} course`,
+      `${cleanQuery} lesson`,
+      `${cleanQuery} guide`,
+      `${cleanQuery} basics`,
+      `${cleanQuery} fundamentals`,
+      `${cleanQuery} explained`,
+      `${cleanQuery} introduction`,
+      `${cleanQuery} crash course`,
+      `${cleanQuery} full tutorial`,
+      `${cleanQuery} complete guide`
     ];
     
-    // Try multiple search variations
-    for (const searchTerm of searchVariations.slice(0, 3)) {
+    // Try multiple search variations (increased from 3 to 8 for better coverage)
+    for (const searchTerm of searchVariations.slice(0, 8)) {
       try {
         const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
         
@@ -305,7 +315,66 @@ class AdvancedWebScraper {
       }
     }
     
-    // Method 4: If still no results, generate realistic fallback resources
+    // Method 4: Try additional video search engines
+    if (results.length === 0) {
+      try {
+        // Try Vimeo search
+        const vimeoUrl = `https://vimeo.com/search?q=${encodeURIComponent(cleanQuery)}`;
+        const response = await this.makeRequest(vimeoUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href*="/videos/"]').each((index, element) => {
+          if (results.length >= 3) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).find('h3, .title').text().trim();
+          
+          if (href && title && !title.includes('http') && title.length > 10) {
+            results.push({
+              title: title,
+              url: href.startsWith('http') ? href : `https://vimeo.com${href}`,
+              source: 'Vimeo',
+              duration_minutes: 15
+            });
+          }
+        });
+        
+        console.log(`Vimeo search found ${results.length} results`);
+      } catch (error) {
+        console.error('Vimeo search failed:', error);
+      }
+    }
+    
+    // Method 5: Try Dailymotion search
+    if (results.length === 0) {
+      try {
+        const dailymotionUrl = `https://www.dailymotion.com/search/${encodeURIComponent(cleanQuery)}`;
+        const response = await this.makeRequest(dailymotionUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href*="/video/"]').each((index, element) => {
+          if (results.length >= 2) return false;
+          
+          const href = $(element).attr('href');
+          const title = $(element).find('h3, .title').text().trim();
+          
+          if (href && title && !title.includes('http') && title.length > 10) {
+            results.push({
+              title: title,
+              url: href.startsWith('http') ? href : `https://dailymotion.com${href}`,
+              source: 'Dailymotion',
+              duration_minutes: 15
+            });
+          }
+        });
+        
+        console.log(`Dailymotion search found ${results.length} results`);
+      } catch (error) {
+        console.error('Dailymotion search failed:', error);
+      }
+    }
+    
+    // Method 6: If still no results, generate realistic fallback resources
     if (results.length === 0) {
       console.log('No YouTube results found, generating fallback resources');
       const fallbackTitles = [
@@ -335,11 +404,27 @@ class AdvancedWebScraper {
   async searchArticles(query: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
-    // Clean up the query to be more specific
+    // Clean up the query and create comprehensive search variations
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
-    const enhancedQuery = `${cleanQuery} guide tutorial`;
+    const searchVariations = [
+      `${cleanQuery} tutorial`,
+      `${cleanQuery} guide`,
+      `${cleanQuery} how to`,
+      `${cleanQuery} step by step`,
+      `${cleanQuery} beginner`,
+      `${cleanQuery} learn`,
+      `${cleanQuery} course`,
+      `${cleanQuery} lesson`,
+      `${cleanQuery} basics`,
+      `${cleanQuery} fundamentals`,
+      `${cleanQuery} explained`,
+      `${cleanQuery} introduction`,
+      `${cleanQuery} complete guide`,
+      `${cleanQuery} comprehensive guide`,
+      `${cleanQuery} detailed tutorial`
+    ];
     
-    // Educational domains to prioritize
+    // Educational domains to prioritize (expanded list)
     const educationalDomains = [
       'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
       'w3schools.com', 'mdn.mozilla.org', 'stackoverflow.com',
@@ -348,16 +433,23 @@ class AdvancedWebScraper {
       'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com',
       'skillshare.com', 'udemy.com', 'coursera.org', 'edx.org',
       'khanacademy.org', 'codecademy.com', 'pluralsight.com',
-      'youtube.com', 'vimeo.com', 'ted.com', 'khanacademy.org',
-      'coursera.org', 'edx.org', 'udacity.com', 'pluralsight.com'
+      'youtube.com', 'vimeo.com', 'ted.com', 'udacity.com',
+      'reddit.com', 'quora.com', 'stackexchange.com', 'superuser.com',
+      'askubuntu.com', 'serverfault.com', 'mathoverflow.net',
+      'wikipedia.org', 'wikihow.com', 'instructables.com',
+      'allrecipes.com', 'foodnetwork.com', 'seriouseats.com',
+      'healthline.com', 'webmd.com', 'mayoclinic.org',
+      'investopedia.com', 'khanacademy.org', 'coursera.org',
+      'edx.org', 'udacity.com', 'pluralsight.com', 'linkedin.com'
     ];
     
-    // Method 1: Try DuckDuckGo
-    try {
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(enhancedQuery)}`;
-      
-      const response = await this.makeRequest(searchUrl);
-      const $ = cheerio.load(response.data);
+    // Method 1: Try multiple search variations with DuckDuckGo
+    for (const searchTerm of searchVariations.slice(0, 5)) {
+      try {
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchTerm)}`;
+        
+        const response = await this.makeRequest(searchUrl);
+        const $ = cheerio.load(response.data);
       
       // Multiple selectors for DuckDuckGo results
       const selectors = [
@@ -407,10 +499,10 @@ class AdvancedWebScraper {
         });
         
         if (results.length > 0) break;
+      } catch (error) {
+        console.error(`DuckDuckGo search error for "${searchTerm}":`, error);
+        continue; // Try next search term
       }
-      
-    } catch (error) {
-      console.error('DuckDuckGo search error:', error);
     }
     
     // Method 2: If no results, try Startpage
@@ -503,7 +595,77 @@ class AdvancedWebScraper {
       }
     }
     
-    // Method 4: If still no results, generate realistic fallback resources
+    // Method 4: Try additional search engines
+    if (results.length === 0) {
+      try {
+        // Try Yandex search
+        const yandexUrl = `https://yandex.com/search/?text=${encodeURIComponent(cleanQuery)}`;
+        const response = await this.makeRequest(yandexUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href^="http"]').each((index, element) => {
+          if (results.length >= 3) return false;
+          
+          const href = $(element).attr('href');
+          let title = $(element).text().trim();
+          
+          if (href && title && title.length > 10 && !title.includes('{') && !title.includes('css-')) {
+            try {
+              const url = new URL(href);
+              const isEducational = educationalDomains.some(domain => 
+                url.hostname.includes(domain)
+              );
+              
+              if (isEducational) {
+                results.push({
+                  title: title.substring(0, 100),
+                  url: href,
+                  source: url.hostname,
+                  duration_minutes: 10 + Math.floor(Math.random() * 8)
+                });
+              }
+            } catch (e) {
+              // Skip invalid URLs
+            }
+          }
+        });
+        
+        console.log(`Yandex search found ${results.length} results`);
+      } catch (error) {
+        console.error('Yandex search failed:', error);
+      }
+    }
+    
+    // Method 5: Try Reddit search for community discussions
+    if (results.length === 0) {
+      try {
+        const redditUrl = `https://www.reddit.com/search/?q=${encodeURIComponent(cleanQuery)}`;
+        const response = await this.makeRequest(redditUrl);
+        const $ = cheerio.load(response.data);
+        
+        $('a[href*="/r/"]').each((index, element) => {
+          if (results.length >= 2) return false;
+          
+          const href = $(element).attr('href');
+          let title = $(element).text().trim();
+          
+          if (href && title && title.length > 10 && !title.includes('{') && !title.includes('css-')) {
+            results.push({
+              title: `Reddit Discussion: ${title.substring(0, 80)}`,
+              url: href.startsWith('http') ? href : `https://reddit.com${href}`,
+              source: 'Reddit',
+              duration_minutes: 5 + Math.floor(Math.random() * 5)
+            });
+          }
+        });
+        
+        console.log(`Reddit search found ${results.length} results`);
+      } catch (error) {
+        console.error('Reddit search failed:', error);
+      }
+    }
+    
+    // Method 6: If still no results, generate realistic fallback resources
     if (results.length === 0) {
       console.log('No article results found, generating fallback resources');
       const fallbackTitles = [
@@ -555,15 +717,21 @@ class AdvancedWebScraper {
           results = await this.searchAlternativeArticles(query);
         }
       } else if (type === 'listen') {
-        // For now, generate podcast-style results
-        results = [
-          {
-            title: `${query} Podcast Episode`,
-            url: `https://spotify.com/search/${encodeURIComponent(query)}`,
-            source: 'Spotify',
-            duration_minutes: 20
-          }
-        ];
+        // Try to find real podcast resources
+        results = await this.searchPodcasts(query);
+        console.log(`Podcast search found ${results.length} results`);
+        
+        // If no real podcasts found, generate search links
+        if (results.length === 0) {
+          results = [
+            {
+              title: `${query} Podcast Episode`,
+              url: `https://spotify.com/search/${encodeURIComponent(query)}`,
+              source: 'Spotify',
+              duration_minutes: 20
+            }
+          ];
+        }
       }
     } catch (error) {
       console.error(`Error in ${type} search:`, error);
@@ -644,6 +812,40 @@ class AdvancedWebScraper {
       console.log(`Medium search found ${results.length} results`);
     } catch (error) {
       console.error('Medium search failed:', error);
+    }
+    
+    return results;
+  }
+  
+  // Search for podcasts
+  async searchPodcasts(query: string): Promise<ScrapingResult[]> {
+    const results: ScrapingResult[] = [];
+    
+    try {
+      // Try Spotify search
+      const spotifyUrl = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+      const response = await this.makeRequest(spotifyUrl);
+      const $ = cheerio.load(response.data);
+      
+      $('a[href*="/episode/"]').each((index, element) => {
+        if (results.length >= 3) return false;
+        
+        const href = $(element).attr('href');
+        const title = $(element).find('h3, .title').text().trim();
+        
+        if (href && title && !title.includes('http')) {
+          results.push({
+            title: title,
+            url: href.startsWith('http') ? href : `https://open.spotify.com${href}`,
+            source: 'Spotify',
+            duration_minutes: 20
+          });
+        }
+      });
+      
+      console.log(`Spotify search found ${results.length} results`);
+    } catch (error) {
+      console.error('Spotify search failed:', error);
     }
     
     return results;

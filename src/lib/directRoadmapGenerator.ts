@@ -229,10 +229,8 @@ Return a JSON object with:
       };
     }
     
-    const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
-    
-    // Ensure content has the correct structure - fix React error #31
-    const normalizedContent = {
+    // Clean the content object to remove problematic keys BEFORE creating normalizedContent
+    const cleanedContent = {
       title: content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
       content: content.content || content.podcast_script || content.article || 'Content not available',
       duration_minutes: content.duration_minutes || (contentType === 'podcast' ? 20 : 15),
@@ -240,13 +238,14 @@ Return a JSON object with:
       type: contentType
     };
     
-    // Remove any problematic keys that might cause React errors
-    if ('podcast_script' in normalizedContent) {
-      delete (normalizedContent as any).podcast_script;
-    }
-    if ('article' in normalizedContent) {
-      delete (normalizedContent as any).article;
-    }
+    // Remove any problematic keys from the cleaned content
+    delete (cleanedContent as any).podcast_script;
+    delete (cleanedContent as any).article;
+    
+    const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
+    
+    // Use the cleaned content for normalizedContent
+    const normalizedContent = { ...cleanedContent };
     
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
@@ -273,7 +272,10 @@ Return a JSON object with:
       }
     });
     
-    return cleanResource;
+    // Ensure no problematic keys exist in the final resource
+    const finalResource = JSON.parse(JSON.stringify(cleanResource));
+    
+    return finalResource;
   } catch (error) {
     console.error('Gemini content generation failed:', error);
     // If quota exceeded, return a fallback content
@@ -428,8 +430,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
       const searchPromises = [];
       
-      // Try multiple search terms for watch resources
-      for (let i = 0; i < Math.min(3, searchTerms.length); i++) {
+      // Try multiple search terms for watch resources (increased from 3 to 6)
+      for (let i = 0; i < Math.min(6, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
             signal: AbortSignal.timeout(20000) // 20 second timeout per search
@@ -443,8 +445,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         );
       }
       
-      // Try multiple search terms for read resources
-      for (let i = 0; i < Math.min(2, searchTerms.length); i++) {
+      // Try multiple search terms for read resources (increased from 2 to 4)
+      for (let i = 0; i < Math.min(4, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
             signal: AbortSignal.timeout(20000) // 20 second timeout per search

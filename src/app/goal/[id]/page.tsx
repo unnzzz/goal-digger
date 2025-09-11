@@ -178,7 +178,16 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       const title = prompt("New title", r.title) ?? r.title;
       const url = prompt("New URL", r.url) ?? r.url;
       const next = structuredClone(prev);
-      next.days[di][section][i] = { ...r, title, url };
+      next.days[di][section][i] = { 
+        kind: r.kind,
+        title, 
+        url,
+        source: r.source,
+        duration_minutes: r.duration_minutes,
+        split: r.split,
+        isAIGenerated: r.isAIGenerated,
+        contentType: r.contentType
+      };
       return next;
     });
   };
