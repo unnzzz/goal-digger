@@ -114,6 +114,33 @@ function generateBasicTopics(goal: string, totalDays: number): string[] {
   return genericTopics.slice(0, totalDays);
 }
 
+// Generate creative practice exercises for each day
+function generatePracticeExercises(dayTitle: string, dayNumber: number): any[] {
+  const exercises: any[] = [];
+  
+  // Generate 2 creative practice exercises based on the day's topic
+  const exercise1 = {
+    kind: 'read',
+    title: `Hands-on Exercise: ${dayTitle} Practice`,
+    url: `https://example.com/practice/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-exercise-1`,
+    source: 'Practice Hub',
+    duration_minutes: 15 + (dayNumber * 2),
+    split: null
+  };
+  
+  const exercise2 = {
+    kind: 'read', 
+    title: `Creative Challenge: Apply ${dayTitle} Skills`,
+    url: `https://example.com/challenge/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-challenge`,
+    source: 'Skill Builder',
+    duration_minutes: 20 + (dayNumber * 2),
+    split: null
+  };
+  
+  exercises.push(exercise1, exercise2);
+  return exercises;
+}
+
 
 // Direct roadmap generation with real web scraping
 export async function generateRoadmapWithDirectScraping(params: RoadmapParams): Promise<RoadmapT> {
@@ -242,7 +269,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       // Find watch resources (videos) for LEARN section using server-side API with retry
       let watchAttempts = 0;
       const maxWatchAttempts = 3;
-      while (day.learn.length < 2 && watchAttempts < maxWatchAttempts) {
+      while (day.learn.length < 3 && watchAttempts < maxWatchAttempts) {
         try {
           const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`);
           if (watchResponse.ok) {
@@ -267,8 +294,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                 return true;
               });
               
-              // Add new resources and mark them as used
-              const resourcesToAdd = newResources.slice(0, 2);
+              // Add new resources and mark them as used (aim for 2-3 watch resources)
+              const resourcesToAdd = newResources.slice(0, 3);
               resourcesToAdd.forEach((resource: any) => {
                 // Generate fallback title if missing
                 if (!resource.title || resource.title.trim() === '') {
@@ -290,7 +317,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
               });
               
               day.learn.push(...resourcesToAdd);
-              if (day.learn.length >= 2) break;
+              if (day.learn.length >= 3) break;
             }
           }
         } catch (error) {
@@ -305,7 +332,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       // Find read resources (articles) for LEARN section using server-side API with retry
       let readAttempts = 0;
       const maxReadAttempts = 3;
-      while (day.learn.length < 3 && readAttempts < maxReadAttempts) {
+      while (day.learn.length < 4 && readAttempts < maxReadAttempts) {
         try {
           const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`);
           if (readResponse.ok) {
@@ -330,8 +357,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                 return true;
               });
               
-              // Add new resources and mark them as used
-              const resourcesToAdd = newResources.slice(0, 1);
+              // Add new resources and mark them as used (aim for 1-2 read resources)
+              const resourcesToAdd = newResources.slice(0, 2);
               resourcesToAdd.forEach((resource: any) => {
                 // Generate fallback title if missing
                 if (!resource.title || resource.title.trim() === '') {
@@ -353,7 +380,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
               });
               
               day.learn.push(...resourcesToAdd);
-              if (day.learn.length >= 3) break;
+              if (day.learn.length >= 4) break;
             }
           }
         } catch (error) {
@@ -428,7 +455,11 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         }
       }
       
-      
+      // Fallback: If no practice resources found, create creative exercises
+      if (day.practice.length === 0) {
+        const practiceExercises = generatePracticeExercises(day.title, day.day);
+        day.practice.push(...practiceExercises);
+      }
       
       console.log(`Day ${day.day} completed with ${day.learn.length} learn and ${day.practice.length} practice resources`);
     }
