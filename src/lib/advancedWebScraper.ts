@@ -12,7 +12,16 @@ const USER_AGENTS = [
 ];
 
 // Proxy rotation (you can add real proxies here)
-const PROXIES = [
+interface ProxyConfig {
+  host: string;
+  port: number;
+  auth?: {
+    username: string;
+    password: string;
+  };
+}
+
+const PROXIES: ProxyConfig[] = [
   // Add your proxy list here
   // { host: 'proxy1.example.com', port: 8080, auth: { username: 'user', password: 'pass' } }
 ];
