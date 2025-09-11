@@ -122,6 +122,7 @@ export async function generateRoadmapWithDirectScraping(params: RoadmapParams): 
     
     // Track used resources to prevent duplicates
     const usedResourceUrls = new Set<string>();
+    const usedResourceTitles = new Set<string>();
     
     // Step 1: Generate roadmap structure with Gemini
     const structurePrompt = `Generate a detailed learning roadmap for: "${params.goal}"
@@ -249,13 +250,17 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             if (watchData.resources && watchData.resources.length > 0) {
               // Filter out already used resources
               const newResources = watchData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url)
+                !usedResourceUrls.has(resource.url) && 
+                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
               );
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 2);
               resourcesToAdd.forEach((resource: any) => {
                 usedResourceUrls.add(resource.url);
+                if (resource.title) {
+                  usedResourceTitles.add(resource.title.toLowerCase());
+                }
               });
               
               day.learn.push(...resourcesToAdd);
@@ -282,13 +287,17 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             if (readData.resources && readData.resources.length > 0) {
               // Filter out already used resources
               const newResources = readData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url)
+                !usedResourceUrls.has(resource.url) && 
+                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
               );
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 1);
               resourcesToAdd.forEach((resource: any) => {
                 usedResourceUrls.add(resource.url);
+                if (resource.title) {
+                  usedResourceTitles.add(resource.title.toLowerCase());
+                }
               });
               
               day.learn.push(...resourcesToAdd);
@@ -315,13 +324,17 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             if (practiceData.resources && practiceData.resources.length > 0) {
               // Filter out already used resources
               const newResources = practiceData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url)
+                !usedResourceUrls.has(resource.url) && 
+                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
               );
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 2);
               resourcesToAdd.forEach((resource: any) => {
                 usedResourceUrls.add(resource.url);
+                if (resource.title) {
+                  usedResourceTitles.add(resource.title.toLowerCase());
+                }
               });
               
               day.practice.push(...resourcesToAdd);

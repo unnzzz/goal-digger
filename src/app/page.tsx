@@ -357,7 +357,7 @@ export default function Home() {
                 <div className="roadmap-days">
                   {data.days?.map((day: any, index: number) => (
                     <div key={index} className="roadmap-day">
-                      <h4>Day {day.day}</h4>
+                      <h4>Day {day.day}: {day.title}</h4>
                       <div className="day-sections">
                         {day.learn && (
                           <div className="section learn">
@@ -366,7 +366,7 @@ export default function Home() {
                               {Array.isArray(day.learn) ? (
                                 day.learn.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -379,6 +379,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
@@ -395,7 +396,7 @@ export default function Home() {
                               {Array.isArray(day.practice) ? (
                                 day.practice.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -408,6 +409,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
@@ -424,7 +426,7 @@ export default function Home() {
                               {Array.isArray(day.reflect) ? (
                                 day.reflect.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -437,6 +439,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
