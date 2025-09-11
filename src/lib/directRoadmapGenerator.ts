@@ -137,7 +137,7 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   const exercise1 = {
     kind: 'read',
     title: exercise1Title,
-    url: null, // No URL for practice exercises
+    url: null, // No URL for practice exercises - they are creative activities
     source: 'Practice Hub',
     duration_minutes: 15 + (dayNumber * 2),
     split: null
@@ -146,7 +146,7 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   const exercise2 = {
     kind: 'read', 
     title: exercise2Title,
-    url: null, // No URL for practice exercises
+    url: null, // No URL for practice exercises - they are creative activities
     source: 'Skill Builder',
     duration_minutes: 20 + (dayNumber * 2),
     split: null
@@ -413,64 +413,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         console.error(`Read resources failed:`, error);
       }
       
-      // Find practice resources for PRACTICE section - single attempt with timeout
-      try {
-        const practiceResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[2])}&type=read`, {
-          signal: AbortSignal.timeout(5000) // 5 second timeout
-        });
-        if (practiceResponse.ok) {
-          const practiceData = await practiceResponse.json();
-          if (practiceData.resources && practiceData.resources.length > 0) {
-            // Filter out already used resources
-            const newResources = practiceData.resources.filter((resource: any) => {
-              // Check URL
-              if (usedResourceUrls.has(resource.url)) return false;
-              
-              // Check for similar URLs (truncated versions)
-              const baseUrl = resource.url.split('?')[0].split('#')[0];
-              for (const usedUrl of usedResourceUrls) {
-                const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
-                if (baseUrl === usedBaseUrl) return false;
-              }
-              
-              // Check title
-              const title = resource.title?.toLowerCase() || '';
-              if (usedResourceTitles.has(title)) return false;
-              
-              return true;
-            });
-            
-            // Add new resources and mark them as used
-            const resourcesToAdd = newResources.slice(0, 2);
-            resourcesToAdd.forEach((resource: any) => {
-              // Generate fallback title if missing
-              if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
-                if (resource.url.includes('youtube.com')) {
-                  resource.title = `Video Tutorial - Day ${day.day}`;
-                } else if (resource.url.includes('skillshare.com')) {
-                  resource.title = `Skillshare Course - Day ${day.day}`;
-                } else if (resource.url.includes('masterclass.com')) {
-                  resource.title = `MasterClass Lesson - Day ${day.day}`;
-                } else if (resource.url.includes('studiobinder.com')) {
-                  resource.title = `StudioBinder Guide - Day ${day.day}`;
-                } else {
-                  resource.title = `Learning Resource - Day ${day.day}`;
-                }
-              }
-              
-              // Only add if not already in this day's resources
-              const existingUrls = day.practice.map((r: any) => r.url);
-              if (!existingUrls.includes(resource.url)) {
-                usedResourceUrls.add(resource.url);
-                usedResourceTitles.add(resource.title.toLowerCase());
-                day.practice.push(resource);
-              }
-            });
-          }
-        }
-      } catch (error) {
-        console.error(`Practice resources failed:`, error);
-      }
+      // Practice section - only add creative activities, no web scraping for practice
+      // Practice quests should be creative activities, not web resources
       
       // MANDATORY: Ensure every day has at least 2 learn resources - try more search terms if needed
       if (day.learn.length < 2) {

@@ -178,10 +178,10 @@ class AdvancedWebScraper {
           let title = titleElement.text().trim();
           
           // Clean up title - remove CSS classes and ensure it's actual text
-          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5 || title.includes('http')) {
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5 || title.includes('http') || title.includes('search') || title.includes('results')) {
             // Try alternative title extraction
             const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).text().trim();
-            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && altTitle.length > 5) {
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && !altTitle.includes('search') && !altTitle.includes('results') && altTitle.length > 5) {
               title = altTitle;
             } else {
               // Generate a meaningful title based on the query
@@ -189,9 +189,9 @@ class AdvancedWebScraper {
             }
           }
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
-            if (videoId && videoId.length === 11) {
+            if (videoId && videoId.length === 11 && !videoId.includes('search') && !videoId.includes('results')) {
               results.push({
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -233,9 +233,9 @@ class AdvancedWebScraper {
             }
           }
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
-            if (videoId && videoId.length === 11) {
+            if (videoId && videoId.length === 11 && !videoId.includes('search') && !videoId.includes('results')) {
               results.push({
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -274,9 +274,9 @@ class AdvancedWebScraper {
             }
           }
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
-            if (videoId && videoId.length === 11) {
+            if (videoId && videoId.length === 11 && !videoId.includes('search') && !videoId.includes('results')) {
               results.push({
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -337,9 +337,9 @@ class AdvancedWebScraper {
           let title = $(element).text().trim();
           
           // Clean up title - remove CSS classes and ensure it's actual text
-          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http')) {
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http') || title.includes('search') || title.includes('results')) {
             const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
-            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && altTitle.length > 10) {
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && !altTitle.includes('search') && !altTitle.includes('results') && altTitle.length > 10) {
               title = altTitle;
             } else {
               // Generate a meaningful title based on the query
@@ -347,7 +347,7 @@ class AdvancedWebScraper {
             }
           }
           
-          if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-')) {
+          if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
             try {
               const url = new URL(href);
               const isEducational = educationalDomains.some(domain => 
