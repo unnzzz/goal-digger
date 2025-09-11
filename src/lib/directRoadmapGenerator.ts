@@ -149,7 +149,7 @@ function generateFallbackLearnResources(dayTitle: string, dayNumber: number): an
   const resource1 = {
     kind: 'watch',
     title: `Video Tutorial: ${dayTitle} - Day ${dayNumber}`,
-    url: `https://www.youtube.com/watch?v=fallback${dayNumber}`,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(dayTitle)}`,
     source: 'YouTube',
     duration_minutes: 15 + (dayNumber * 2),
     split: null
@@ -158,7 +158,7 @@ function generateFallbackLearnResources(dayTitle: string, dayNumber: number): an
   const resource2 = {
     kind: 'watch',
     title: `Advanced Guide: ${dayTitle} Techniques`,
-    url: `https://www.youtube.com/watch?v=advanced${dayNumber}`,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(dayTitle + ' tutorial')}`,
     source: 'YouTube',
     duration_minutes: 20 + (dayNumber * 2),
     split: null
@@ -167,7 +167,7 @@ function generateFallbackLearnResources(dayTitle: string, dayNumber: number): an
   const resource3 = {
     kind: 'read',
     title: `Complete Guide: ${dayTitle} Fundamentals`,
-    url: null, // No URL for fallback resources
+    url: `https://www.google.com/search?q=${encodeURIComponent(dayTitle + ' guide')}`,
     source: 'Learning Hub',
     duration_minutes: 12 + (dayNumber * 2),
     split: null
@@ -179,7 +179,7 @@ function generateFallbackLearnResources(dayTitle: string, dayNumber: number): an
 
 
 // Direct roadmap generation with real web scraping
-export async function generateRoadmapWithDirectScraping(params: RoadmapParams): Promise<RoadmapT> {
+export async function generateRoadmapWithDirectScraping(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void): Promise<RoadmapT> {
   try {
     console.log('Generating roadmap with direct scraping for:', params.goal);
     
@@ -188,6 +188,8 @@ export async function generateRoadmapWithDirectScraping(params: RoadmapParams): 
     const usedResourceTitles = new Set<string>();
     
     // Step 1: Generate roadmap structure with Gemini
+    progressCallback?.(10, "Generating roadmap structure...");
+    
     const structurePrompt = `Generate a detailed learning roadmap for: "${params.goal}"
 Daily minutes: ${params.daily_minutes}
 Total days: ${params.total_days || 10}
@@ -287,8 +289,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     
     // Step 2: Find real resources for each day
     console.log('Finding real resources for each day...');
+    progressCallback?.(30, "Finding real resources...");
     
-    for (const day of roadmap.days) {
+    for (let i = 0; i < roadmap.days.length; i++) {
+      const day = roadmap.days[i];
+      const dayProgress = 30 + (i / roadmap.days.length) * 60; // 30% to 90%
+      progressCallback?.(Math.round(dayProgress), `Processing day ${day.day}: ${day.title}`);
       console.log(`Processing day ${day.day}: ${day.title}`);
       
       // Clear existing arrays
@@ -337,7 +343,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const resourcesToAdd = newResources.slice(0, 3);
             resourcesToAdd.forEach((resource: any) => {
               // Generate fallback title if missing
-              if (!resource.title || resource.title.trim() === '') {
+              if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
                 if (resource.url.includes('youtube.com')) {
                   resource.title = `Video Tutorial - Day ${day.day}`;
                 } else if (resource.url.includes('skillshare.com')) {
@@ -351,11 +357,14 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                 }
               }
               
-              usedResourceUrls.add(resource.url);
-              usedResourceTitles.add(resource.title.toLowerCase());
+              // Only add if not already in this day's resources
+              const existingUrls = day.learn.map((r: any) => r.url);
+              if (!existingUrls.includes(resource.url)) {
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
+                day.learn.push(resource);
+              }
             });
-            
-            day.learn.push(...resourcesToAdd);
           }
         }
       } catch (error) {
@@ -393,7 +402,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const resourcesToAdd = newResources.slice(0, 2);
             resourcesToAdd.forEach((resource: any) => {
               // Generate fallback title if missing
-              if (!resource.title || resource.title.trim() === '') {
+              if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
                 if (resource.url.includes('youtube.com')) {
                   resource.title = `Video Tutorial - Day ${day.day}`;
                 } else if (resource.url.includes('skillshare.com')) {
@@ -407,11 +416,14 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                 }
               }
               
-              usedResourceUrls.add(resource.url);
-              usedResourceTitles.add(resource.title.toLowerCase());
+              // Only add if not already in this day's resources
+              const existingUrls = day.learn.map((r: any) => r.url);
+              if (!existingUrls.includes(resource.url)) {
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
+                day.learn.push(resource);
+              }
             });
-            
-            day.learn.push(...resourcesToAdd);
           }
         }
       } catch (error) {
@@ -449,7 +461,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const resourcesToAdd = newResources.slice(0, 2);
             resourcesToAdd.forEach((resource: any) => {
               // Generate fallback title if missing
-              if (!resource.title || resource.title.trim() === '') {
+              if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
                 if (resource.url.includes('youtube.com')) {
                   resource.title = `Video Tutorial - Day ${day.day}`;
                 } else if (resource.url.includes('skillshare.com')) {
@@ -463,11 +475,14 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                 }
               }
               
-              usedResourceUrls.add(resource.url);
-              usedResourceTitles.add(resource.title.toLowerCase());
+              // Only add if not already in this day's resources
+              const existingUrls = day.practice.map((r: any) => r.url);
+              if (!existingUrls.includes(resource.url)) {
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
+                day.practice.push(resource);
+              }
             });
-            
-            day.practice.push(...resourcesToAdd);
           }
         }
       } catch (error) {
@@ -488,6 +503,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       console.log(`Day ${day.day} completed with ${day.learn.length} learn and ${day.practice.length} practice resources`);
     }
     
+    progressCallback?.(100, "Roadmap generation completed!");
     console.log('Direct roadmap generation completed successfully');
     return roadmap;
     

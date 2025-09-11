@@ -8,12 +8,12 @@ export interface RoadmapParams {
 }
 
 // Direct roadmap generation with real web scraping
-export async function generateRoadmapWithGemini(params: RoadmapParams): Promise<RoadmapT> {
+export async function generateRoadmapWithGemini(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void): Promise<RoadmapT> {
   try {
     console.log('Generating roadmap with direct scraping for:', params.goal);
     
     // Use the direct scraping approach
-    const roadmap = await generateRoadmapWithDirectScraping(params);
+    const roadmap = await generateRoadmapWithDirectScraping(params, progressCallback);
     
     console.log('Direct roadmap generation completed successfully');
     return roadmap;

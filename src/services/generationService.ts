@@ -96,7 +96,11 @@ class GenerationService {
       this.notify();
 
       // Generate roadmap with Gemini and web scraping
-      const result = await generateRoadmapWithGemini(requestData);
+      const result = await generateRoadmapWithGemini(requestData, (progress, message) => {
+        this.progress = progress;
+        this.statusMessage = message;
+        this.notify();
+      });
       
       this.statusMessage = "Finding real resources...";
       this.progress = 30;
