@@ -40,7 +40,6 @@ WATCH PRIORITY
 
 SPLITTING (for long resources)
 - If resource >30 minutes or multi-part:
-  • Reuse SAME URL across days.
   • Fill split.total_parts, split.part_number, split.range (timestamps or chapters).
   • Do NOT invent new URLs for splits.
 

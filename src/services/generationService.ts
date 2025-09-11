@@ -75,77 +75,43 @@ class GenerationService {
       total_days: totalDays,
     };
 
-  // Use simple streaming approach that works and is cost-effective
-  this.performSimpleGeneration(requestData);
+  // Use Gemini API with web scraping for free, real resources
+  this.performGeminiGeneration(requestData);
   }
 
-  // Simple, cost-effective generation approach
-  private async performSimpleGeneration(requestData: any) {
+  // Gemini API with web scraping for free, real resources
+  private async performGeminiGeneration(requestData: any) {
     try {
-      console.log('GenerationService: Starting simple generation...');
+      console.log('GenerationService: Starting Gemini generation...');
+      
+      this.statusMessage = "Generating roadmap structure...";
+      this.progress = 10;
+      this.notify();
 
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-      });
+      // Import the Gemini generator
+      const { generateRoadmapWithGemini } = await import('@/lib/geminiRoadmapGenerator');
+      
+      this.statusMessage = "Finding real resources...";
+      this.progress = 30;
+      this.notify();
 
-      console.log('GenerationService: API response received:', res.status);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      let buffer = "";
-      let result: any = null;
-
-      console.log('GenerationService: Starting to read stream...');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('GenerationService: Stream reading complete');
-          break;
-        }
-
-        buffer += new TextDecoder().decode(value);
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.type === "progress") {
-              this.progress = parsed.percent || 0;
-              this.statusMessage = parsed.message || "Processing...";
-              console.log('GenerationService: Progress update:', this.progress + '%');
-              this.notify();
-            } else if (parsed.type === "result") {
-              result = parsed.data;
-              console.log('GenerationService: Result received');
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
-            }
-          } catch (e) {
-            console.warn("Failed to parse line:", line, e);
-          }
-        }
-      }
+      // Generate roadmap with Gemini and web scraping
+      const result = await generateRoadmapWithGemini(requestData);
+      
+      this.statusMessage = "Finalizing roadmap...";
+      this.progress = 90;
+      this.notify();
 
       this.data = result;
       this.statusMessage = "Complete!";
+      this.progress = 100;
       this.isGenerating = false;
-      this.goalName = result?.title || '';
-      console.log('GenerationService: Generation completed successfully');
+      this.goalName = result?.goal || '';
+      console.log('GenerationService: Gemini generation completed successfully');
       this.notify();
       
     } catch (e: any) {
-      console.error('GenerationService: Generation failed:', e);
+      console.error('GenerationService: Gemini generation failed:', e);
       this.error = e?.message || "Generation failed";
       this.isGenerating = false;
       this.notify();
