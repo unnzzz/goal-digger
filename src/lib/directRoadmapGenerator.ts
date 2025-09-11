@@ -124,26 +124,38 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   let exercise1Url = null;
   let exercise2Url = null;
   
-  // Make exercises more specific based on the goal and add interactive links
+  // Make exercises more specific based on the goal and day content
   if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
-    exercise1Title = `Practice: Create a ${dayTitle.toLowerCase()} exercise`;
-    exercise2Title = `Project: Apply ${dayTitle} to a short film scene`;
-    exercise1Url = `https://www.storyboardthat.com/`; // Interactive storyboard tool
-    exercise2Url = `https://www.canva.com/create/videos/`; // Video creation tool
+    if (dayTitle.toLowerCase().includes('camera') || dayTitle.toLowerCase().includes('exposure')) {
+      exercise1Title = `Practice: Test different camera settings for ${dayTitle.toLowerCase()}`;
+      exercise2Title = `Project: Shoot a scene demonstrating ${dayTitle.toLowerCase()}`;
+    } else if (dayTitle.toLowerCase().includes('lighting')) {
+      exercise1Title = `Practice: Set up three-point lighting for different scenarios`;
+      exercise2Title = `Project: Create mood lighting for a dramatic scene`;
+    } else if (dayTitle.toLowerCase().includes('editing')) {
+      exercise1Title = `Practice: Edit a 30-second clip using ${dayTitle.toLowerCase()}`;
+      exercise2Title = `Project: Create a short film with smooth transitions`;
+    } else {
+      exercise1Title = `Practice: Create a ${dayTitle.toLowerCase()} exercise`;
+      exercise2Title = `Project: Apply ${dayTitle} to a short film scene`;
+    }
   } else if (goal.toLowerCase().includes('programming') || goal.toLowerCase().includes('coding')) {
-    exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example`;
-    exercise2Title = `Project: Create a program using ${dayTitle}`;
-    exercise1Url = `https://codepen.io/`; // Interactive coding playground
-    exercise2Url = `https://replit.com/`; // Online IDE
+    if (dayTitle.toLowerCase().includes('javascript') || dayTitle.toLowerCase().includes('js')) {
+      exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example in JavaScript`;
+      exercise2Title = `Project: Create a web app using ${dayTitle.toLowerCase()}`;
+    } else if (dayTitle.toLowerCase().includes('react')) {
+      exercise1Title = `Code: Build a React component for ${dayTitle.toLowerCase()}`;
+      exercise2Title = `Project: Create a React app with ${dayTitle.toLowerCase()}`;
+    } else {
+      exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example`;
+      exercise2Title = `Project: Create a program using ${dayTitle}`;
+    }
   } else if (goal.toLowerCase().includes('language') || goal.toLowerCase().includes('spanish') || goal.toLowerCase().includes('french')) {
     exercise1Title = `Practice: Use ${dayTitle.toLowerCase()} in conversation`;
     exercise2Title = `Challenge: Write a story using ${dayTitle}`;
-    exercise1Url = `https://www.duolingo.com/`; // Language learning platform
-    exercise2Url = `https://www.lingoda.com/`; // Language practice platform
   } else {
-    // Generic interactive tools
-    exercise1Url = `https://www.khanacademy.org/`; // Educational platform
-    exercise2Url = `https://www.coursera.org/`; // Learning platform
+    exercise1Title = `Practice: Apply ${dayTitle.toLowerCase()} concepts`;
+    exercise2Title = `Project: Create something using ${dayTitle}`;
   }
   
   const exercise1 = {
@@ -200,13 +212,22 @@ Return a JSON object with:
     }
     
     const content = JSON.parse(jsonText);
+    const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
+    
+    // Store content in localStorage for the AI content page
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(content));
+    }
+    
     return {
       kind: contentType === 'video' ? 'watch' : 'read',
       title: content.title,
-      url: `https://ai-generated-content.com/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}`,
+      url: `/ai-content/${slug}`,
       source: content.source,
       duration_minutes: content.duration_minutes,
-      split: null
+      split: null,
+      isAIGenerated: true,
+      content: content.content
     };
   } catch (error) {
     console.error('Gemini content generation failed:', error);
@@ -285,6 +306,7 @@ export async function generateRoadmapWithDirectScraping(params: RoadmapParams, p
     // Track used resources to prevent duplicates
     const usedResourceUrls = new Set<string>();
     const usedResourceTitles = new Set<string>();
+    const usedResourceDomains = new Set<string>();
     
     // Step 1: Generate roadmap structure with Gemini
     progressCallback?.(10, "Generating roadmap structure...");
@@ -402,12 +424,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       
       // Create specific search terms for this day with unique modifiers
       const searchTerms = [
-        `${day.title} tutorial`,
-        `${day.title} guide`,
-        `${day.title} for beginners`,
-        `learn ${day.title}`,
-        `${day.title} basics`,
-        `${day.title} fundamentals`
+        `${day.title} tutorial day ${day.day}`,
+        `${day.title} guide step by step`,
+        `${day.title} for beginners complete`,
+        `learn ${day.title} from scratch`,
+        `${day.title} basics explained`,
+        `${day.title} fundamentals practical`
       ];
       
       // Find watch resources (videos) for LEARN section - single attempt with timeout
@@ -569,6 +591,16 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                   if (usedResourceTitles.has(title)) return false;
                   const existingUrls = day.learn.map((r: any) => r.url);
                   if (existingUrls.includes(resource.url)) return false;
+                  
+                  // Check domain uniqueness
+                  const domain = new URL(resource.url).hostname;
+                  if (usedResourceDomains.has(domain)) return false;
+                  
+                  // Check for similar titles (fuzzy matching)
+                  for (const usedTitle of usedResourceTitles) {
+                    if (title.includes(usedTitle) || usedTitle.includes(title)) return false;
+                  }
+                  
                   return true;
                 });
                 
@@ -579,6 +611,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                   }
                   usedResourceUrls.add(resource.url);
                   usedResourceTitles.add(resource.title.toLowerCase());
+                  const domain = new URL(resource.url).hostname;
+                  usedResourceDomains.add(domain);
                   day.learn.push(resource);
                 });
               }
@@ -592,19 +626,29 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
               if (readResponse.ok) {
                 const readData = await readResponse.json();
                 if (readData.resources && readData.resources.length > 0) {
-                  const newResources = readData.resources.filter((resource: any) => {
-                    if (usedResourceUrls.has(resource.url)) return false;
-                    const baseUrl = resource.url.split('?')[0].split('#')[0];
-                    for (const usedUrl of usedResourceUrls) {
-                      const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
-                      if (baseUrl === usedBaseUrl) return false;
-                    }
-                    const title = resource.title?.toLowerCase() || '';
-                    if (usedResourceTitles.has(title)) return false;
-                    const existingUrls = day.learn.map((r: any) => r.url);
-                    if (existingUrls.includes(resource.url)) return false;
-                    return true;
-                  });
+                const newResources = readData.resources.filter((resource: any) => {
+                  if (usedResourceUrls.has(resource.url)) return false;
+                  const baseUrl = resource.url.split('?')[0].split('#')[0];
+                  for (const usedUrl of usedResourceUrls) {
+                    const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                    if (baseUrl === usedBaseUrl) return false;
+                  }
+                  const title = resource.title?.toLowerCase() || '';
+                  if (usedResourceTitles.has(title)) return false;
+                  const existingUrls = day.learn.map((r: any) => r.url);
+                  if (existingUrls.includes(resource.url)) return false;
+                  
+                  // Check domain uniqueness
+                  const domain = new URL(resource.url).hostname;
+                  if (usedResourceDomains.has(domain)) return false;
+                  
+                  // Check for similar titles (fuzzy matching)
+                  for (const usedTitle of usedResourceTitles) {
+                    if (title.includes(usedTitle) || usedTitle.includes(title)) return false;
+                  }
+                  
+                  return true;
+                });
                   
                   const resourcesToAdd = newResources.slice(0, 2 - day.learn.length);
                   resourcesToAdd.forEach((resource: any) => {
@@ -613,6 +657,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
                     }
                     usedResourceUrls.add(resource.url);
                     usedResourceTitles.add(resource.title.toLowerCase());
+                    const domain = new URL(resource.url).hostname;
+                    usedResourceDomains.add(domain);
                     day.learn.push(resource);
                   });
                 }

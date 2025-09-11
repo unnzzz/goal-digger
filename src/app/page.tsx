@@ -449,7 +449,7 @@ export default function Home() {
                             </div>
                           </div>
                         )}
-                        {day.quiz && (
+                        {day.quiz && savedGoals.some(g => g.title === goalName && g.startDate) && (
                           <div className="section quiz">
                             <h5>Daily Quiz</h5>
                             <div className="section-content">
