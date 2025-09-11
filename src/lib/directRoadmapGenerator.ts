@@ -236,7 +236,7 @@ Return a JSON object with:
   } catch (error) {
     console.error('Gemini content generation failed:', error);
     // If quota exceeded, return a fallback content
-    if (error.message && error.message.includes('429')) {
+    if (error instanceof Error && error.message && error.message.includes('429')) {
       return {
         kind: contentType === 'podcast' ? 'listen' : 'read',
         title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
