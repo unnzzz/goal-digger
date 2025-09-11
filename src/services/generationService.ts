@@ -99,18 +99,25 @@ class GenerationService {
       const result = await generateRoadmapWithGemini(requestData);
       
       this.statusMessage = "Finding real resources...";
-      this.progress = 50;
+      this.progress = 30;
       this.notify();
 
       // Simulate progress during resource finding
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       this.statusMessage = "Scraping educational content...";
-      this.progress = 70;
+      this.progress = 50;
       this.notify();
 
       // Simulate progress during scraping
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      this.statusMessage = "Processing daily resources...";
+      this.progress = 70;
+      this.notify();
+
+      // Simulate progress during processing
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       this.statusMessage = "Finalizing roadmap...";
       this.progress = 90;
