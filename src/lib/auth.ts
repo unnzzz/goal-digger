@@ -21,22 +21,33 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // Skip email verification for now since we don't have email verification set up
-        // if (!user.emailVerified) {
-        //   return null;
-        // }
+        // Require email verification
+        if (!user.emailVerified) {
+          return null;
+        }
 
-        return { id: user.id, email: user.email, name: user.name ?? null };
+        return { 
+          id: user.id, 
+          email: user.email, 
+          name: user.name ?? null,
+          emailVerified: user.emailVerified
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) (token as any).userId = (user as any).id;
+      if (user) {
+        (token as any).userId = (user as any).id;
+        (token as any).emailVerified = (user as any).emailVerified;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (token) (session as any).user.id = (token as any).userId;
+      if (token) {
+        (session as any).user.id = (token as any).userId;
+        (session as any).user.emailVerified = (token as any).emailVerified;
+      }
       return session;
     },
   },

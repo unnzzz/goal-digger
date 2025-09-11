@@ -27,6 +27,7 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
 
   return (
     <div
+      className="avatar-chatbox"
       style={{
         position: "fixed",
         left: "20px",
@@ -40,6 +41,7 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
       }}
     >
       <div
+        className="avatar-chatbox-content"
         style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           color: "white",
@@ -57,6 +59,7 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
       >
         {/* Speech bubble tail */}
         <div
+          className="avatar-chatbox-tail"
           style={{
             position: "absolute",
             bottom: "-8px",

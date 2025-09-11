@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
+    "prisma:deploy": "prisma migrate deploy",
     "start": "next start",
     "lint": "next lint"
   },
@@ -12,8 +14,11 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.15.0",
+    "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
+    "cheerio": "^1.1.2",
     "next": "^14.2.5",
     "next-auth": "^4.24.11",
     "node-fetch": "^3.3.2",

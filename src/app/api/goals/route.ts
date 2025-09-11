@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -26,7 +28,10 @@ export async function POST(req: Request) {
 
   // Parse the content if it's a string
   const roadmapData = typeof content === 'string' ? JSON.parse(content) : content;
-  const contentHash = hashRoadmap(roadmapData);
+  
+  // Sanitize the roadmap data to remove any null bytes that could cause UTF8 encoding issues
+  const sanitizedRoadmapData = JSON.parse(JSON.stringify(roadmapData).replace(/\0/g, ''));
+  const contentHash = hashRoadmap(sanitizedRoadmapData);
 
   // Find existing goal with the same hash
   let existing = await prisma.goal.findFirst({
@@ -40,7 +45,7 @@ export async function POST(req: Request) {
         where: { id: existing.id },
         data: { 
           startDate: new Date(),
-          roadmapJson: roadmapData // Update the roadmap data as well
+          roadmapJson: sanitizedRoadmapData // Update the roadmap data as well
         },
       });
     }
@@ -57,7 +62,7 @@ export async function POST(req: Request) {
       title,
       dailyMinutes,
       totalDays,
-      roadmapJson: roadmapData,
+      roadmapJson: sanitizedRoadmapData,
       startDate: startGoal ? new Date() : null,
       contentHash,
     },

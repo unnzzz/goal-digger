@@ -5,6 +5,9 @@ import Image from "next/image";
 import { useUserData } from "../hooks/useUserData";
 import { useAvatar } from "../contexts/AvatarContext";
 import AvatarChatbox from "./AvatarChatbox";
+import MobileNavigation from "./MobileNavigation";
+import MobileTopBar from "./MobileTopBar";
+import GlobalGenerationStatus from "./GlobalGenerationStatus";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -55,7 +58,10 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
   }
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${activePage === 'room' ? 'room-page' : ''}`}>
+      {/* Mobile Top Bar */}
+      <MobileTopBar />
+      
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -202,32 +208,24 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
         </div>
       </main>
 
-      {/* Avatar Chatbox */}
-      <AvatarChatbox
-        message={currentMessage}
-        isVisible={isVisible}
-        onClose={hideMessage}
-      />
+      {/* Avatar Chatbox - Only show on room page */}
+      {activePage === 'room' && (
+        <AvatarChatbox
+          message={currentMessage}
+          isVisible={isVisible}
+          onClose={hideMessage}
+        />
+      )}
 
-      {/* Static Avatar */}
-      {userData?.avatarKey && (
-        <div
-          style={{
-            position: "fixed",
-            left: "20px",
-            bottom: "0px",
-            zIndex: 50,
-            pointerEvents: "none"
-          }}
-        >
+      {/* Static Avatar - Only show on room page */}
+      {activePage === 'room' && userData?.avatarKey && (
+        <div className="avatar-container">
           <Image
             src={`/avatars/full-body/${userData.avatarKey}.png`}
             alt="Avatar"
             width={120}
             height={180}
-            style={{
-              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
-            }}
+            className="avatar-image"
             onError={(e) => {
               // Fallback to regular avatar if full-body doesn't exist
               const target = e.target as HTMLImageElement;
@@ -236,6 +234,12 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
           />
         </div>
       )}
+      
+      {/* Mobile Navigation */}
+      <MobileNavigation activePage={activePage} />
+      
+      {/* Global Generation Status */}
+      <GlobalGenerationStatus />
     </div>
   );
 }

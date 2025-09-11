@@ -5,24 +5,39 @@ import { useUserData } from '@/hooks/useUserData';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '../components/AppLayout';
+import LandingPage from '../components/LandingPage';
 import { useAvatar } from '../contexts/AvatarContext';
+import { useRoadmapGeneration } from '../contexts/RoadmapGenerationContext';
 import { getMessageForAction } from '../lib/avatarMessages';
 
 export default function Home() {
   const [goal, setGoal] = useState("");
   const [dailyMinutes, setDailyMinutes] = useState(30);
   const [totalDays, setTotalDays] = useState(10);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [goalName, setGoalName] = useState("");
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { showMessage } = useAvatar();
   const [savedGoals, setSavedGoals] = useState<any[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(false);
+  
+  // Use the global generation context
+  const { 
+    generationState, 
+    startGeneration, 
+    clearGeneration, 
+    goalName, 
+    setGoalName,
+    setData
+  } = useRoadmapGeneration();
+  
+  // Destructure for easier access
+  const { 
+    isGenerating: loading, 
+    data, 
+    error, 
+    progress, 
+    statusMessage 
+  } = generationState;
 
   // Show avatar message when roadmap generator page loads
   useEffect(() => {
@@ -49,81 +64,18 @@ export default function Home() {
   const router = useRouter();
 
 
-  // Redirect to login if not authenticated
+  // Show landing page if not authenticated
   if (status === "loading") {
     return <div className="loading-screen">Loading...</div>;
   }
 
   if (status === "unauthenticated") {
-    router.push("/login");
-    return null;
+    return <LandingPage />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setProgress(0);
-    setStatusMessage("Starting generation...");
-
-    const requestData = {
-      goal,
-      daily_minutes: dailyMinutes,
-      total_days: totalDays,
-    };
-
-    try {
-      const res = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      let buffer = "";
-      let result: any = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += new TextDecoder().decode(value);
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.type === "progress") {
-              setProgress(parsed.percent || 0);
-              setStatusMessage(parsed.message || "Processing...");
-            } else if (parsed.type === "result") {
-              result = parsed.data;
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
-            }
-          } catch (e) {
-            console.warn("Failed to parse line:", line, e);
-          }
-        }
-      }
-
-      setData(result);
-      setGoalName(result.title || goal);
-      setStatusMessage("Complete!");
-    } catch (e: any) {
-      setError(e?.message || "Generation failed");
-    } finally {
-      setLoading(false);
-    }
+    await startGeneration(goal, dailyMinutes, totalDays);
   };
 
   const handleSaveGoal = async (startGoal = false) => {
@@ -213,6 +165,7 @@ export default function Home() {
       if (response.ok) {
         const result = await response.json();
         const roadmapData = result.goal.roadmapJson;
+        // Update the context with loaded data
         setData(roadmapData);
         setGoalName(result.goal.title);
         setIsEditing(false);
@@ -224,7 +177,8 @@ export default function Home() {
 
   return (
     <AppLayout activePage="generator">
-      <div className="page-layout">
+      <div className="generator-page">
+        <div className="page-layout">
         <div className="content-main">
           <div className="form-container">
             <form onSubmit={handleSubmit}>
@@ -329,13 +283,8 @@ export default function Home() {
                       <button 
                         className="btn-ghost regenerate-btn"
                         onClick={() => {
-                          setData(null);
-                          setGoalName("");
+                          clearGeneration();
                           setIsEditing(false);
-                          setLoading(false);
-                          setError(null);
-                          setProgress(0);
-                          setStatusMessage(null);
                         }}
                       >
                         Regenerate
@@ -408,7 +357,7 @@ export default function Home() {
                 <div className="roadmap-days">
                   {data.days?.map((day: any, index: number) => (
                     <div key={index} className="roadmap-day">
-                      <h4>Day {day.day}</h4>
+                      <h4>Day {day.day}: {day.title}</h4>
                       <div className="day-sections">
                         {day.learn && (
                           <div className="section learn">
@@ -417,7 +366,7 @@ export default function Home() {
                               {Array.isArray(day.learn) ? (
                                 day.learn.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -430,6 +379,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
@@ -446,7 +396,7 @@ export default function Home() {
                               {Array.isArray(day.practice) ? (
                                 day.practice.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -459,6 +409,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
@@ -475,7 +426,7 @@ export default function Home() {
                               {Array.isArray(day.reflect) ? (
                                 day.reflect.map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
-                                    <h6>{item.title}</h6>
+                                    <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
                                     <div className="task-meta">
                                       {item.kind && (
@@ -488,6 +439,7 @@ export default function Home() {
                                       )}
                                       {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="resource-link">View Resource</a>}
                                       {item.duration_minutes && <span className="duration">{item.duration_minutes} min</span>}
+                                      {item.source && <span className="source">{item.source}</span>}
                                     </div>
                                   </div>
                                 ))
@@ -516,7 +468,7 @@ export default function Home() {
             <ul className="sidebar-list">
               <li>We turn your big goal into a daily roadmap, by finding top rated resources from the internet and reddit</li>
               <li>Each day has 3 parts: Learn, Practice, Reflect.</li>
-              <li>We will send you a reminder email every 2 hours to remind you to complete your daily tasks, until you complete them all.</li>
+              <li>We will send you a reminder email daily to remind you to complete your daily tasks, until you complete them all.</li>
               <li> once you complete all the tasks for the day, we will stop spamming you with emails.</li>
               <li>You earn <img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> coins for completing daily tasks.</li>
               <li>Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>
@@ -617,6 +569,7 @@ export default function Home() {
           </div>
           </div>
       )}
+        </div>
     </AppLayout>
   );
 }

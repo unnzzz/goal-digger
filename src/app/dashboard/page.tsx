@@ -863,8 +863,9 @@ export default function Dashboard() {
   // ---- Render ----
   return (
     <AppLayout activePage="dashboard">
-      {/* Content Area */}
-      <div className="content-main" style={{ padding: "32px" }}>
+      <div className="dashboard-page">
+        {/* Content Area */}
+        <div className="content-main" style={{ padding: "32px" }}>
 
       <div className="bento-grid">
         {/* GOALS */}
@@ -1367,6 +1368,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      </div>
     </AppLayout>
   );
 }

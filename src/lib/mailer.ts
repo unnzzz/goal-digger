@@ -28,6 +28,21 @@ export async function getTransport() {
   return cachedTransport;
 }
 
+export async function sendEmail({ to, subject, html, text }: { to: string; subject: string; html: string; text?: string }) {
+  const transporter = await getTransport();
+  const from = process.env.EMAIL_FROM || "Goal Digger <no-reply@example.com>";
+
+  const info = await transporter.sendMail({
+    to, from, subject, html, text,
+  });
+
+  // Log preview URL for Ethereal (dev)
+  const preview = (nodemailer as any).getTestMessageUrl?.(info);
+  if (preview) {
+    console.log("📧 Ethereal preview:", preview);
+  }
+}
+
 export async function sendVerificationEmail(to: string, url: string) {
   const transporter = await getTransport();
   const from = process.env.EMAIL_FROM || "Roadmap App <no-reply@example.com>";

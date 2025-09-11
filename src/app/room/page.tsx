@@ -229,12 +229,14 @@ export default function RoomPage() {
   };
 
   const handleScale = async (itemId: string, direction: 'in' | 'out') => {
+    console.log('handleScale called:', itemId, direction);
     const scaleDelta = direction === 'in' ? 0.1 : -0.1;
     const updatedItems = items.map(item => 
       item.id === itemId 
         ? { ...item, scale: Math.max(0.3, Math.min(10, item.scale + scaleDelta)) }
         : item
     );
+    console.log('Updated items:', updatedItems);
     setItems(updatedItems);
 
     // Only save to server if it's not the default table
@@ -339,33 +341,34 @@ export default function RoomPage() {
   return (
     <AppLayout activePage="room">
       <div 
+        className="room-page-container"
         style={{ 
           display: "flex", 
           height: "calc(100vh - 80px)", 
-          gap: "0px", 
+          gap: "20px", 
           padding: "0px",
-          background: "transparent"
+          margin: "0px",
+          background: "transparent",
+          width: "100%"
         }}
         onClick={() => setSelectedItem(null)}
       >
-        {/* Central Room View - ENTIRE PAGE */}
-        <div style={{ 
-          flex: 1, 
+        {/* Central Room View - Main Area */}
+        <div className="room-container" style={{ 
+          flex: 5, 
           background: "transparent", 
           borderRadius: "20px", 
           padding: "0px",
           position: "relative",
           overflow: "visible",
           boxShadow: "none",
-          minWidth: "1116px", // Increased from 1110px by 0.5%
+          minWidth: "0",
           height: "100%",
-          marginLeft: "20px",
-          marginTop: "20px",
           display: "flex",
           flexDirection: "column"
         }}>
           {/* Room Title - Above Picture */}
-          <div style={{ 
+          <div className="room-title" style={{ 
             textAlign: "center", 
             color: "#2d3748",
             marginBottom: "10px",
@@ -394,7 +397,7 @@ export default function RoomPage() {
             </p>
             
             {/* Save/Edit Room Buttons */}
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div className="room-buttons" style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               {isEditing ? (
                 <button
                   onClick={handleSaveRoom}
@@ -511,10 +514,15 @@ export default function RoomPage() {
                     borderRadius: "8px",
                     zIndex: 200,
                     marginLeft: "10px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                    minWidth: "120px"
                   }}>
                     <button
                       onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotate(item.id, 'left');
+                      }}
+                      onTouchEnd={(e) => {
                         e.stopPropagation();
                         handleRotate(item.id, 'left');
                       }}
@@ -523,11 +531,14 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Rotate Left"
                     >
@@ -538,16 +549,23 @@ export default function RoomPage() {
                         e.stopPropagation();
                         handleScale(item.id, 'out');
                       }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        handleScale(item.id, 'out');
+                      }}
                       style={{
                         background: "#667eea",
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Make Smaller"
                     >
@@ -558,16 +576,23 @@ export default function RoomPage() {
                         e.stopPropagation();
                         handleScale(item.id, 'in');
                       }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        handleScale(item.id, 'in');
+                      }}
                       style={{
                         background: "#667eea",
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Make Bigger"
                     >
@@ -578,16 +603,23 @@ export default function RoomPage() {
                         e.stopPropagation();
                         handleRotate(item.id, 'right');
                       }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        handleRotate(item.id, 'right');
+                      }}
                       style={{
                         background: "#667eea",
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        minWidth: "32px",
-                        height: "32px"
+                        fontSize: "14px",
+                        minWidth: "40px",
+                        height: "40px",
+                        touchAction: "manipulation",
+                        userSelect: "none",
+                        WebkitUserSelect: "none"
                       }}
                       title="Rotate Right"
                     >
@@ -603,9 +635,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
@@ -623,9 +655,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
@@ -643,9 +675,9 @@ export default function RoomPage() {
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        padding: "6px 8px",
+                        padding: "8px 12px",
                         cursor: "pointer",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         minWidth: "32px",
                         height: "32px"
                       }}
@@ -660,19 +692,17 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Inventory Sidebar - Absolute Overlay */}
-        <div style={{ 
-          position: "absolute",
-          top: "100px",
-          right: "20px",
-          width: "180px", 
+        {/* Inventory Sidebar - Desktop */}
+        <div className="inventory-sidebar" style={{ 
+          flex: 1,
+          maxWidth: "250px",
           background: "rgba(255, 255, 255, 0.95)", 
           borderRadius: "15px", 
-          padding: "10px",
-          boxShadow: "0 0 20px rgba(0,0,0,0.2)",
-          overflowY: "auto",
+          padding: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
           backdropFilter: "blur(10px)",
-          zIndex: 20
+          height: "100%",
+          overflowY: "auto"
         }}>
           <div style={{ marginBottom: "10px" }}>
             <h2 style={{ 
@@ -716,7 +746,14 @@ export default function RoomPage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="inventory-grid" style={{ 
+              display: "grid", 
+              gridTemplateColumns: "1fr", 
+              gap: "8px",
+              padding: "8px 0",
+              maxHeight: "calc(100vh - 200px)",
+              overflowY: "auto"
+            }}>
               {inventoryItems.map(item => (
                 <div 
                   key={item.id} 
@@ -724,12 +761,18 @@ export default function RoomPage() {
                   onDragStart={isEditing ? (e) => handleDragStart(e, item) : undefined}
                   style={{
                     background: "#f8f9fa",
-                    borderRadius: "6px",
+                    borderRadius: "8px",
                     padding: "8px",
                     border: "1px solid #e2e8f0",
                     transition: "all 0.2s ease",
                     cursor: isEditing ? "grab" : "default",
-                    opacity: isEditing ? 1 : 0.6
+                    opacity: isEditing ? 1 : 0.6,
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    gap: "8px"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#ffffff";
@@ -742,21 +785,21 @@ export default function RoomPage() {
                     e.currentTarget.style.transform = "translateX(0)";
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
                     <img
                       src={getFurnitureImagePath(item.item.name)}
                       alt={item.item.name}
-                      width={20}
-                      height={20}
-                      style={{ borderRadius: "3px", display: 'block' }}
+                      width={40}
+                      height={40}
+                      style={{ borderRadius: "6px", display: 'block' }}
                       draggable={false}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ width: "100%" }}>
                       <div style={{
-                        fontSize: "11px",
+                        fontSize: "12px",
                         fontWeight: "600",
                         color: "#2d3748",
-                        marginBottom: "1px",
+                        marginBottom: "4px",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis"
@@ -764,7 +807,7 @@ export default function RoomPage() {
                         {item.item.name}
                       </div>
                       <div style={{
-                        fontSize: "9px",
+                        fontSize: "10px",
                         color: "#718096",
                         textTransform: "uppercase",
                         letterSpacing: "0.5px"

@@ -1,6 +1,6 @@
 // src/app/api/generate/stream/route.ts
 import { z } from "zod";
-import { generateRoadmap } from "@/lib/generateRoadmap";
+import { generateRoadmapWithGemini } from "@/lib/geminiRoadmapGenerator";
 import type { RoadmapT } from "@/lib/schema";
 import { checkGoalSafety } from "@/lib/goalGuard";
 
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
             return [{
               id: 0,
               spanDays: 1,
-              run: () => generateRoadmap(params),
+              run: () => generateRoadmapWithGemini(params),
               done: false
             }];
           }
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
             chunks.push({
               id: id++,
               spanDays: span,
-              run: () => generateRoadmap(sub),
+              run: () => generateRoadmapWithGemini(sub),
               done: false,
             });
             remaining -= span;

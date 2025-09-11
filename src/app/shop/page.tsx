@@ -48,15 +48,7 @@ export default function ShopPage() {
   const [unauth, setUnauth] = useState(false);
   const { showMessage } = useAvatar();
 
-  // Show avatar message when shop page loads
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        showMessage(getMessageForAction('shop_visited'));
-      }, 2000); // Delay to let page load
-      return () => clearTimeout(timer);
-    }
-  }, [loading, showMessage]);
+  // Avatar messages removed - only show in room tab
 
   const load = async () => {
     setLoading(true);
@@ -125,11 +117,11 @@ export default function ShopPage() {
       setMsg("Purchased!");
       setCoins(j.coins ?? 0);
       await load();
-      // Let the navbar refresh coins
+      // Let the navbar refresh coins and stats
       window.dispatchEvent(new Event("coins:refresh"));
+      window.dispatchEvent(new Event("stats:refresh"));
       
-      // Show instant avatar message for purchase
-      showMessage(getMessageForAction('furniture_bought'), true);
+      // Avatar messages removed - only show in room tab
     } catch (e: any) {
       setError(e?.message || "Network error");
     }
@@ -137,7 +129,7 @@ export default function ShopPage() {
 
   return (
     <AppLayout activePage="shop">
-      <div className="content-main" style={{ padding: "32px" }}>
+      <div className="content-main" style={{ padding: "32px 48px", width: "100%", maxWidth: "none" }}>
 
       {loading && <div>Loading…</div>}
 
@@ -206,7 +198,7 @@ npx prisma db seed`}
           {msg && <div className="success" style={{ marginBottom: 20 }}>{msg}</div>}
 
           {Object.entries(groupItemsByCategory(items)).map(([category, categoryItems]) => (
-            <div key={category} style={{ marginBottom: '32px' }}>
+            <div key={category} style={{ marginBottom: '48px' }}>
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: '700',
@@ -219,8 +211,9 @@ npx prisma db seed`}
               </h2>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '16px'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '30px',
+                width: '100%'
               }}>
                 {categoryItems.map((it) => (
                   <div key={it.id} style={{
