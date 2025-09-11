@@ -53,14 +53,23 @@ export async function generateRoadmapWithGemini(params: RoadmapParams): Promise<
     console.log('Generating roadmap with Gemini for:', params.goal);
     
     // First, generate the roadmap structure with Gemini
-    const structurePrompt = `Generate a learning roadmap for: "${params.goal}"
+    const structurePrompt = `Generate a detailed learning roadmap for: "${params.goal}"
 Daily minutes: ${params.daily_minutes}
 Total days: ${params.total_days || 10}
 
 Create a JSON roadmap structure with:
-- Each day has a specific topic related to the goal
-- Focus on practical, actionable learning
+- Each day has a UNIQUE, SPECIFIC topic related to the goal
+- Focus on practical, actionable learning with clear progression
 - Progress from beginner to intermediate
+- Each day title should be DISTINCT and describe a specific skill/concept
+- Avoid generic titles like "basics" or "fundamentals" - be specific
+
+EXAMPLES of good specific titles:
+- "Camera Settings: Aperture, Shutter Speed, and ISO"
+- "3-Point Lighting Setup and Techniques"
+- "Storyboarding and Shot Composition"
+- "Audio Recording and Microphone Placement"
+- "Color Grading in Post-Production"
 
 IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations. Just the raw JSON object.
 
@@ -71,11 +80,11 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
   "days": [
     {
       "day": 1,
-      "title": "Specific topic title",
+      "title": "Specific, unique topic title",
       "minutes": ${params.daily_minutes},
       "learn": [],
       "practice": [],
-      "reflect": "Reflection question about today's learning"
+      "reflect": "Specific reflection question about today's learning"
     }
   ]
 }`;
@@ -118,20 +127,28 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       day.learn = [];
       day.practice = [];
       
+      // Create more specific search terms based on the day title
+      const searchTerms = [
+        day.title,
+        `${day.title} tutorial`,
+        `${day.title} guide`,
+        `${day.title} for beginners`
+      ];
+      
       // Find watch resources (videos) for LEARN section
-      const watchResources = await findResourcesForTopic(day.title, 'watch');
+      const watchResources = await findResourcesForTopic(searchTerms[0], 'watch');
       if (watchResources.length > 0) {
         day.learn.push(...watchResources.slice(0, 2)); // Add up to 2 videos
       }
       
       // Find read resources (articles) for LEARN section
-      const readResources = await findResourcesForTopic(day.title, 'read');
+      const readResources = await findResourcesForTopic(searchTerms[1], 'read');
       if (readResources.length > 0) {
         day.learn.push(...readResources.slice(0, 1)); // Add 1 article to learn
       }
       
       // Find practice resources for PRACTICE section
-      const practiceResources = await findResourcesForTopic(`${day.title} practice`, 'read');
+      const practiceResources = await findResourcesForTopic(searchTerms[2], 'read');
       if (practiceResources.length > 0) {
         day.practice.push(...practiceResources.slice(0, 2)); // Add up to 2 practice resources
       } else {
