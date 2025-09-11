@@ -453,18 +453,59 @@ export async function generateRoadmap(params: {
     throw new Error("OpenAI client not initialized. Missing OPENAI_API_KEY environment variable.");
   }
 
-  const messages: Array<{ role: "system" | "user"; content: string }> = [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: JSON.stringify(params) },
+  // Simplified prompt for cost efficiency - no web search, just generate structure
+  const simplePrompt = `Generate a learning roadmap for: "${params.goal}"
+Daily minutes: ${params.daily_minutes}
+Total days: ${params.total_days || 10}
+
+Create a JSON roadmap with:
+- Each day has a specific topic related to the goal
+- 2-3 resources per day (mix of watch/read)
+- Use placeholder URLs that follow the pattern: https://example.com/[topic]
+- Keep it practical and actionable
+
+Return ONLY valid JSON in this format:
+{
+  "goal": "${params.goal}",
+  "total_days": ${params.total_days || 10},
+  "daily_minutes": ${params.daily_minutes},
+  "days": [
+    {
+      "day": 1,
+      "title": "Topic title",
+      "minutes": ${params.daily_minutes},
+      "learn": [
+        {
+          "kind": "watch",
+          "title": "Video title",
+          "url": "https://youtube.com/watch?v=placeholder",
+          "source": "YouTube",
+          "duration_minutes": 15
+        }
+      ],
+      "practice": [
+        {
+          "kind": "read",
+          "title": "Article title", 
+          "url": "https://example.com/article",
+          "source": "Example Site",
+          "duration_minutes": 10
+        }
+      ],
+      "reflect": "Reflection question about today's learning"
+    }
+  ]
+}`;
+
+  const messages: Array<{ role: "user"; content: string }> = [
+    { role: "user", content: simplePrompt },
   ];
 
   const resp = await withRetries(() =>
     client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       input: messages,
-      tools: [{ type: "web_search" }],
       text: { format: zodTextFormat(Roadmap, "roadmap") },
-      tool_choice: "required", // Force web search usage
     })
   );
 
@@ -474,13 +515,5 @@ export async function generateRoadmap(params: {
   const roadmap = Roadmap.parse(JSON.parse(text));
   console.log("Parsed roadmap successfully");
   
-  // Validate that all resources have proper URLs
-  const validatedRoadmap = await validateRoadmapLinks(roadmap);
-  console.log("Validated roadmap links");
-  
-  // Post-process to fix any broken YouTube links
-  const processedRoadmap = await fixBrokenVideoLinks(validatedRoadmap);
-  console.log("Fixed broken video links");
-  
-  return processedRoadmap;
+  return roadmap;
 }
