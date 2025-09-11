@@ -58,6 +58,9 @@ class GenerationService {
       this.controller.abort();
     }
 
+    // Create new abort controller for this generation
+    this.controller = new AbortController();
+
     this.isGenerating = true;
     this.progress = 0;
     this.statusMessage = "Starting generation...";
@@ -84,6 +87,12 @@ class GenerationService {
     try {
       console.log('GenerationService: Starting Gemini generation...');
       
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted before starting');
+        return;
+      }
+      
       this.statusMessage = "Generating roadmap structure...";
       this.progress = 10;
       this.notify();
@@ -91,16 +100,33 @@ class GenerationService {
       // Import the Gemini generator
       const { generateRoadmapWithGemini } = await import('@/lib/geminiRoadmapGenerator');
       
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during import');
+        return;
+      }
+      
       this.statusMessage = "Creating daily learning topics...";
       this.progress = 20;
       this.notify();
 
       // Generate roadmap with Gemini and web scraping
       const result = await generateRoadmapWithGemini(requestData, (progress, message) => {
+        // Check if generation was aborted during progress updates
+        if (this.controller?.signal.aborted) {
+          console.log('GenerationService: Generation was aborted during progress update');
+          return;
+        }
         this.progress = progress;
         this.statusMessage = message;
         this.notify();
-      });
+      }, this.controller?.signal);
+      
+      // Check if generation was aborted after completion
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted after completion');
+        return;
+      }
       
       this.statusMessage = "Finding real resources...";
       this.progress = 30;
@@ -109,6 +135,12 @@ class GenerationService {
       // Simulate progress during resource finding
       await new Promise(resolve => setTimeout(resolve, 200));
       
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during resource finding');
+        return;
+      }
+      
       this.statusMessage = "Scraping educational content...";
       this.progress = 50;
       this.notify();
@@ -116,12 +148,24 @@ class GenerationService {
       // Simulate progress during scraping
       await new Promise(resolve => setTimeout(resolve, 200));
       
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during scraping');
+        return;
+      }
+      
       this.statusMessage = "Processing daily resources...";
       this.progress = 70;
       this.notify();
 
       // Simulate progress during processing
       await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during processing');
+        return;
+      }
       
       this.statusMessage = "Finalizing roadmap...";
       this.progress = 90;
@@ -136,6 +180,16 @@ class GenerationService {
       this.notify();
       
     } catch (e: any) {
+      // Check if the error is due to abortion
+      if (e.name === 'AbortError' || e.message?.includes('aborted')) {
+        console.log('GenerationService: Generation was aborted by user');
+        this.isGenerating = false;
+        this.statusMessage = "Generation cancelled";
+        this.error = null; // Don't show error for user cancellation
+        this.notify();
+        return;
+      }
+      
       console.error('GenerationService: Gemini generation failed:', e);
       this.error = e?.message || "Generation failed";
       this.isGenerating = false;

@@ -333,12 +333,24 @@ Return a JSON array of questions:
 }
 
 // OPTIMIZED: Process multiple days in parallel for much faster generation
-async function processDaysInParallel(days: any[], params: RoadmapParams, usedResourceUrls: Set<string>, usedResourceTitles: Set<string>, usedResourceDomains: Set<string>, progressCallback?: (progress: number, message: string) => void): Promise<void> {
+async function processDaysInParallel(days: any[], params: RoadmapParams, usedResourceUrls: Set<string>, usedResourceTitles: Set<string>, usedResourceDomains: Set<string>, progressCallback?: (progress: number, message: string) => void, abortSignal?: AbortSignal): Promise<void> {
   const BATCH_SIZE = 3; // Process 3 days at a time for optimal speed
   
   for (let i = 0; i < days.length; i += BATCH_SIZE) {
+    // Check if aborted before processing batch
+    if (abortSignal?.aborted) {
+      console.log('Generation was aborted during batch processing');
+      return;
+    }
+    
     const batch = days.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map(async (day, batchIndex) => {
+      // Check if aborted before processing individual day
+      if (abortSignal?.aborted) {
+        console.log('Generation was aborted during day processing');
+        return;
+      }
+      
       const dayIndex = i + batchIndex;
       const dayProgress = 30 + (dayIndex / days.length) * 60;
       progressCallback?.(Math.round(dayProgress), `Processing day ${day.day}: ${day.title}`);
@@ -448,9 +460,14 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
 }
 
 // OPTIMIZED: Fast roadmap generation with parallel processing
-export async function generateRoadmapWithDirectScraping(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void): Promise<RoadmapT> {
+export async function generateRoadmapWithDirectScraping(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void, abortSignal?: AbortSignal): Promise<RoadmapT> {
   try {
     console.log('Generating FAST roadmap with direct scraping for:', params.goal);
+    
+    // Check if aborted before starting
+    if (abortSignal?.aborted) {
+      throw new Error('Generation was aborted');
+    }
     
     // Track used resources to prevent duplicates
     const usedResourceUrls = new Set<string>();
@@ -555,7 +572,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     console.log('Finding real resources for each day (FAST MODE)...');
     progressCallback?.(30, "Finding real resources...");
     
-    await processDaysInParallel(roadmap.days, params, usedResourceUrls, usedResourceTitles, usedResourceDomains, progressCallback);
+    await processDaysInParallel(roadmap.days, params, usedResourceUrls, usedResourceTitles, usedResourceDomains, progressCallback, abortSignal);
     
     progressCallback?.(100, "Roadmap generation completed!");
     console.log('FAST roadmap generation completed successfully');
