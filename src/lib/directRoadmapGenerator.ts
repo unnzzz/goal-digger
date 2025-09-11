@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { advancedScraper } from './advancedWebScraper';
 import { RoadmapT, ResourceT } from './schema';
 
 // Initialize Gemini
@@ -95,27 +94,43 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         `${day.title} for beginners`
       ];
       
-      // Find watch resources (videos) for LEARN section
-      const watchResources = await advancedScraper.searchResources(searchTerms[0], 'watch');
-      if (watchResources.length > 0) {
-        day.learn.push(...watchResources.slice(0, 2)); // Add up to 2 videos
-      }
-      
-      // Find read resources (articles) for LEARN section
-      const readResources = await advancedScraper.searchResources(searchTerms[1], 'read');
-      if (readResources.length > 0) {
-        day.learn.push(...readResources.slice(0, 1)); // Add 1 article to learn
-      }
-      
-      // Find practice resources for PRACTICE section
-      const practiceResources = await advancedScraper.searchResources(searchTerms[2], 'read');
-      if (practiceResources.length > 0) {
-        day.practice.push(...practiceResources.slice(0, 2)); // Add up to 2 practice resources
-      } else {
-        // If no specific practice resources, use some read resources
-        if (readResources.length > 1) {
-          day.practice.push(...readResources.slice(1, 3)); // Add remaining read resources
+      // Find watch resources (videos) for LEARN section using server-side API
+      try {
+        const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`);
+        if (watchResponse.ok) {
+          const watchData = await watchResponse.json();
+          if (watchData.resources && watchData.resources.length > 0) {
+            day.learn.push(...watchData.resources.slice(0, 2)); // Add up to 2 videos
+          }
         }
+      } catch (error) {
+        console.error('Failed to fetch watch resources:', error);
+      }
+      
+      // Find read resources (articles) for LEARN section using server-side API
+      try {
+        const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`);
+        if (readResponse.ok) {
+          const readData = await readResponse.json();
+          if (readData.resources && readData.resources.length > 0) {
+            day.learn.push(...readData.resources.slice(0, 1)); // Add 1 article to learn
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch read resources:', error);
+      }
+      
+      // Find practice resources for PRACTICE section using server-side API
+      try {
+        const practiceResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[2])}&type=read`);
+        if (practiceResponse.ok) {
+          const practiceData = await practiceResponse.json();
+          if (practiceData.resources && practiceData.resources.length > 0) {
+            day.practice.push(...practiceData.resources.slice(0, 2)); // Add up to 2 practice resources
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch practice resources:', error);
       }
       
       // Ensure we have at least some practice content
