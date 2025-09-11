@@ -184,9 +184,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
         url,
         source: r.source,
         duration_minutes: r.duration_minutes,
-        split: r.split,
-        isAIGenerated: r.isAIGenerated,
-        contentType: r.contentType
+        split: r.split
       };
       return next;
     });

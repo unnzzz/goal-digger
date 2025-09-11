@@ -451,52 +451,55 @@ class AdvancedWebScraper {
         const response = await this.makeRequest(searchUrl);
         const $ = cheerio.load(response.data);
       
-      // Multiple selectors for DuckDuckGo results
-      const selectors = [
-        '.result__title a',
-        '.result__url a',
-        '.result a',
-        '.result__snippet a'
-      ];
-      
-      for (const selector of selectors) {
-        $(selector).each((index, element) => {
-          if (results.length >= 5) return false;
-          
-          const href = $(element).attr('href');
-          let title = $(element).text().trim();
-          
-          // Clean up title - remove CSS classes and ensure it's actual text
-          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http') || title.includes('search') || title.includes('results')) {
-            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
-            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && !altTitle.includes('search') && !altTitle.includes('results') && altTitle.length > 10) {
-              title = altTitle;
-            } else {
-              // Generate a meaningful title based on the query
-              title = `Guide: ${query}`;
-            }
-          }
-          
-          if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
-            try {
-              const url = new URL(href);
-              const isEducational = educationalDomains.some(domain => 
-                url.hostname.includes(domain)
-              );
-              
-              if (isEducational) {
-                results.push({
-                  title: title.substring(0, 100),
-                  url: href,
-                  source: url.hostname,
-                  duration_minutes: 10 + Math.floor(Math.random() * 8)
-                });
+        // Multiple selectors for DuckDuckGo results
+        const selectors = [
+          '.result__title a',
+          '.result__url a',
+          '.result a',
+          '.result__snippet a'
+        ];
+        
+        for (const selector of selectors) {
+          $(selector).each((index, element) => {
+            if (results.length >= 5) return false;
+            
+            const href = $(element).attr('href');
+            let title = $(element).text().trim();
+            
+            // Clean up title - remove CSS classes and ensure it's actual text
+            if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http') || title.includes('search') || title.includes('results')) {
+              const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+              if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && !altTitle.includes('search') && !altTitle.includes('results') && altTitle.length > 10) {
+                title = altTitle;
+              } else {
+                // Generate a meaningful title based on the query
+                title = `Guide: ${query}`;
               }
-            } catch (e) {
-              // Skip invalid URLs
             }
-          }
-        });
+            
+            if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results')) {
+              try {
+                const url = new URL(href);
+                const isEducational = educationalDomains.some(domain => 
+                  url.hostname.includes(domain)
+                );
+                
+                if (isEducational) {
+                  results.push({
+                    title: title.substring(0, 100),
+                    url: href,
+                    source: url.hostname,
+                    duration_minutes: 10 + Math.floor(Math.random() * 8)
+                  });
+                }
+              } catch (e) {
+                // Skip invalid URLs
+              }
+            }
+          });
+          
+          if (results.length > 0) break;
+        }
         
         if (results.length > 0) break;
       } catch (error) {
