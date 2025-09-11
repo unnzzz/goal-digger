@@ -110,7 +110,8 @@ Create a JSON roadmap structure with:
 - Focus on practical, actionable learning
 - Progress from beginner to intermediate
 
-Return ONLY valid JSON in this format:
+IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations. Just the raw JSON object.
+
 {
   "goal": "${params.goal}",
   "total_days": ${params.total_days || 10},
@@ -134,9 +135,24 @@ Return ONLY valid JSON in this format:
     
     let roadmap: RoadmapT;
     try {
-      roadmap = JSON.parse(structureText);
+      // Extract JSON from markdown code blocks if present
+      let jsonText = structureText;
+      if (structureText.includes('```json')) {
+        const jsonMatch = structureText.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[1];
+        }
+      } else if (structureText.includes('```')) {
+        const jsonMatch = structureText.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[1];
+        }
+      }
+      
+      roadmap = JSON.parse(jsonText);
     } catch (e) {
       console.error('Failed to parse roadmap structure:', e);
+      console.error('Raw structure text:', structureText);
       throw new Error('Failed to generate valid roadmap structure');
     }
     
