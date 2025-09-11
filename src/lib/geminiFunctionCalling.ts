@@ -47,7 +47,7 @@ const webSearchFunction = {
     },
     required: ['queries']
   }
-};
+} as any;
 
 interface SearchQuery {
   query: string;
@@ -90,7 +90,7 @@ Start by planning the daily topics, then use web_search to find resources for ea
     const result = await model.generateContent({
       contents: this.conversationHistory,
       tools: [{ functionDeclarations: [webSearchFunction] }]
-    });
+    } as any);
 
     const response = result.response;
     this.conversationHistory.push({
@@ -172,7 +172,7 @@ Start by planning the daily topics, then use web_search to find resources for ea
     const result = await model.generateContent({
       contents: this.conversationHistory,
       tools: [{ functionDeclarations: [webSearchFunction] }]
-    });
+    } as any);
 
     const response = result.response;
     this.conversationHistory.push({
