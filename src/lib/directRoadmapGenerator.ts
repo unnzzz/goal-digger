@@ -366,13 +366,13 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         `${day.title} for beginners`
       ];
       
-      // OPTIMIZED: Run watch and read searches in parallel with shorter timeouts
+      // OPTIMIZED: Run watch and read searches in parallel with longer timeouts for real resources
       const [watchResult, readResult] = await Promise.allSettled([
         fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`, {
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(25000) // 25 second timeout for real resources
         }),
         fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`, {
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(25000) // 25 second timeout for real resources
         })
       ]);
       
@@ -404,6 +404,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             day.learn.push(resource);
           });
         }
+      } else if (watchResult.status === 'rejected') {
+        console.log(`Watch resources failed for day ${day.day}:`, watchResult.reason);
       }
       
       // Process read resources
@@ -431,6 +433,24 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             usedResourceTitles.add(resource.title.toLowerCase());
             day.learn.push(resource);
           });
+        }
+      }
+      
+      // Generate AI content if no real resources found
+      if (day.learn.length === 0) {
+        console.log(`No real resources found for day ${day.day}, generating AI content...`);
+        try {
+          const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+          const geminiPodcast = await generateGeminiContent(day.title, day.day, params.goal, 'podcast');
+          
+          if (geminiArticle) {
+            day.learn.push(geminiArticle);
+          }
+          if (geminiPodcast) {
+            day.learn.push(geminiPodcast);
+          }
+        } catch (error) {
+          console.error(`AI content generation failed for day ${day.day}:`, error);
         }
       }
       
@@ -579,6 +599,19 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     return roadmap;
     
   } catch (error) {
+    // Check if the error is due to abortion
+    if (error instanceof Error && (error.name === 'AbortError' || error.message?.includes('aborted'))) {
+      console.log('Roadmap generation was aborted by user');
+      throw error; // Re-throw so service can handle it properly
+    }
+    
+    // Check if it's a timeout error (not user abortion)
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      console.log('Roadmap generation timed out, but continuing with available resources');
+      // Don't throw, just return what we have
+      return roadmap;
+    }
+    
     console.error('Fast roadmap generation failed:', error);
     throw error;
   }
