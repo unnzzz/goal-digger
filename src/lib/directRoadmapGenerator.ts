@@ -231,7 +231,7 @@ Return a JSON object with:
     
     const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
     
-    // Ensure content has the correct structure
+    // Ensure content has the correct structure - fix React error #31
     const normalizedContent = {
       title: content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
       content: content.content || content.podcast_script || content.article || 'Content not available',
@@ -240,13 +240,18 @@ Return a JSON object with:
       type: contentType
     };
     
+    // Remove any problematic keys that might cause React errors
+    delete normalizedContent.podcast_script;
+    delete normalizedContent.article;
+    
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
       localStorage.setItem(`ai-content-${slug}`, JSON.stringify(normalizedContent));
     }
     
-    return {
-      kind: contentType === 'podcast' ? 'listen' : 'read',
+    // Return clean structure without problematic keys
+    const cleanResource = {
+      kind: contentType === 'podcast' ? 'listen' as const : 'read' as const,
       title: normalizedContent.title,
       url: `/ai-content/${slug}`,
       source: normalizedContent.source,
@@ -256,6 +261,15 @@ Return a JSON object with:
       contentType: contentType,
       content: normalizedContent.content
     };
+    
+    // Remove any undefined or problematic properties
+    Object.keys(cleanResource).forEach(key => {
+      if (cleanResource[key as keyof typeof cleanResource] === undefined) {
+        delete cleanResource[key as keyof typeof cleanResource];
+      }
+    });
+    
+    return cleanResource;
   } catch (error) {
     console.error('Gemini content generation failed:', error);
     // If quota exceeded, return a fallback content
@@ -397,80 +411,123 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       day.practice = [];
       
       // Create search terms
+      // Create more specific and diverse search terms for better resource discovery
+      const baseTitle = day.title.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
       const searchTerms = [
-        `${day.title} tutorial`,
-        `${day.title} guide`,
-        `${day.title} for beginners`
+        `${baseTitle} tutorial step by step`,
+        `${baseTitle} how to guide`,
+        `${baseTitle} beginner tutorial`,
+        `${baseTitle} learn basics`,
+        `${baseTitle} complete guide`
       ];
       
-      // OPTIMIZED: Run watch and read searches in parallel with longer timeouts for real resources
-      const [watchResult, readResult] = await Promise.allSettled([
-        fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`, {
-          signal: AbortSignal.timeout(25000) // 25 second timeout for real resources
-        }),
-        fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`, {
-          signal: AbortSignal.timeout(25000) // 25 second timeout for real resources
-        })
-      ]);
+      // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
+      const searchPromises = [];
       
-      // Process watch resources
-      if (watchResult.status === 'fulfilled' && watchResult.value.ok) {
-        const watchData = await watchResult.value.json();
-        if (watchData.resources && watchData.resources.length > 0) {
-          const newResources = watchData.resources.filter((resource: any) => {
-            if (usedResourceUrls.has(resource.url)) return false;
-            const baseUrl = resource.url.split('?')[0].split('#')[0];
-            for (const usedUrl of usedResourceUrls) {
-              const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
-              if (baseUrl === usedBaseUrl) return false;
+      // Try multiple search terms for watch resources
+      for (let i = 0; i < Math.min(3, searchTerms.length); i++) {
+        searchPromises.push(
+          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
+            signal: AbortSignal.timeout(20000) // 20 second timeout per search
+          }).then(async (response) => {
+            if (response.ok) {
+              const data = await response.json();
+              return { type: 'watch', data: data.resources || [], query: searchTerms[i] };
             }
-            const title = resource.title?.toLowerCase() || '';
-            if (usedResourceTitles.has(title)) return false;
-            const existingUrls = day.learn.map((r: any) => r.url);
-            if (existingUrls.includes(resource.url)) return false;
-            return true;
-          });
-          
-          const resourcesToAdd = newResources.slice(0, 2);
-          resourcesToAdd.forEach((resource: any) => {
-            if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
-              resource.title = `Video Tutorial - Day ${day.day}`;
-            }
-            usedResourceUrls.add(resource.url);
-            usedResourceTitles.add(resource.title.toLowerCase());
-            day.learn.push(resource);
-          });
-        }
-      } else if (watchResult.status === 'rejected') {
-        console.log(`Watch resources failed for day ${day.day}:`, watchResult.reason);
+            return { type: 'watch', data: [], query: searchTerms[i] };
+          }).catch(() => ({ type: 'watch', data: [], query: searchTerms[i] }))
+        );
       }
       
-      // Process read resources
-      if (readResult.status === 'fulfilled' && readResult.value.ok) {
-        const readData = await readResult.value.json();
-        if (readData.resources && readData.resources.length > 0) {
-          const newResources = readData.resources.filter((resource: any) => {
-            if (usedResourceUrls.has(resource.url)) return false;
-            const baseUrl = resource.url.split('?')[0].split('#')[0];
-            for (const usedUrl of usedResourceUrls) {
-              const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
-              if (baseUrl === usedBaseUrl) return false;
+      // Try multiple search terms for read resources
+      for (let i = 0; i < Math.min(2, searchTerms.length); i++) {
+        searchPromises.push(
+          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
+            signal: AbortSignal.timeout(20000) // 20 second timeout per search
+          }).then(async (response) => {
+            if (response.ok) {
+              const data = await response.json();
+              return { type: 'read', data: data.resources || [], query: searchTerms[i] };
             }
-            const title = resource.title?.toLowerCase() || '';
-            if (usedResourceTitles.has(title)) return false;
-            return true;
-          });
-          
-          const resourcesToAdd = newResources.slice(0, 1);
-          resourcesToAdd.forEach((resource: any) => {
-            if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
-              resource.title = `Guide - Day ${day.day}`;
-            }
-            usedResourceUrls.add(resource.url);
-            usedResourceTitles.add(resource.title.toLowerCase());
-            day.learn.push(resource);
-          });
+            return { type: 'read', data: [], query: searchTerms[i] };
+          }).catch(() => ({ type: 'read', data: [], query: searchTerms[i] }))
+        );
+      }
+      
+      const searchResults = await Promise.allSettled(searchPromises);
+      
+      // Process all watch results
+      const watchResources = [];
+      const readResources = [];
+      
+      searchResults.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          if (result.value.type === 'watch') {
+            watchResources.push(...result.value.data);
+          } else if (result.value.type === 'read') {
+            readResources.push(...result.value.data);
+          }
         }
+      });
+      
+      // Process watch resources (aggregated from multiple searches)
+      if (watchResources.length > 0) {
+        const newResources = watchResources.filter((resource: any) => {
+          if (usedResourceUrls.has(resource.url)) return false;
+          const baseUrl = resource.url.split('?')[0].split('#')[0];
+          for (const usedUrl of usedResourceUrls) {
+            const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+            if (baseUrl === usedBaseUrl) return false;
+          }
+          const title = resource.title?.toLowerCase() || '';
+          if (usedResourceTitles.has(title)) return false;
+          const existingUrls = day.learn.map((r: any) => r.url);
+          if (existingUrls.includes(resource.url)) return false;
+          return true;
+        });
+        
+        const resourcesToAdd = newResources.slice(0, 2);
+        resourcesToAdd.forEach((resource: any) => {
+          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
+            resource.title = `Video Tutorial - Day ${day.day}`;
+          }
+          usedResourceUrls.add(resource.url);
+          usedResourceTitles.add(resource.title.toLowerCase());
+          day.learn.push(resource);
+        });
+        console.log(`Found ${resourcesToAdd.length} watch resources for day ${day.day}`);
+      } else {
+        console.log(`No watch resources found for day ${day.day}`);
+      }
+      
+      // Process read resources (aggregated from multiple searches)
+      if (readResources.length > 0) {
+        const newResources = readResources.filter((resource: any) => {
+          if (usedResourceUrls.has(resource.url)) return false;
+          const baseUrl = resource.url.split('?')[0].split('#')[0];
+          for (const usedUrl of usedResourceUrls) {
+            const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+            if (baseUrl === usedBaseUrl) return false;
+          }
+          const title = resource.title?.toLowerCase() || '';
+          if (usedResourceTitles.has(title)) return false;
+          const existingUrls = day.learn.map((r: any) => r.url);
+          if (existingUrls.includes(resource.url)) return false;
+          return true;
+        });
+        
+        const resourcesToAdd = newResources.slice(0, 2);
+        resourcesToAdd.forEach((resource: any) => {
+          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
+            resource.title = `Article - Day ${day.day}`;
+          }
+          usedResourceUrls.add(resource.url);
+          usedResourceTitles.add(resource.title.toLowerCase());
+          day.learn.push(resource);
+        });
+        console.log(`Found ${resourcesToAdd.length} read resources for day ${day.day}`);
+      } else {
+        console.log(`No read resources found for day ${day.day}`);
       }
       
       // Generate AI content if no real resources found
