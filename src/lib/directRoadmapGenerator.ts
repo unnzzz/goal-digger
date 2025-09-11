@@ -529,6 +529,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         
         const resourcesToAdd = newResources.slice(0, 2);
         resourcesToAdd.forEach((resource: any) => {
+          // Skip empty or invalid resources
+          if (!resource || typeof resource !== 'object' || Object.keys(resource).length === 0) {
+            return;
+          }
+          
           if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
             resource.title = `Video Tutorial - Day ${day.day}`;
           }
@@ -559,6 +564,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         
         const resourcesToAdd = newResources.slice(0, 2);
         resourcesToAdd.forEach((resource: any) => {
+          // Skip empty or invalid resources
+          if (!resource || typeof resource !== 'object' || Object.keys(resource).length === 0) {
+            return;
+          }
+          
           if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
             resource.title = `Article - Day ${day.day}`;
           }

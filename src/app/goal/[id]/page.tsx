@@ -597,7 +597,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {d.learn.map((r, i) => (
+                    {d.learn.filter((r: any) => r && typeof r === 'object' && Object.keys(r).length > 0).map((r, i) => (
                         <div key={`L${di}-${i}`} style={{
                           background: 'white',
                           padding: '16px',
@@ -811,7 +811,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {d.practice.map((r, i) => (
+                    {d.practice.filter((r: any) => r && typeof r === 'object' && Object.keys(r).length > 0).map((r, i) => (
                         <div key={`P${di}-${i}`} style={{
                           background: 'white',
                           padding: '20px',

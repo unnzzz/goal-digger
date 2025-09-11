@@ -364,7 +364,7 @@ export default function Home() {
                             <h5>Learn</h5>
                             <div className="section-content">
                               {Array.isArray(day.learn) ? (
-                                day.learn.map((item: any, idx: number) => (
+                                day.learn.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
                                     <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
@@ -394,7 +394,7 @@ export default function Home() {
                             <h5>Practice</h5>
                             <div className="section-content">
                               {Array.isArray(day.practice) ? (
-                                day.practice.map((item: any, idx: number) => (
+                                day.practice.filter((item: any) => item && typeof item === 'object' && Object.keys(item).length > 0).map((item: any, idx: number) => (
                                   <div key={idx} className="task-item">
                                     <h6>{item.title || 'Resource'}</h6>
                                     <p>{item.description || item.content}</p>
