@@ -181,7 +181,7 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
 }
 
 // Generate content using Gemini when web scraping fails
-async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'video' | 'podcast'): Promise<any> {
+async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'podcast'): Promise<any> {
   try {
     const contentPrompt = `Create a ${contentType} about "${dayTitle}" for someone learning "${goal}".
 
@@ -190,13 +190,16 @@ For ${contentType}:
 - Include specific examples and actionable advice
 - Keep it engaging and beginner-friendly
 - Focus on the core concepts of "${dayTitle}"
+- For podcast: Include a detailed script with speaking notes and timing
+- For article: Write 800-1200 words with clear sections
 
 Return a JSON object with:
 {
   "title": "Specific, engaging title for the ${contentType}",
-  "content": "Full ${contentType} content (500-1000 words for article, detailed script for video/podcast)",
-  "duration_minutes": 15,
-  "source": "AI Generated"
+  "content": "Full ${contentType} content (800-1200 words for article, detailed podcast script for podcast)",
+  "duration_minutes": ${contentType === 'podcast' ? '20' : '15'},
+  "source": "AI Generated",
+  "type": "${contentType}"
 }`;
 
     const result = await model.generateContent(contentPrompt);
@@ -220,17 +223,32 @@ Return a JSON object with:
     }
     
     return {
-      kind: contentType === 'video' ? 'watch' : 'read',
+      kind: contentType === 'podcast' ? 'listen' : 'read',
       title: content.title,
       url: `/ai-content/${slug}`,
       source: content.source,
       duration_minutes: content.duration_minutes,
       split: null,
       isAIGenerated: true,
+      contentType: contentType,
       content: content.content
     };
   } catch (error) {
     console.error('Gemini content generation failed:', error);
+    // If quota exceeded, return a fallback content
+    if (error.message && error.message.includes('429')) {
+      return {
+        kind: contentType === 'podcast' ? 'listen' : 'read',
+        title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
+        url: `#ai-content-unavailable`,
+        source: 'AI Generated (Fallback)',
+        duration_minutes: contentType === 'podcast' ? 20 : 15,
+        split: null,
+        isAIGenerated: true,
+        contentType: contentType,
+        content: `This ${contentType} about "${dayTitle}" is temporarily unavailable due to API limits. Please try again later.`
+      };
+    }
     return null;
   }
 }
@@ -285,12 +303,23 @@ Return a JSON array of questions:
         question: `What did you learn about ${dayTitle} today?`,
         options: {
           "A": "Basic concepts",
-          "B": "Advanced techniques",
+          "B": "Advanced techniques", 
           "C": "Both A and B",
           "D": "Nothing"
         },
         correct: "C",
         explanation: "You should have learned both basic concepts and some advanced techniques."
+      },
+      {
+        question: `How confident do you feel about ${dayTitle}?`,
+        options: {
+          "A": "Very confident",
+          "B": "Somewhat confident",
+          "C": "Not very confident",
+          "D": "Not confident at all"
+        },
+        correct: "B",
+        explanation: "It's normal to feel somewhat confident as you're still learning."
       }
     ];
   }
@@ -435,7 +464,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       // Find watch resources (videos) for LEARN section - single attempt with timeout
       try {
         const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[0])}&type=watch`, {
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         if (watchResponse.ok) {
           const watchData = await watchResponse.json();
@@ -498,7 +527,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       // Find read resources (articles) for LEARN section - single attempt with timeout
       try {
         const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[1])}&type=read`, {
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         if (readResponse.ok) {
           const readData = await readResponse.json();
@@ -575,7 +604,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
           try {
             // Try watch resources first
             const watchResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerm)}&type=watch`, {
-              signal: AbortSignal.timeout(5000)
+              signal: AbortSignal.timeout(10000)
             });
             if (watchResponse.ok) {
               const watchData = await watchResponse.json();
@@ -621,7 +650,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             // Try read resources if still need more
             if (day.learn.length < 2) {
               const readResponse = await fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerm)}&type=read`, {
-                signal: AbortSignal.timeout(5000)
+                signal: AbortSignal.timeout(10000)
               });
               if (readResponse.ok) {
                 const readData = await readResponse.json();
@@ -672,14 +701,14 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         // If still no resources found, generate content using Gemini
         if (day.learn.length === 0) {
           console.log(`No resources found for "${day.title}", generating with Gemini...`);
-          const geminiVideo = await generateGeminiContent(day.title, day.day, params.goal, 'video');
           const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+          const geminiPodcast = await generateGeminiContent(day.title, day.day, params.goal, 'podcast');
           
-          if (geminiVideo) {
-            day.learn.push(geminiVideo);
-          }
           if (geminiArticle) {
             day.learn.push(geminiArticle);
+          }
+          if (geminiPodcast) {
+            day.learn.push(geminiPodcast);
           }
         }
       }

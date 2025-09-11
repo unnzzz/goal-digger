@@ -1153,6 +1153,100 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                     </div>
                   </div>
                 </div>
+
+                {/* Quiz Section */}
+                {(d as any).quiz && (d as any).quiz.length > 0 && (
+                  <div style={{ 
+                    background: '#F3E8FF',
+                    borderLeft: '4px solid #8B5CF6',
+                    padding: '20px',
+                    marginTop: '16px',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ fontSize: '18px' }}>🧠</span>
+                      <h4 style={{ 
+                        margin: 0, 
+                        fontSize: '16px', 
+                        fontWeight: '700', 
+                        color: '#7C3AED',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        Daily Quiz
+                      </h4>
+                    </div>
+                    
+                    <p style={{ 
+                      margin: '0 0 16px 0', 
+                      fontSize: '14px', 
+                      color: '#6B7280' 
+                    }}>
+                      Test your knowledge! Score 50% or higher to unlock the next day.
+                    </p>
+                    
+                    <div style={{ marginBottom: '20px' }}>
+                      {(d as any).quiz.map((question: any, idx: number) => (
+                        <div key={idx} style={{
+                          marginBottom: '20px',
+                          padding: '16px',
+                          background: 'white',
+                          borderRadius: '8px',
+                          border: '1px solid #E5E7EB'
+                        }}>
+                          <h6 style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: '#1F2937',
+                            margin: '0 0 12px 0'
+                          }}>
+                            {idx + 1}. {question.question}
+                          </h6>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {Object.entries(question.options).map(([key, value]) => (
+                              <label key={key} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s ease'
+                              }}>
+                                <input 
+                                  type="radio" 
+                                  name={`quiz-${d.day}-${idx}`} 
+                                  value={key}
+                                  style={{ margin: 0 }}
+                                />
+                                <span>{key}. {String(value)}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <button style={{
+                      background: '#6A3EE8',
+                      color: 'white',
+                      border: 'none',
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease'
+                    }}>
+                      Submit Quiz
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
           );

@@ -80,12 +80,83 @@ export default function AIContentPage() {
         lineHeight: '1.6',
         fontSize: '16px'
       }}>
-        <div style={{
-          whiteSpace: 'pre-wrap',
-          color: '#374151'
-        }}>
-          {content?.content || 'Content not available.'}
-        </div>
+        {content?.type === 'podcast' ? (
+          <div>
+            <div style={{
+              background: '#F3E8FF',
+              padding: '20px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#7C3AED' }}>🎧 Podcast Episode</h3>
+              <p style={{ margin: 0, color: '#6B7280' }}>
+                Duration: {content?.duration_minutes || 20} minutes
+              </p>
+            </div>
+            
+            <div style={{
+              background: '#F8FAFC',
+              padding: '20px',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}>
+              <h4 style={{ margin: '0 0 15px 0', color: '#1F2937' }}>Podcast Script</h4>
+              <div style={{
+                whiteSpace: 'pre-wrap',
+                color: '#374151',
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                lineHeight: '1.5'
+              }}>
+                {content?.content || 'Podcast script not available.'}
+              </div>
+            </div>
+            
+            <div style={{
+              background: '#EFF6FF',
+              padding: '20px',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: '0 0 15px 0', color: '#1E40AF' }}>
+                <strong>Note:</strong> This is a text-based podcast script. For audio playback, 
+                use a text-to-speech tool or read it aloud.
+              </p>
+              <button
+                onClick={() => {
+                  if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(content?.content || '');
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1;
+                    speechSynthesis.speak(utterance);
+                  } else {
+                    alert('Text-to-speech not supported in this browser');
+                  }
+                }}
+                style={{
+                  background: '#3B82F6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                🔊 Play Audio
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            whiteSpace: 'pre-wrap',
+            color: '#374151'
+          }}>
+            {content?.content || 'Content not available.'}
+          </div>
+        )}
       </div>
 
       <div style={{
