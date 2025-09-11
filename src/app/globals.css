@@ -1133,6 +1133,11 @@ a:hover {
   border-left-color: #F59E0B;
 }
 
+.section.quiz {
+  background: #F3E8FF;
+  border-left-color: #8B5CF6;
+}
+
 .section h5 {
   margin: 0 0 8px 0;
   font-size: 14px;
@@ -1151,6 +1156,69 @@ a:hover {
 
 .section.reflect h5 {
   color: #92400E;
+}
+
+.section.quiz h5 {
+  color: #7C3AED;
+}
+
+/* Quiz styles */
+.quiz-questions {
+  margin: 16px 0;
+}
+
+.quiz-question {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.quiz-question h6 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.quiz-option:hover {
+  background-color: #f8f9fa;
+}
+
+.quiz-option input[type="radio"] {
+  margin: 0;
+}
+
+.quiz-submit-btn {
+  background: var(--purple);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.quiz-submit-btn:hover {
+  background: #5a2d91;
 }
 
 .section p {

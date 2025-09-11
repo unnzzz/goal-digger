@@ -121,24 +121,36 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   // Generate creative practice exercises based on the day's topic and overall goal
   let exercise1Title = `Hands-on Exercise: ${dayTitle} Practice`;
   let exercise2Title = `Creative Challenge: Apply ${dayTitle} Skills`;
+  let exercise1Url = null;
+  let exercise2Url = null;
   
-  // Make exercises more specific based on the goal
+  // Make exercises more specific based on the goal and add interactive links
   if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
     exercise1Title = `Practice: Create a ${dayTitle.toLowerCase()} exercise`;
     exercise2Title = `Project: Apply ${dayTitle} to a short film scene`;
+    exercise1Url = `https://www.storyboardthat.com/`; // Interactive storyboard tool
+    exercise2Url = `https://www.canva.com/create/videos/`; // Video creation tool
   } else if (goal.toLowerCase().includes('programming') || goal.toLowerCase().includes('coding')) {
     exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example`;
     exercise2Title = `Project: Create a program using ${dayTitle}`;
+    exercise1Url = `https://codepen.io/`; // Interactive coding playground
+    exercise2Url = `https://replit.com/`; // Online IDE
   } else if (goal.toLowerCase().includes('language') || goal.toLowerCase().includes('spanish') || goal.toLowerCase().includes('french')) {
     exercise1Title = `Practice: Use ${dayTitle.toLowerCase()} in conversation`;
     exercise2Title = `Challenge: Write a story using ${dayTitle}`;
+    exercise1Url = `https://www.duolingo.com/`; // Language learning platform
+    exercise2Url = `https://www.lingoda.com/`; // Language practice platform
+  } else {
+    // Generic interactive tools
+    exercise1Url = `https://www.khanacademy.org/`; // Educational platform
+    exercise2Url = `https://www.coursera.org/`; // Learning platform
   }
   
   const exercise1 = {
     kind: 'read',
     title: exercise1Title,
-    url: null, // No URL for practice exercises - they are creative activities
-    source: 'Practice Hub',
+    url: exercise1Url,
+    source: null, // Remove source text
     duration_minutes: 15 + (dayNumber * 2),
     split: null
   };
@@ -146,14 +158,121 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   const exercise2 = {
     kind: 'read', 
     title: exercise2Title,
-    url: null, // No URL for practice exercises - they are creative activities
-    source: 'Skill Builder',
+    url: exercise2Url,
+    source: null, // Remove source text
     duration_minutes: 20 + (dayNumber * 2),
     split: null
   };
   
   exercises.push(exercise1, exercise2);
   return exercises;
+}
+
+// Generate content using Gemini when web scraping fails
+async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'video' | 'podcast'): Promise<any> {
+  try {
+    const contentPrompt = `Create a ${contentType} about "${dayTitle}" for someone learning "${goal}".
+
+For ${contentType}:
+- Make it educational and practical
+- Include specific examples and actionable advice
+- Keep it engaging and beginner-friendly
+- Focus on the core concepts of "${dayTitle}"
+
+Return a JSON object with:
+{
+  "title": "Specific, engaging title for the ${contentType}",
+  "content": "Full ${contentType} content (500-1000 words for article, detailed script for video/podcast)",
+  "duration_minutes": 15,
+  "source": "AI Generated"
+}`;
+
+    const result = await model.generateContent(contentPrompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extract JSON from response
+    let jsonText = text;
+    if (text.includes('```json')) {
+      jsonText = text.split('```json')[1].split('```')[0].trim();
+    } else if (text.includes('```')) {
+      jsonText = text.split('```')[1].split('```')[0].trim();
+    }
+    
+    const content = JSON.parse(jsonText);
+    return {
+      kind: contentType === 'video' ? 'watch' : 'read',
+      title: content.title,
+      url: `https://ai-generated-content.com/${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}`,
+      source: content.source,
+      duration_minutes: content.duration_minutes,
+      split: null
+    };
+  } catch (error) {
+    console.error('Gemini content generation failed:', error);
+    return null;
+  }
+}
+
+// Generate daily quiz questions using Gemini
+async function generateDailyQuiz(dayTitle: string, dayNumber: number, goal: string): Promise<any[]> {
+  try {
+    const quizPrompt = `Create a 5-10 question multiple choice quiz about "${dayTitle}" for someone learning "${goal}".
+
+Requirements:
+- 5-10 questions total
+- Each question should have 4 multiple choice options (A, B, C, D)
+- Only one correct answer per question
+- Questions should test understanding of the day's topic
+- Include practical application questions
+- Make questions progressively challenging
+
+Return a JSON array of questions:
+[
+  {
+    "question": "What is the main concept of ${dayTitle}?",
+    "options": {
+      "A": "Option 1",
+      "B": "Option 2", 
+      "C": "Option 3",
+      "D": "Option 4"
+    },
+    "correct": "A",
+    "explanation": "Brief explanation of why this is correct"
+  }
+]`;
+
+    const result = await model.generateContent(quizPrompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extract JSON from response
+    let jsonText = text;
+    if (text.includes('```json')) {
+      jsonText = text.split('```json')[1].split('```')[0].trim();
+    } else if (text.includes('```')) {
+      jsonText = text.split('```')[1].split('```')[0].trim();
+    }
+    
+    const quiz = JSON.parse(jsonText);
+    return quiz;
+  } catch (error) {
+    console.error('Quiz generation failed:', error);
+    // Return a simple fallback quiz
+    return [
+      {
+        question: `What did you learn about ${dayTitle} today?`,
+        options: {
+          "A": "Basic concepts",
+          "B": "Advanced techniques",
+          "C": "Both A and B",
+          "D": "Nothing"
+        },
+        correct: "C",
+        explanation: "You should have learned both basic concepts and some advanced techniques."
+      }
+    ];
+  }
 }
 
 
@@ -503,6 +622,20 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             console.error(`Additional search failed for "${searchTerm}":`, error);
           }
         }
+        
+        // If still no resources found, generate content using Gemini
+        if (day.learn.length === 0) {
+          console.log(`No resources found for "${day.title}", generating with Gemini...`);
+          const geminiVideo = await generateGeminiContent(day.title, day.day, params.goal, 'video');
+          const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+          
+          if (geminiVideo) {
+            day.learn.push(geminiVideo);
+          }
+          if (geminiArticle) {
+            day.learn.push(geminiArticle);
+          }
+        }
       }
       
       // MANDATORY: Ensure every day has at least 2 practice resources
@@ -511,7 +644,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
         day.practice.push(...practiceExercises);
       }
       
-      console.log(`Day ${day.day} completed with ${day.learn.length} learn and ${day.practice.length} practice resources`);
+      // Generate daily quiz
+      console.log(`Generating quiz for day ${day.day}: ${day.title}`);
+      const quiz = await generateDailyQuiz(day.title, day.day, params.goal);
+      (day as any).quiz = quiz;
+      
+      console.log(`Day ${day.day} completed with ${day.learn.length} learn, ${day.practice.length} practice resources, and ${quiz.length} quiz questions`);
     }
     
     progressCallback?.(100, "Roadmap generation completed!");

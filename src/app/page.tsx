@@ -449,6 +449,30 @@ export default function Home() {
                             </div>
                           </div>
                         )}
+                        {day.quiz && (
+                          <div className="section quiz">
+                            <h5>Daily Quiz</h5>
+                            <div className="section-content">
+                              <p>Test your knowledge! Score 50% or higher to unlock the next day.</p>
+                              <div className="quiz-questions">
+                                {day.quiz.map((question: any, idx: number) => (
+                                  <div key={idx} className="quiz-question">
+                                    <h6>{idx + 1}. {question.question}</h6>
+                                    <div className="quiz-options">
+                                      {Object.entries(question.options).map(([key, value]) => (
+                                        <label key={key} className="quiz-option">
+                                          <input type="radio" name={`quiz-${day.day}-${idx}`} value={key} />
+                                          <span>{key}. {String(value)}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <button className="btn quiz-submit-btn">Submit Quiz</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

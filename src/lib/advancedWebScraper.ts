@@ -311,7 +311,9 @@ class AdvancedWebScraper {
       'studiobinder.com', 'premiumbeat.com', 'masterclass.com',
       'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com',
       'skillshare.com', 'udemy.com', 'coursera.org', 'edx.org',
-      'khanacademy.org', 'codecademy.com', 'pluralsight.com'
+      'khanacademy.org', 'codecademy.com', 'pluralsight.com',
+      'youtube.com', 'vimeo.com', 'ted.com', 'khanacademy.org',
+      'coursera.org', 'edx.org', 'udacity.com', 'pluralsight.com'
     ];
     
     // Method 1: Try DuckDuckGo
