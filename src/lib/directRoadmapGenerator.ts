@@ -249,18 +249,44 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const watchData = await watchResponse.json();
             if (watchData.resources && watchData.resources.length > 0) {
               // Filter out already used resources
-              const newResources = watchData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url) && 
-                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
-              );
+              const newResources = watchData.resources.filter((resource: any) => {
+                // Check URL
+                if (usedResourceUrls.has(resource.url)) return false;
+                
+                // Check for similar URLs (truncated versions)
+                const baseUrl = resource.url.split('?')[0].split('#')[0];
+                for (const usedUrl of usedResourceUrls) {
+                  const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                  if (baseUrl === usedBaseUrl) return false;
+                }
+                
+                // Check title
+                const title = resource.title?.toLowerCase() || '';
+                if (usedResourceTitles.has(title)) return false;
+                
+                return true;
+              });
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 2);
               resourcesToAdd.forEach((resource: any) => {
-                usedResourceUrls.add(resource.url);
-                if (resource.title) {
-                  usedResourceTitles.add(resource.title.toLowerCase());
+                // Generate fallback title if missing
+                if (!resource.title || resource.title.trim() === '') {
+                  if (resource.url.includes('youtube.com')) {
+                    resource.title = `Video Tutorial - Day ${day.day}`;
+                  } else if (resource.url.includes('skillshare.com')) {
+                    resource.title = `Skillshare Course - Day ${day.day}`;
+                  } else if (resource.url.includes('masterclass.com')) {
+                    resource.title = `MasterClass Lesson - Day ${day.day}`;
+                  } else if (resource.url.includes('studiobinder.com')) {
+                    resource.title = `StudioBinder Guide - Day ${day.day}`;
+                  } else {
+                    resource.title = `Learning Resource - Day ${day.day}`;
+                  }
                 }
+                
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
               });
               
               day.learn.push(...resourcesToAdd);
@@ -286,18 +312,44 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const readData = await readResponse.json();
             if (readData.resources && readData.resources.length > 0) {
               // Filter out already used resources
-              const newResources = readData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url) && 
-                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
-              );
+              const newResources = readData.resources.filter((resource: any) => {
+                // Check URL
+                if (usedResourceUrls.has(resource.url)) return false;
+                
+                // Check for similar URLs (truncated versions)
+                const baseUrl = resource.url.split('?')[0].split('#')[0];
+                for (const usedUrl of usedResourceUrls) {
+                  const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                  if (baseUrl === usedBaseUrl) return false;
+                }
+                
+                // Check title
+                const title = resource.title?.toLowerCase() || '';
+                if (usedResourceTitles.has(title)) return false;
+                
+                return true;
+              });
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 1);
               resourcesToAdd.forEach((resource: any) => {
-                usedResourceUrls.add(resource.url);
-                if (resource.title) {
-                  usedResourceTitles.add(resource.title.toLowerCase());
+                // Generate fallback title if missing
+                if (!resource.title || resource.title.trim() === '') {
+                  if (resource.url.includes('youtube.com')) {
+                    resource.title = `Video Tutorial - Day ${day.day}`;
+                  } else if (resource.url.includes('skillshare.com')) {
+                    resource.title = `Skillshare Course - Day ${day.day}`;
+                  } else if (resource.url.includes('masterclass.com')) {
+                    resource.title = `MasterClass Lesson - Day ${day.day}`;
+                  } else if (resource.url.includes('studiobinder.com')) {
+                    resource.title = `StudioBinder Guide - Day ${day.day}`;
+                  } else {
+                    resource.title = `Learning Resource - Day ${day.day}`;
+                  }
                 }
+                
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
               });
               
               day.learn.push(...resourcesToAdd);
@@ -323,18 +375,44 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
             const practiceData = await practiceResponse.json();
             if (practiceData.resources && practiceData.resources.length > 0) {
               // Filter out already used resources
-              const newResources = practiceData.resources.filter((resource: any) => 
-                !usedResourceUrls.has(resource.url) && 
-                !usedResourceTitles.has(resource.title?.toLowerCase() || '')
-              );
+              const newResources = practiceData.resources.filter((resource: any) => {
+                // Check URL
+                if (usedResourceUrls.has(resource.url)) return false;
+                
+                // Check for similar URLs (truncated versions)
+                const baseUrl = resource.url.split('?')[0].split('#')[0];
+                for (const usedUrl of usedResourceUrls) {
+                  const usedBaseUrl = usedUrl.split('?')[0].split('#')[0];
+                  if (baseUrl === usedBaseUrl) return false;
+                }
+                
+                // Check title
+                const title = resource.title?.toLowerCase() || '';
+                if (usedResourceTitles.has(title)) return false;
+                
+                return true;
+              });
               
               // Add new resources and mark them as used
               const resourcesToAdd = newResources.slice(0, 2);
               resourcesToAdd.forEach((resource: any) => {
-                usedResourceUrls.add(resource.url);
-                if (resource.title) {
-                  usedResourceTitles.add(resource.title.toLowerCase());
+                // Generate fallback title if missing
+                if (!resource.title || resource.title.trim() === '') {
+                  if (resource.url.includes('youtube.com')) {
+                    resource.title = `Video Tutorial - Day ${day.day}`;
+                  } else if (resource.url.includes('skillshare.com')) {
+                    resource.title = `Skillshare Course - Day ${day.day}`;
+                  } else if (resource.url.includes('masterclass.com')) {
+                    resource.title = `MasterClass Lesson - Day ${day.day}`;
+                  } else if (resource.url.includes('studiobinder.com')) {
+                    resource.title = `StudioBinder Guide - Day ${day.day}`;
+                  } else {
+                    resource.title = `Learning Resource - Day ${day.day}`;
+                  }
                 }
+                
+                usedResourceUrls.add(resource.url);
+                usedResourceTitles.add(resource.title.toLowerCase());
               });
               
               day.practice.push(...resourcesToAdd);
