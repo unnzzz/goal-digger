@@ -1,6 +1,27 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RoadmapT, ResourceT } from './schema';
 
+// Clear any problematic content from localStorage
+function clearProblematicContent() {
+  if (typeof window !== 'undefined') {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('ai-content-')) {
+        try {
+          const content = JSON.parse(localStorage.getItem(key) || '{}');
+          if (content.podcast_script || content.article) {
+            delete content.podcast_script;
+            delete content.article;
+            localStorage.setItem(key, JSON.stringify(content));
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    });
+  }
+}
+
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI('AIzaSyBQseIm2Zs6bBGeKeDkKvkjw4B4Q0X9Q6o');
 const model = genAI.getGenerativeModel({ 
@@ -242,6 +263,10 @@ Return a JSON object with:
     delete (cleanedContent as any).podcast_script;
     delete (cleanedContent as any).article;
     
+    // Also clean the original content object to prevent any references
+    delete (content as any).podcast_script;
+    delete (content as any).article;
+    
     const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
     
     // Use the cleaned content for normalizedContent
@@ -249,7 +274,11 @@ Return a JSON object with:
     
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(normalizedContent));
+      // Clean the content before storing to prevent React errors
+      const cleanStoredContent = JSON.parse(JSON.stringify(normalizedContent));
+      delete (cleanStoredContent as any).podcast_script;
+      delete (cleanStoredContent as any).article;
+      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(cleanStoredContent));
     }
     
     // Return clean structure without problematic keys
@@ -274,6 +303,12 @@ Return a JSON object with:
     
     // Ensure no problematic keys exist in the final resource
     const finalResource = JSON.parse(JSON.stringify(cleanResource));
+    
+    // Double-check: remove any problematic keys that might have slipped through
+    delete (finalResource as any).podcast_script;
+    delete (finalResource as any).article;
+    delete (finalResource as any).content?.podcast_script;
+    delete (finalResource as any).content?.article;
     
     return finalResource;
   } catch (error) {
@@ -581,6 +616,9 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
 
 // OPTIMIZED: Fast roadmap generation with parallel processing
 export async function generateRoadmapWithDirectScraping(params: RoadmapParams, progressCallback?: (progress: number, message: string) => void, abortSignal?: AbortSignal): Promise<RoadmapT> {
+  // Clear any existing problematic content
+  clearProblematicContent();
+  
   let roadmap: RoadmapT | undefined;
   
   try {
