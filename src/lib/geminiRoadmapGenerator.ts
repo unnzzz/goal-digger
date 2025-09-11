@@ -1,5 +1,5 @@
 import { RoadmapT } from './schema';
-import { geminiFunctionCalling } from './geminiFunctionCalling';
+import { generateRoadmapWithDirectScraping } from './directRoadmapGenerator';
 
 export interface RoadmapParams {
   goal: string;
@@ -7,23 +7,19 @@ export interface RoadmapParams {
   daily_minutes: number;
 }
 
-// Advanced roadmap generation using Gemini function calling and robust web scraping
+// Direct roadmap generation with real web scraping
 export async function generateRoadmapWithGemini(params: RoadmapParams): Promise<RoadmapT> {
   try {
-    console.log('Generating roadmap with advanced Gemini function calling for:', params.goal);
+    console.log('Generating roadmap with direct scraping for:', params.goal);
     
-    // Use the new function calling system
-    const roadmap = await geminiFunctionCalling.generateRoadmapWithFunctionCalling(
-      params.goal,
-      params.total_days || 10,
-      params.daily_minutes
-    );
+    // Use the direct scraping approach
+    const roadmap = await generateRoadmapWithDirectScraping(params);
     
-    console.log('Advanced roadmap generation completed successfully');
+    console.log('Direct roadmap generation completed successfully');
     return roadmap;
     
   } catch (error) {
-    console.error('Advanced roadmap generation failed:', error);
+    console.error('Direct roadmap generation failed:', error);
     throw error;
   }
 }

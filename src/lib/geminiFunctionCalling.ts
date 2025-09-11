@@ -71,14 +71,18 @@ class GeminiFunctionCalling {
 
 Create a detailed learning roadmap with ${totalDays} days, ${dailyMinutes} minutes per day.
 
-For each day, you need to find real educational resources. Use the web_search function to find:
-1. Video tutorials (watch resources)
-2. Articles and guides (read resources) 
-3. Podcasts or audio content (listen resources)
+IMPORTANT: You MUST use the web_search function to find real educational resources. Do not generate placeholder content.
+
+For each day, you need to:
+1. Plan a specific, unique topic for that day
+2. Use web_search to find video tutorials (watch resources)
+3. Use web_search to find articles and guides (read resources)
+4. Use web_search to find podcasts or audio content (listen resources)
+5. Create practice exercises for each day
 
 The roadmap should progress from beginner to intermediate level with practical, actionable learning.
 
-Start by planning the daily topics, then use web_search to find resources for each day.`;
+Start by using web_search to find resources for the first few days of learning "${goal}".`;
 
     this.conversationHistory = [
       {
@@ -221,6 +225,13 @@ Start by planning the daily topics, then use web_search to find resources for ea
   ]
 }
 
+CRITICAL REQUIREMENTS:
+1. Each day MUST have both "learn" and "practice" sections with real resources
+2. Use the actual URLs and titles from the web search results we found
+3. Practice section should contain hands-on exercises, tutorials, or practical applications
+4. Each day should have 2-3 learn resources and 1-2 practice resources
+5. All URLs must be real, working links from our search results
+
 IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.`;
 
     this.conversationHistory.push({
@@ -277,9 +288,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
           break;
         }
 
+        console.log(`Found ${functionCalls.length} function calls in iteration ${iteration + 1}`);
+
         // Execute function calls
         for (const part of functionCalls) {
           if (part.functionCall) {
+            console.log('Executing function call:', part.functionCall.name);
             const searchResults = await this.handleFunctionCall(part.functionCall);
             await this.sendSearchResults(searchResults);
           }
