@@ -25,6 +25,9 @@ export async function generateRoadmapWithDirectScraping(params: RoadmapParams): 
   try {
     console.log('Generating roadmap with direct scraping for:', params.goal);
     
+    // Track used resources to prevent duplicates
+    const usedResourceUrls = new Set<string>();
+    
     // Step 1: Generate roadmap structure with Gemini
     const structurePrompt = `Generate a detailed learning roadmap for: "${params.goal}"
 Daily minutes: ${params.daily_minutes}
@@ -87,12 +90,11 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
       day.learn = [];
       day.practice = [];
       
-      // Create specific search terms for this day
+      // Create specific search terms for this day with unique modifiers
       const searchTerms = [
-        day.title,
-        `${day.title} tutorial`,
-        `${day.title} guide`,
-        `${day.title} for beginners`
+        `${day.title} tutorial day ${day.day}`,
+        `${day.title} guide step ${day.day}`,
+        `${day.title} for beginners lesson ${day.day}`
       ];
       
       // Find watch resources (videos) for LEARN section using server-side API with retry
@@ -104,8 +106,19 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
           if (watchResponse.ok) {
             const watchData = await watchResponse.json();
             if (watchData.resources && watchData.resources.length > 0) {
-              day.learn.push(...watchData.resources.slice(0, 2)); // Add up to 2 videos
-              break;
+              // Filter out already used resources
+              const newResources = watchData.resources.filter((resource: any) => 
+                !usedResourceUrls.has(resource.url)
+              );
+              
+              // Add new resources and mark them as used
+              const resourcesToAdd = newResources.slice(0, 2);
+              resourcesToAdd.forEach((resource: any) => {
+                usedResourceUrls.add(resource.url);
+              });
+              
+              day.learn.push(...resourcesToAdd);
+              if (day.learn.length >= 2) break;
             }
           }
         } catch (error) {
@@ -126,8 +139,19 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
           if (readResponse.ok) {
             const readData = await readResponse.json();
             if (readData.resources && readData.resources.length > 0) {
-              day.learn.push(...readData.resources.slice(0, 1)); // Add 1 article to learn
-              break;
+              // Filter out already used resources
+              const newResources = readData.resources.filter((resource: any) => 
+                !usedResourceUrls.has(resource.url)
+              );
+              
+              // Add new resources and mark them as used
+              const resourcesToAdd = newResources.slice(0, 1);
+              resourcesToAdd.forEach((resource: any) => {
+                usedResourceUrls.add(resource.url);
+              });
+              
+              day.learn.push(...resourcesToAdd);
+              if (day.learn.length >= 3) break;
             }
           }
         } catch (error) {
@@ -148,8 +172,19 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
           if (practiceResponse.ok) {
             const practiceData = await practiceResponse.json();
             if (practiceData.resources && practiceData.resources.length > 0) {
-              day.practice.push(...practiceData.resources.slice(0, 2)); // Add up to 2 practice resources
-              break;
+              // Filter out already used resources
+              const newResources = practiceData.resources.filter((resource: any) => 
+                !usedResourceUrls.has(resource.url)
+              );
+              
+              // Add new resources and mark them as used
+              const resourcesToAdd = newResources.slice(0, 2);
+              resourcesToAdd.forEach((resource: any) => {
+                usedResourceUrls.add(resource.url);
+              });
+              
+              day.practice.push(...resourcesToAdd);
+              if (day.practice.length >= 2) break;
             }
           }
         } catch (error) {

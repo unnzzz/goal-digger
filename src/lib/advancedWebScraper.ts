@@ -170,10 +170,21 @@ class AdvancedWebScraper {
           if (results.length >= 5) return false; // Limit results
           
           const href = $(element).attr('href');
-          const titleElement = $(element).find('h3, .ytd-video-renderer h3, #video-title, .ytd-video-meta-block h3');
-          const title = titleElement.text().trim();
+          const titleElement = $(element).find('h3, .ytd-video-renderer h3, #video-title, .ytd-video-meta-block h3, .ytd-video-renderer #video-title, .ytd-video-meta-block #video-title');
+          let title = titleElement.text().trim();
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5) {
+          // Clean up title - remove CSS classes and ensure it's actual text
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5) {
+            // Try alternative title extraction
+            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).text().trim();
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 5) {
+              title = altTitle;
+            } else {
+              return; // Skip this result if title is invalid
+            }
+          }
+          
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
             if (videoId && videoId.length === 11) {
               results.push({
@@ -205,9 +216,19 @@ class AdvancedWebScraper {
           if (results.length >= 5) return false;
           
           const href = $(element).attr('href');
-          const title = $(element).text().trim();
+          let title = $(element).text().trim();
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5) {
+          // Clean up title - remove CSS classes and ensure it's actual text
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5) {
+            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 5) {
+              title = altTitle;
+            } else {
+              return; // Skip this result if title is invalid
+            }
+          }
+          
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
             if (videoId && videoId.length === 11) {
               results.push({
@@ -236,9 +257,19 @@ class AdvancedWebScraper {
           if (results.length >= 5) return false;
           
           const href = $(element).attr('href');
-          const title = $(element).text().trim();
+          let title = $(element).text().trim();
           
-          if (href && title && href.includes('/watch?v=') && title.length > 5) {
+          // Clean up title - remove CSS classes and ensure it's actual text
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 5) {
+            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 5) {
+              title = altTitle;
+            } else {
+              return; // Skip this result if title is invalid
+            }
+          }
+          
+          if (href && title && href.includes('/watch?v=') && title.length > 5 && !title.includes('{') && !title.includes('css-')) {
             const videoId = href.split('v=')[1]?.split('&')[0];
             if (videoId && videoId.length === 11) {
               results.push({
@@ -294,9 +325,19 @@ class AdvancedWebScraper {
           if (results.length >= 5) return false;
           
           const href = $(element).attr('href');
-          const title = $(element).text().trim();
+          let title = $(element).text().trim();
           
-          if (href && title && !href.includes('duckduckgo.com') && title.length > 10) {
+          // Clean up title - remove CSS classes and ensure it's actual text
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10) {
+            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 10) {
+              title = altTitle;
+            } else {
+              return; // Skip this result if title is invalid
+            }
+          }
+          
+          if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-')) {
             try {
               const url = new URL(href);
               const isEducational = educationalDomains.some(domain => 
@@ -336,9 +377,19 @@ class AdvancedWebScraper {
           if (results.length >= 5) return false;
           
           const href = $(element).attr('href');
-          const title = $(element).text().trim();
+          let title = $(element).text().trim();
           
-          if (href && title && title.length > 10) {
+          // Clean up title - remove CSS classes and ensure it's actual text
+          if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10) {
+            const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+            if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 10) {
+              title = altTitle;
+            } else {
+              return; // Skip this result if title is invalid
+            }
+          }
+          
+          if (href && title && title.length > 10 && !title.includes('{') && !title.includes('css-')) {
             try {
               const url = new URL(href);
               const isEducational = educationalDomains.some(domain => 
