@@ -142,17 +142,23 @@ export default function QuizPage() {
       }
     }
     
-    // Store quiz completion (always completed after one attempt)
-    localStorage.setItem(`quiz-completed-${goalId}-day-${dayNumber}`, JSON.stringify({
-      score: finalScore,
-      passed: finalScore >= 80,
-      attempts: newAttempts,
-      completedAt: new Date().toISOString()
-    }));
+    // Get goalId for localStorage storage
+    const goalId = new URLSearchParams(window.location.search).get('goalId') || 
+                  localStorage.getItem('currentGoalId');
     
-    // Store passed status only if score >= 80% (for coins and next day unlock)
-    if (finalScore >= 80) {
-      localStorage.setItem(`quiz-passed-${goalId}-day-${dayNumber}`, 'true');
+    if (goalId) {
+      // Store quiz completion (always completed after one attempt)
+      localStorage.setItem(`quiz-completed-${goalId}-day-${dayNumber}`, JSON.stringify({
+        score: finalScore,
+        passed: finalScore >= 80,
+        attempts: newAttempts,
+        completedAt: new Date().toISOString()
+      }));
+      
+      // Store passed status only if score >= 80% (for coins and next day unlock)
+      if (finalScore >= 80) {
+        localStorage.setItem(`quiz-passed-${goalId}-day-${dayNumber}`, 'true');
+      }
     }
     
     // Always dispatch event to refresh dashboard (quiz is completed regardless of score)
