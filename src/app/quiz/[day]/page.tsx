@@ -69,7 +69,7 @@ export default function QuizPage() {
     
     let correct = 0;
     quiz.forEach((question: any, index: number) => {
-      if (answers[index] === question.correct_answer) {
+      if (answers[index] === question.correct) {
         correct++;
       }
     });
@@ -387,13 +387,13 @@ export default function QuizPage() {
                     {questionIndex + 1}. {question.question}
                   </div>
                   <div style={{
-                    color: answers[questionIndex] === question.correct_answer ? '#10B981' : '#EF4444',
+                    color: answers[questionIndex] === question.correct ? '#10B981' : '#EF4444',
                     fontWeight: '500'
                   }}>
-                    Your answer: {answers[questionIndex]} {answers[questionIndex] === question.correct_answer ? '✓' : '✗'}
+                    Your answer: {answers[questionIndex]} {answers[questionIndex] === question.correct ? '✓' : '✗'}
                   </div>
                   <div style={{ color: '#6B7280', fontSize: '14px' }}>
-                    Correct answer: {question.correct_answer}
+                    Correct answer: {question.correct}
                   </div>
                 </div>
               ))}
