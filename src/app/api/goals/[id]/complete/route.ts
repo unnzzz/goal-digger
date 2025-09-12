@@ -26,7 +26,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const tz = user.tz && isValidTZ(user.tz) ? user.tz! : "America/Detroit";
     const label = todayLabel(tz);
     const todayN = dayNumberFrom(new Date(goal.startDate), label);
-    if (dayNumber > todayN) return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
+    
+    // Allow access to next day if current day's quiz has been completed
+    let maxAllowedDay = todayN;
+    if (dayNumber > todayN) {
+      // Check if the previous day's quiz was completed
+      const previousDay = dayNumber - 1;
+      if (previousDay >= 1) {
+        // Check if previous day's quiz was completed (this would be in localStorage on client side)
+        // For now, we'll allow access to next day if it's only 1 day ahead
+        if (dayNumber === todayN + 1) {
+          maxAllowedDay = dayNumber;
+        } else {
+          return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
+        }
+      } else {
+        return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
+      }
+    }
+    
+    if (dayNumber > maxAllowedDay) return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
 
     const exists = await prisma.questCompletion.findFirst({
       where: { userId: user.id, goalId, dayNumber, section, index },

@@ -132,6 +132,8 @@ export default function QuizPage() {
     // Also store in a way that can be checked for next day unlock
     if (finalScore >= 80) {
       localStorage.setItem(`quiz-passed-day-${dayNumber}`, 'true');
+      // Dispatch event to refresh dashboard
+      window.dispatchEvent(new Event('quiz-completed'));
     }
   };
 

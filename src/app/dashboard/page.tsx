@@ -426,20 +426,24 @@ function SectionCard({
             <button
               className="btn"
               onClick={() => {
-                window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
+                if (!isCompleted(it)) {
+                  window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
+                }
               }}
+              disabled={isCompleted(it)}
               style={{
-                background: "#8B5CF6",
+                background: isCompleted(it) ? "#10B981" : "#8B5CF6",
                 color: "white",
                 padding: "8px 16px",
                 borderRadius: "6px",
                 fontSize: "14px",
                 fontWeight: "600",
                 border: "none",
-                cursor: "pointer"
+                cursor: isCompleted(it) ? "not-allowed" : "pointer",
+                opacity: isCompleted(it) ? 0.8 : 1
               }}
             >
-              {isCompleted ? "View Results" : "Take Quiz"}
+              {isCompleted(it) ? "✅ Quiz Completed" : "Take Quiz"}
             </button>
           </div>
         ) : it.section !== "reflect" && (it.title || it.url) ? (
@@ -709,6 +713,16 @@ export default function Dashboard() {
     }
   };
 
+  // Listen for quiz completion events to refresh the dashboard
+  useEffect(() => {
+    const handleQuizCompletion = () => {
+      loadDaily();
+    };
+
+    window.addEventListener('quiz-completed', handleQuizCompletion);
+    return () => window.removeEventListener('quiz-completed', handleQuizCompletion);
+  }, []);
+
   useEffect(() => {
     loadGoals();
   }, []); // mount
@@ -745,7 +759,14 @@ export default function Dashboard() {
     });
   }, [daily]);
 
-  const isCompleted = (it: DailyItem) => !!it.completed;
+  const isCompleted = (it: DailyItem) => {
+    if (it.section === "quiz") {
+      // For quiz items, check localStorage for completion status
+      const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
+      return quizPassed;
+    }
+    return !!it.completed;
+  };
 
   const completeQuest = useCallback(async (it: DailyItem, e?: React.MouseEvent) => {
     e?.preventDefault();
