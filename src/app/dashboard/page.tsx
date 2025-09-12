@@ -819,7 +819,7 @@ export default function Dashboard() {
     // For quiz sections, redirect to quiz page instead of marking complete
     if (it.section === "quiz") {
       if (isCompleted(it)) {
-        alert('You have already completed this quiz!');
+        showNotification('info', 'Quiz Already Completed', 'You have already completed this quiz!');
         return;
       }
       window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
@@ -838,7 +838,7 @@ export default function Dashboard() {
         const j = await res.json();
         if (j?.error) msg = j.error;
       } catch {}
-      alert(msg);
+      showNotification('error', 'Quest Failed', msg);
       return;
     }
 
@@ -884,6 +884,27 @@ export default function Dashboard() {
     totalCoins: 0,
     questType: ""
   });
+
+  // ---- Notification Modal ----
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationData, setNotificationData] = useState<{
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
+  const showNotification = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    setNotificationData({ type, title, message });
+    setShowNotificationModal(true);
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setShowNotificationModal(false);
+    }, 5000);
+  };
 
   // ---- Diary helpers ----
   const [openDiary, setOpenDiary] = useState<Record<string, boolean>>({});
@@ -933,7 +954,7 @@ export default function Dashboard() {
         if (j?.error) msg = j.error;
       } catch {}
         console.error("Diary save failed:", msg);
-      alert(msg);
+      showNotification('error', 'Diary Save Failed', msg);
       return;
     }
 
@@ -941,7 +962,7 @@ export default function Dashboard() {
     markSavedFlash(key);
     } catch (error) {
       console.error("Diary save error:", error);
-      alert("Failed to save diary. Please try again.");
+      showNotification('error', 'Diary Save Error', 'Failed to save diary. Please try again.');
     }
   }, [diaryDrafts, tz]);
 
@@ -959,7 +980,7 @@ export default function Dashboard() {
       headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
     });
     if (!res.ok) {
-      alert("Could not start goal");
+      showNotification('error', 'Start Failed', 'Could not start goal. Please try again.');
       return;
     }
     const j = await res.json();
@@ -978,7 +999,7 @@ export default function Dashboard() {
         const j = await res.json();
         if (j?.error) msg = j.error;
       } catch {}
-      alert(msg);
+      showNotification('error', 'Goal Start Failed', msg);
       return;
     }
     setGoals((prev) => prev.filter((x) => x.id !== g.id));
@@ -1507,6 +1528,81 @@ export default function Dashboard() {
                 }}
               >
                 Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {showNotificationModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              {notificationData.type === 'success' ? '✅' : 
+               notificationData.type === 'error' ? '❌' : 'ℹ️'}
+            </div>
+            <h3 style={{
+              margin: '0 0 12px 0',
+              color: notificationData.type === 'success' ? '#10B981' : 
+                     notificationData.type === 'error' ? '#EF4444' : '#6B7280',
+              fontSize: '20px',
+              fontWeight: '600'
+            }}>
+              {notificationData.title}
+            </h3>
+            <p style={{
+              margin: '0 0 24px 0',
+              color: '#6B7280',
+              fontSize: '16px',
+              lineHeight: '1.5'
+            }}>
+              {notificationData.message}
+            </p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowNotificationModal(false)}
+                style={{
+                  background: notificationData.type === 'success' ? '#10B981' : 
+                             notificationData.type === 'error' ? '#EF4444' : '#6A3EE8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                OK
               </button>
             </div>
           </div>

@@ -117,6 +117,27 @@ export default function GoalPage({ params }: { params: { id: string } }) {
     questType: ""
   });
 
+  // Error/Success Modal
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationData, setNotificationData] = useState<{
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
+  const showNotification = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    setNotificationData({ type, title, message });
+    setShowNotificationModal(true);
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setShowNotificationModal(false);
+    }, 5000);
+  };
+
   useEffect(() => {
     (async () => {
       const res = await fetch(`/api/goals/${params.id}`);
@@ -139,8 +160,11 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: goal.title, roadmap }),
     });
-    if (!res.ok) alert("Save failed");
-    else alert("Saved!");
+    if (!res.ok) {
+      showNotification('error', 'Save Failed', 'Failed to save the roadmap. Please try again.');
+    } else {
+      showNotification('success', 'Saved!', 'Roadmap saved successfully.');
+    }
   };
 
   const addResource = (di: number, section: "learn" | "practice") => {
@@ -235,7 +259,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
         if (j?.error) msg = j.error;
       } catch {}
       console.error('Quest completion failed:', msg, 'Status:', res.status);
-      alert(`ERROR: ${msg} (Status: ${res.status})`);
+      showNotification('error', 'Quest Failed', `${msg} (Status: ${res.status})`);
       return;
     }
 
@@ -271,12 +295,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       headers: { "X-Roadmap-Ajax": "1", "X-Timezone": tzHead },
     });
     if (!res.ok) {
-      alert("Could not start");
+      showNotification('error', 'Start Failed', 'Could not start the goal. Please try again.');
       return;
     }
     const j = await res.json();
     setGoal((g: any) => ({ ...g, startDate: j.startDate }));
-    alert("Starts today — reminders armed. Check Dashboard → Daily quests.");
+    showNotification('success', 'Goal Started!', 'Starts today — reminders armed. Check Dashboard → Daily quests.');
   };
 
   // ----- Diary helpers -----
@@ -316,7 +340,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
         const j = await res.json();
         if (j?.error) msg = j.error;
       } catch {}
-      alert(msg);
+      showNotification('error', 'Diary Save Failed', msg);
       return;
     }
 
@@ -1331,7 +1355,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                                 if (canTakeQuiz) {
                                   window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
                                 } else if (isQuizAlreadyCompleted) {
-                                  alert('You have already completed this quiz!');
+                                  showNotification('info', 'Quiz Already Completed', 'You have already completed this quiz!');
                                 }
                               }}
                             >
@@ -1632,6 +1656,81 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                 }}
               >
                 Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {showNotificationModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              {notificationData.type === 'success' ? '✅' : 
+               notificationData.type === 'error' ? '❌' : 'ℹ️'}
+            </div>
+            <h3 style={{
+              margin: '0 0 12px 0',
+              color: notificationData.type === 'success' ? '#10B981' : 
+                     notificationData.type === 'error' ? '#EF4444' : '#6B7280',
+              fontSize: '20px',
+              fontWeight: '600'
+            }}>
+              {notificationData.title}
+            </h3>
+            <p style={{
+              margin: '0 0 24px 0',
+              color: '#6B7280',
+              fontSize: '16px',
+              lineHeight: '1.5'
+            }}>
+              {notificationData.message}
+            </p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowNotificationModal(false)}
+                style={{
+                  background: notificationData.type === 'success' ? '#10B981' : 
+                             notificationData.type === 'error' ? '#EF4444' : '#6A3EE8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                OK
               </button>
             </div>
           </div>
