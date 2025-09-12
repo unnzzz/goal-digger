@@ -213,7 +213,7 @@ export default function DiaryDatesPage() {
                     Day {byGoal[g][0].dayNumber}
                   </span>
                 )}
-              </div>
+            </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {byGoal[g].map((e, index) => (
                 <div key={e.id} style={{ 
@@ -258,7 +258,7 @@ export default function DiaryDatesPage() {
                 </div>
               ))}
               </div>
-            </div>
+          </div>
           );
         })}
       </div>
@@ -304,7 +304,7 @@ export default function DiaryDatesPage() {
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ margin: 0, color: 'white', fontSize: '20px', fontWeight: '700' }}>Calendar</h2>
-            </div>
+          </div>
 
             {datesLoading && (
               <div style={{ 
@@ -428,7 +428,7 @@ export default function DiaryDatesPage() {
                         fontWeight: '600',
                         marginBottom: '2px'
                       }}>
-                        {formatHuman(d, tz)}
+                    {formatHuman(d, tz)}
                       </div>
                     </div>
                     

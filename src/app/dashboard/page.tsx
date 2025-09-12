@@ -230,9 +230,10 @@ function diaryKeyFor(it: DailyItem) {
 
 function isCompleted(it: DailyItem) {
   if (it.section === "quiz") {
-    // For quiz items, check if quiz has been passed
+    // For quiz items, check if quiz has been passed or completed
     const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
-    return quizPassed;
+    const quizCompleted = localStorage.getItem(`quiz-completed-day-${it.dayNumber}`);
+    return quizPassed || !!quizCompleted;
   }
   return !!it.completed;
 }
@@ -404,7 +405,7 @@ function SectionCard({
                 fontWeight: "600"
               }}
             >
-              {isCompletedValue ? "Completed" : it.section === "quiz" ? "Take Quiz" : "Complete"}
+              {isCompletedValue ? (it.section === "quiz" ? "✅ Quiz Completed" : "Completed") : it.section === "quiz" ? "Take Quiz" : "Complete"}
             </button>
           </div>
         </div>
@@ -804,6 +805,10 @@ export default function Dashboard() {
 
     // For quiz sections, redirect to quiz page instead of marking complete
     if (it.section === "quiz") {
+      if (isCompleted(it)) {
+        alert('You have already completed this quiz!');
+        return;
+      }
       window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
       return;
     }

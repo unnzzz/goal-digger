@@ -13,7 +13,7 @@ function Show({ v, label }: { v: any; label: string }) {
   return <>{v}</>;
 }
 
-const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
+const COINS = { learn: 5, practice: 10, reflect: 5, quiz: 50 } as const;
 
 type Resource = {
   kind: "watch" | "listen" | "read";
@@ -1244,8 +1244,9 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       
                       const quizUnlocked = isQuizUnlocked(d.day);
                       const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
+                      const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
                       
-                      if (quizPassed) {
+                      if (quizPassed || quizCompleted) {
                         return (
                           <div style={{
                             background: 'linear-gradient(135deg, #10B981, #059669)',
@@ -1265,49 +1266,71 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                         );
                       }
                       
-                      return (
-                        <button 
-                          disabled={!quizUnlocked}
-                          style={{
-                            background: quizUnlocked 
-                              ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
-                              : '#D1D5DB',
-                            color: 'white',
-                            border: 'none',
-                            padding: '12px 24px',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            cursor: quizUnlocked ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.2s ease',
-                            boxShadow: quizUnlocked 
-                              ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
-                              : 'none',
-                            opacity: quizUnlocked ? 1 : 0.6
-                          }}
-                          onMouseOver={(e) => {
-                            if (quizUnlocked) {
-                              e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (quizUnlocked) {
-                              e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
-                            }
-                          }}
-                          onClick={() => {
-                            if (quizUnlocked) {
-                              window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
-                            }
-                          }}
-                        >
-                          {quizUnlocked ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
-                        </button>
-                      );
+                        const isQuizAlreadyCompleted = quizPassed || quizCompleted;
+                        const canTakeQuiz = quizUnlocked && !isQuizAlreadyCompleted;
+                        
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button 
+                              disabled={!canTakeQuiz}
+                              style={{
+                                background: canTakeQuiz
+                                  ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
+                                  : isQuizAlreadyCompleted
+                                  ? 'linear-gradient(135deg, #10B981, #059669)'
+                                  : '#D1D5DB',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                cursor: canTakeQuiz ? 'pointer' : 'not-allowed',
+                                transition: 'all 0.2s ease',
+                                boxShadow: canTakeQuiz
+                                  ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
+                                  : isQuizAlreadyCompleted
+                                  ? '0 4px 12px rgba(16, 185, 129, 0.3)'
+                                  : 'none',
+                                opacity: canTakeQuiz ? 1 : 0.6
+                              }}
+                              onMouseOver={(e) => {
+                                if (canTakeQuiz) {
+                                  e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                                }
+                              }}
+                              onMouseOut={(e) => {
+                                if (canTakeQuiz) {
+                                  e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                                }
+                              }}
+                              onClick={() => {
+                                if (canTakeQuiz) {
+                                  window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
+                                } else if (isQuizAlreadyCompleted) {
+                                  alert('You have already completed this quiz!');
+                                }
+                              }}
+                            >
+                              {isQuizAlreadyCompleted 
+                                ? `✅ Quiz Completed (${d.day})` 
+                                : quizUnlocked 
+                                ? `Take Quiz (${d.day})` 
+                                : `Complete Quests First (${d.day})`}
+                            </button>
+                            
+                            {canTakeQuiz && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '14px', color: '#6B7280' }}>+{COINS.quiz}</span>
+                                <img src="/icons/coin.png" alt="coin" style={{ width: '16px', height: '16px' }} />
+                              </div>
+                            )}
+                          </div>
+                        );
                     })()}
                   </div>
                 )}
