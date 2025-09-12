@@ -21,9 +21,19 @@ export default function QuizPage() {
   const [maxAttempts] = useState(1);
 
   useEffect(() => {
+    // Get goalId first
+    const goalId = new URLSearchParams(window.location.search).get('goalId') || 
+                  localStorage.getItem('currentGoalId');
+    
+    if (!goalId) {
+      alert('Goal ID not found!');
+      window.close();
+      return;
+    }
+    
     // Check if quiz has already been completed (any attempt)
-    const quizPassed = localStorage.getItem(`quiz-passed-day-${dayNumber}`) === 'true';
-    const quizCompleted = localStorage.getItem(`quiz-completed-day-${dayNumber}`);
+    const quizPassed = localStorage.getItem(`quiz-passed-${goalId}-day-${dayNumber}`) === 'true';
+    const quizCompleted = localStorage.getItem(`quiz-completed-${goalId}-day-${dayNumber}`);
     
     if (quizPassed || quizCompleted) {
       // Quiz already completed, redirect back
@@ -133,7 +143,7 @@ export default function QuizPage() {
     }
     
     // Store quiz completion (always completed after one attempt)
-    localStorage.setItem(`quiz-completed-day-${dayNumber}`, JSON.stringify({
+    localStorage.setItem(`quiz-completed-${goalId}-day-${dayNumber}`, JSON.stringify({
       score: finalScore,
       passed: finalScore >= 80,
       attempts: newAttempts,
@@ -142,7 +152,7 @@ export default function QuizPage() {
     
     // Store passed status only if score >= 80% (for coins and next day unlock)
     if (finalScore >= 80) {
-      localStorage.setItem(`quiz-passed-day-${dayNumber}`, 'true');
+      localStorage.setItem(`quiz-passed-${goalId}-day-${dayNumber}`, 'true');
     }
     
     // Always dispatch event to refresh dashboard (quiz is completed regardless of score)
