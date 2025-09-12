@@ -19,6 +19,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const [maxAttempts] = useState(1);
+  const [showError, setShowError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get goalId first
@@ -26,8 +27,11 @@ export default function QuizPage() {
                   localStorage.getItem('currentGoalId');
     
     if (!goalId) {
-      alert('Goal ID not found!');
-      window.close();
+      // Show error modal instead of alert
+      setShowResults(true);
+      setFinalScore(0);
+      setShowError('Goal ID not found!');
+      setTimeout(() => window.close(), 3000);
       return;
     }
     
@@ -37,8 +41,10 @@ export default function QuizPage() {
     
     if (quizPassed || quizCompleted) {
       // Quiz already completed, redirect back
-      alert('You have already completed this quiz!');
-      window.close();
+      setShowResults(true);
+      setFinalScore(0);
+      setShowError('You have already completed this quiz!');
+      setTimeout(() => window.close(), 3000);
       return;
     }
 
@@ -166,7 +172,7 @@ export default function QuizPage() {
   };
 
   const handleRetake = () => {
-    alert('You have already completed this quiz. Only one attempt is allowed.');
+    setShowError('You have already completed this quiz. Only one attempt is allowed.');
   };
 
   const handleBackToGoal = () => {
@@ -383,12 +389,55 @@ export default function QuizPage() {
         ) : (
           /* Results */
           <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '64px',
-              marginBottom: '24px'
-            }}>
-              {score >= 80 ? '🎉' : '😔'}
-            </div>
+            {showError ? (
+              <div>
+                <div style={{
+                  fontSize: '64px',
+                  marginBottom: '24px'
+                }}>
+                  ⚠️
+                </div>
+                <h2 style={{
+                  color: '#DC2626',
+                  fontSize: '32px',
+                  marginBottom: '16px',
+                  fontWeight: '700'
+                }}>
+                  Error
+                </h2>
+                <p style={{
+                  color: '#6B7280',
+                  fontSize: '18px',
+                  marginBottom: '32px',
+                  lineHeight: '1.6'
+                }}>
+                  {showError}
+                </p>
+                <button
+                  onClick={handleBackToGoal}
+                  style={{
+                    background: 'linear-gradient(135deg, #6A3EE8, #8B5CF6)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontFamily: 'Baloo Bhai, cursive'
+                  }}
+                >
+                  Back to Goal
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{
+                  fontSize: '64px',
+                  marginBottom: '24px'
+                }}>
+                  {score >= 80 ? '🎉' : '😔'}
+                </div>
             
             <h2 style={{
               color: score >= 80 ? '#10B981' : '#EF4444',
@@ -498,6 +547,8 @@ export default function QuizPage() {
                 Back to Goal
               </button>
             </div>
+              </div>
+            )}
           </div>
         )}
         </div>
