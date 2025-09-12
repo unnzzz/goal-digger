@@ -1263,6 +1263,71 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                     </button>
                   </div>
                 )}
+
+                {/* QUIZ BUTTON - Only show if learn, practice, and reflect are completed */}
+                {dayCompleted && (d as any).quiz && (d as any).quiz.length > 0 && (
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    marginTop: '16px',
+                    border: '2px solid #8B5CF6',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '20px' }}>🧠</span>
+                      <span style={{ 
+                        background: '#8B5CF6', 
+                        color: 'white', 
+                        padding: '6px 12px', 
+                        borderRadius: '8px', 
+                        fontSize: '14px', 
+                        fontWeight: '600' 
+                      }}>
+                        QUIZ +{COINS.learn + COINS.practice + COINS.reflect} coins
+                      </span>
+                    </div>
+                    
+                    <p style={{ 
+                      margin: '0 0 16px 0', 
+                      fontSize: '14px', 
+                      color: '#6B7280' 
+                    }}>
+                      Test your knowledge! Score 80% or higher to unlock the next day's quests.
+                    </p>
+                    
+                    <button 
+                      style={{
+                        background: 'linear-gradient(135deg, #8B5CF6, #A855F7)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                      }}
+                      onClick={() => {
+                        // TODO: Navigate to quiz page
+                        alert('Quiz functionality coming soon!');
+                      }}
+                    >
+                      Take Quiz ({d.day})
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
           );

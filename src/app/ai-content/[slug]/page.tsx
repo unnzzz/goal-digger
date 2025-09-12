@@ -3,6 +3,43 @@
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
+// Format markdown content for better display
+function formatMarkdownContent(content: string): string {
+  return content
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3 style="color: #1F2937; font-size: 20px; font-weight: 600; margin: 24px 0 12px 0; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px;">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 style="color: #111827; font-size: 24px; font-weight: 700; margin: 32px 0 16px 0; border-bottom: 3px solid #6A3EE8; padding-bottom: 12px;">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 style="color: #111827; font-size: 28px; font-weight: 800; margin: 40px 0 20px 0; text-align: center; background: linear-gradient(135deg, #6A3EE8, #8B5CF6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$1</h1>')
+    
+    // Bold text
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #1F2937; font-weight: 700;">$1</strong>')
+    
+    // Italic text
+    .replace(/\*(.*?)\*/g, '<em style="color: #4B5563; font-style: italic;">$1</em>')
+    
+    // Lists
+    .replace(/^\* (.*$)/gim, '<li style="margin: 8px 0; padding-left: 8px; position: relative;"><span style="color: #6A3EE8; font-weight: bold; position: absolute; left: -16px;">•</span>$1</li>')
+    .replace(/^- (.*$)/gim, '<li style="margin: 8px 0; padding-left: 8px; position: relative;"><span style="color: #6A3EE8; font-weight: bold; position: absolute; left: -16px;">•</span>$1</li>')
+    
+    // Wrap lists in ul tags
+    .replace(/(<li.*<\/li>)/g, '<ul style="margin: 16px 0; padding-left: 20px; background: #F9FAFB; border-left: 4px solid #6A3EE8; padding: 16px 20px; border-radius: 8px;">$1</ul>')
+    
+    // Code blocks
+    .replace(/```([\s\S]*?)```/g, '<pre style="background: #1F2937; color: #F9FAFB; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 16px 0; font-family: \'Monaco\', \'Menlo\', monospace; font-size: 14px; line-height: 1.5;"><code>$1</code></pre>')
+    
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code style="background: #F3E8FF; color: #6A3EE8; padding: 2px 6px; border-radius: 4px; font-family: \'Monaco\', \'Menlo\', monospace; font-size: 14px;">$1</code>')
+    
+    // Paragraphs
+    .replace(/^(?!<[h|u|l|p])(.*$)/gim, '<p style="margin: 16px 0; line-height: 1.8;">$1</p>')
+    
+    // Remove empty paragraphs
+    .replace(/<p><\/p>/g, '')
+    
+    // Clean up multiple newlines
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 export default function AIContentPage() {
   const params = useParams();
   const [content, setContent] = useState<any>(null);
@@ -165,12 +202,16 @@ export default function AIContentPage() {
             </div>
           </div>
         ) : (
-          <div style={{
-            whiteSpace: 'pre-wrap',
-            color: '#374151'
-          }}>
-            {content?.content || 'Content not available.'}
-          </div>
+          <div 
+            style={{
+              color: '#374151',
+              lineHeight: '1.8',
+              fontSize: '16px'
+            }}
+            dangerouslySetInnerHTML={{
+              __html: formatMarkdownContent(content?.content || 'Content not available.')
+            }}
+          />
         )}
       </div>
 

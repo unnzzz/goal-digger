@@ -1392,22 +1392,22 @@ a:hover {
 }
 
 .edit-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-light);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+  background: linear-gradient(135deg, #6A3EE8, #8B5CF6);
+  color: white;
+  border: none;
+  padding: 12px 24px;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(106, 62, 232, 0.3);
 }
 
 .edit-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #5a2d91, #7c3aed);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(106, 62, 232, 0.4);
 }
 
 .goal-name-input {
