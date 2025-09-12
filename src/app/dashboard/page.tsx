@@ -397,19 +397,21 @@ function SectionCard({
                 filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
               }} />
             </span>
-            <button
-              className={`btn ${isCompletedValue ? "disabled" : ""}`}
-              onClick={(e) => completeQuest(it, e)}
-              disabled={isCompletedValue}
-              title={isCompletedValue ? "Already completed" : it.section === "quiz" ? "Take quiz" : "Mark complete"}
-              style={{
-                padding: "8px 16px",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}
-            >
-              {isCompletedValue ? (it.section === "quiz" ? "✅ Quiz Completed" : "Completed") : it.section === "quiz" ? "Take Quiz" : "Complete"}
-            </button>
+            {it.section !== "quiz" && (
+              <button
+                className={`btn ${isCompletedValue ? "disabled" : ""}`}
+                onClick={(e) => completeQuest(it, e)}
+                disabled={isCompletedValue}
+                title={isCompletedValue ? "Already completed" : "Mark complete"}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "14px",
+                  fontWeight: "600"
+                }}
+              >
+                {isCompletedValue ? "Completed" : "Complete"}
+              </button>
+            )}
           </div>
         </div>
       </div>
