@@ -139,50 +139,71 @@ function generateBasicTopics(goal: string, totalDays: number): string[] {
 function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, goal: string): any[] {
   const exercises: any[] = [];
   
-  // Generate creative practice exercises based on the day's topic and overall goal
+  // Generate creative and detailed practice exercises based on the day's topic and overall goal
   let exercise1Title = `Hands-on Exercise: ${dayTitle} Practice`;
+  let exercise1Description = `Apply the concepts you've learned about ${dayTitle.toLowerCase()} through hands-on practice.`;
   let exercise2Title = `Creative Challenge: Apply ${dayTitle} Skills`;
+  let exercise2Description = `Take your ${dayTitle.toLowerCase()} skills to the next level with this creative project.`;
   
-  // Make exercises more specific based on the goal and day content
+  // Make exercises more specific and detailed based on the goal and day content
   if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
     if (dayTitle.toLowerCase().includes('camera') || dayTitle.toLowerCase().includes('exposure')) {
-      exercise1Title = `Practice: Test different camera settings for ${dayTitle.toLowerCase()}`;
-      exercise2Title = `Project: Shoot a scene demonstrating ${dayTitle.toLowerCase()}`;
+      exercise1Title = `Camera Mastery Challenge: ${dayTitle} Exploration`;
+      exercise1Description = `Spend 2-3 hours experimenting with different camera settings and exposure techniques. Set up various lighting conditions (indoor, outdoor, low light) and practice adjusting ISO, aperture, and shutter speed. Create a series of 10 test shots showing different exposure scenarios, then analyze what worked best and why. Document your findings and create a personal reference guide.`;
+      exercise2Title = `Cinematic Storytelling Project: ${dayTitle} in Action`;
+      exercise2Description = `Create a 2-3 minute short film that showcases your ${dayTitle.toLowerCase()} skills. Plan a simple story that requires different exposure settings throughout. Use your camera to tell the story visually - perhaps showing a character moving from bright daylight to dim indoor lighting, or capturing the mood of different times of day. Edit your footage and add a voiceover explaining your creative choices.`;
     } else if (dayTitle.toLowerCase().includes('lighting')) {
-      exercise1Title = `Practice: Set up three-point lighting for different scenarios`;
-      exercise2Title = `Project: Create mood lighting for a dramatic scene`;
+      exercise1Title = `Lighting Workshop: Three-Point Setup Mastery`;
+      exercise1Description = `Set up a complete three-point lighting system in your space. Experiment with different light positions, intensities, and modifiers. Practice lighting different types of subjects (portraits, objects, scenes) and document the results. Try creating different moods - dramatic, soft, high-key, low-key - and understand how each affects the emotional impact of your images.`;
+      exercise2Title = `Mood Lighting Project: Visual Storytelling`;
+      exercise2Description = `Create a series of 5-7 images that tell a story using only lighting. Choose a theme (like "a day in the life" or "emotions") and use different lighting setups to convey different moments or feelings. Experiment with color temperature, shadows, and light direction to create distinct moods. Present your work as a visual narrative with captions explaining your lighting choices.`;
     } else if (dayTitle.toLowerCase().includes('editing')) {
-      exercise1Title = `Practice: Edit a 30-second clip using ${dayTitle.toLowerCase()}`;
-      exercise2Title = `Project: Create a short film with smooth transitions`;
+      exercise1Title = `Editing Bootcamp: ${dayTitle} Techniques`;
+      exercise1Description = `Practice the specific editing techniques covered in today's lesson. Find or create raw footage and spend 3-4 hours applying different editing methods. Focus on timing, rhythm, and flow. Create multiple versions of the same sequence using different approaches, then compare the results. Pay attention to how editing choices affect the emotional impact and pacing of your story.`;
+      exercise2Title = `Short Film Project: Complete Workflow`;
+      exercise2Description = `Plan, shoot, and edit a complete 3-5 minute short film that demonstrates your ${dayTitle.toLowerCase()} skills. Start with a simple concept and storyboard, then execute the project from pre-production to final export. Focus on applying all the editing techniques you've learned while maintaining a cohesive narrative. Share your finished film and reflect on what you learned throughout the process.`;
     } else {
-      exercise1Title = `Practice: Create a ${dayTitle.toLowerCase()} exercise`;
-      exercise2Title = `Project: Apply ${dayTitle} to a short film scene`;
+      exercise1Title = `Technical Practice: ${dayTitle} Fundamentals`;
+      exercise1Description = `Dive deep into the technical aspects of ${dayTitle.toLowerCase()}. Spend 2-3 hours practicing the core techniques, experimenting with different approaches, and troubleshooting common challenges. Document your process, take notes on what works and what doesn't, and create a personal reference guide for future projects.`;
+      exercise2Title = `Creative Application: ${dayTitle} in Practice`;
+      exercise2Description = `Apply your ${dayTitle.toLowerCase()} knowledge to a real creative project. Choose something that excites you - perhaps a personal story, a documentary about someone you know, or an experimental piece. Use this project as an opportunity to push your skills further and discover your unique creative voice while applying the techniques you've learned.`;
     }
   } else if (goal.toLowerCase().includes('programming') || goal.toLowerCase().includes('coding')) {
     if (dayTitle.toLowerCase().includes('javascript') || dayTitle.toLowerCase().includes('js')) {
-      exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example in JavaScript`;
-      exercise2Title = `Project: Create a web app using ${dayTitle.toLowerCase()}`;
+      exercise1Title = `Code Workshop: ${dayTitle} Deep Dive`;
+      exercise1Description = `Build a comprehensive JavaScript project that demonstrates your understanding of ${dayTitle.toLowerCase()}. Start with a simple concept and gradually add complexity. Focus on writing clean, well-commented code and implementing best practices. Test your code thoroughly and refactor as needed. Document your learning process and challenges you overcame.`;
+      exercise2Title = `Full-Stack Project: ${dayTitle} Application`;
+      exercise2Description = `Create a complete web application using ${dayTitle.toLowerCase()} as a core feature. Plan the project architecture, design the user interface, implement the functionality, and deploy it online. Focus on creating something useful and user-friendly while showcasing your technical skills. Consider adding features like user authentication, data persistence, and responsive design.`;
     } else if (dayTitle.toLowerCase().includes('react')) {
-      exercise1Title = `Code: Build a React component for ${dayTitle.toLowerCase()}`;
-      exercise2Title = `Project: Create a React app with ${dayTitle.toLowerCase()}`;
+      exercise1Title = `Component Library: ${dayTitle} Mastery`;
+      exercise1Description = `Build a collection of reusable React components that demonstrate your understanding of ${dayTitle.toLowerCase()}. Focus on creating components that are modular, well-documented, and easy to use. Implement proper prop validation, error handling, and accessibility features. Create a storybook or documentation site to showcase your components.`;
+      exercise2Title = `React Application: Real-World Project`;
+      exercise2Description = `Develop a complete React application that solves a real problem or provides value to users. Plan the project structure, implement state management, handle routing, and integrate with external APIs if needed. Focus on creating a polished, production-ready application with proper error handling, loading states, and user feedback. Deploy your application and gather user feedback.`;
     } else {
-      exercise1Title = `Code: Build a ${dayTitle.toLowerCase()} example`;
-      exercise2Title = `Project: Create a program using ${dayTitle}`;
+      exercise1Title = `Code Practice: ${dayTitle} Implementation`;
+      exercise1Description = `Spend 3-4 hours coding and experimenting with ${dayTitle.toLowerCase()}. Start with simple examples and gradually increase complexity. Focus on understanding the underlying concepts, not just memorizing syntax. Debug issues as they arise and document your learning process. Create a portfolio of your work to showcase your progress.`;
+      exercise2Title = `Project Showcase: ${dayTitle} Application`;
+      exercise2Description = `Build a complete project that demonstrates your mastery of ${dayTitle.toLowerCase()}. Choose something that interests you and provides real value. Focus on creating clean, maintainable code and a polished user experience. Consider open-sourcing your project and contributing to the developer community. Document your development process and lessons learned.`;
     }
   } else if (goal.toLowerCase().includes('language') || goal.toLowerCase().includes('spanish') || goal.toLowerCase().includes('french')) {
-    exercise1Title = `Practice: Use ${dayTitle.toLowerCase()} in conversation`;
-    exercise2Title = `Challenge: Write a story using ${dayTitle}`;
+    exercise1Title = `Conversation Practice: ${dayTitle} in Action`;
+    exercise1Description = `Find a language exchange partner or use language learning apps to practice ${dayTitle.toLowerCase()} in real conversations. Focus on using the specific vocabulary and grammar structures you've learned. Record yourself speaking and listen back to identify areas for improvement. Practice for at least 30 minutes and keep a journal of new words and phrases you discover.`;
+    exercise2Title = `Creative Writing Challenge: ${dayTitle} Story`;
+    exercise2Description = `Write a short story, poem, or essay using ${dayTitle.toLowerCase()} as a central theme. Aim for 200-300 words and focus on using the language structures you've learned. Share your writing with native speakers for feedback, or post it in language learning communities. Use this as an opportunity to express yourself creatively while practicing your language skills.`;
   } else {
-    exercise1Title = `Practice: Apply ${dayTitle.toLowerCase()} concepts`;
-    exercise2Title = `Project: Create something using ${dayTitle}`;
+    exercise1Title = `Hands-on Practice: ${dayTitle} Application`;
+    exercise1Description = `Spend 2-3 hours actively practicing the concepts you've learned about ${dayTitle.toLowerCase()}. Create something tangible that demonstrates your understanding. Focus on applying the knowledge in a practical way and documenting your process. Experiment with different approaches and see what works best for you.`;
+    exercise2Title = `Creative Project: ${dayTitle} Showcase`;
+    exercise2Description = `Create a comprehensive project that showcases your ${dayTitle.toLowerCase()} skills. Choose something that excites you and allows you to express your creativity while applying what you've learned. Focus on creating something of value that you can be proud of and share with others. Document your creative process and reflect on what you learned.`;
   }
   
   const exercise1 = {
     kind: 'read',
     title: exercise1Title,
     url: null,
-    source: null,
-    duration_minutes: 15 + (dayNumber * 2),
+    source: 'Practice Exercise',
+    duration_minutes: 30,
+    description: exercise1Description,
     split: null
   };
   
@@ -190,8 +211,9 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
     kind: 'read', 
     title: exercise2Title,
     url: null,
-    source: null,
-    duration_minutes: 20 + (dayNumber * 2),
+    source: 'Practice Exercise',
+    duration_minutes: 45,
+    description: exercise2Description,
     split: null
   };
   
@@ -202,25 +224,27 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
 // Generate content using Gemini when web scraping fails
 async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'podcast'): Promise<any> {
   try {
-    const contentPrompt = `Create a ${contentType} about "${dayTitle}" for someone learning "${goal}".
+    const contentPrompt = `Create a comprehensive ${contentType} about "${dayTitle}" for someone learning "${goal}".
 
 For ${contentType}:
-- Make it educational and practical
-- Include specific examples and actionable advice
-- Keep it engaging and beginner-friendly
-- Focus on the core concepts of "${dayTitle}"
-- For podcast: Include a detailed script with speaking notes and timing
-- For article: Write 800-1200 words with clear sections
+- Make it VERY detailed and educational (1500-2000 words for article)
+- Include specific examples, step-by-step instructions, and actionable advice
+- Use proper markdown formatting with headers, lists, and emphasis
+- Keep it engaging and beginner-friendly but comprehensive
+- Focus on the core concepts of "${dayTitle}" with practical applications
+- For podcast: Include a detailed script with speaking notes, timing, and natural conversation flow
+- For article: Write with clear sections, subheadings, and detailed explanations
 
 IMPORTANT: The title must be SHORT (max 50 characters) and descriptive, NOT the full content.
 
 Return a JSON object with:
 {
   "title": "Short title (max 50 chars) like '${dayTitle} Guide' or '${dayTitle} Basics'",
-  "content": "Full ${contentType} content (800-1200 words for article, detailed podcast script for podcast)",
-  "duration_minutes": ${contentType === 'podcast' ? '20' : '15'},
+  "content": "Full ${contentType} content (1500-2000 words for article, detailed podcast script for podcast) with proper markdown formatting",
+  "duration_minutes": ${contentType === 'podcast' ? '25' : '20'},
   "source": "AI Generated",
-  "type": "${contentType}"
+  "type": "${contentType}",
+  "description": "Comprehensive ${contentType} covering ${dayTitle.toLowerCase()} with detailed explanations and practical examples."
 }`;
 
     const result = await model.generateContent(contentPrompt);
@@ -270,9 +294,10 @@ Return a JSON object with:
     const cleanedContent = {
       title: title,
       content: content.content || content.podcast_script || content.article || 'Content not available',
-      duration_minutes: content.duration_minutes || (contentType === 'podcast' ? 20 : 15),
+      duration_minutes: content.duration_minutes || (contentType === 'podcast' ? 25 : 20),
       source: content.source || 'AI Generated',
-      type: contentType
+      type: contentType,
+      description: content.description || `Comprehensive ${contentType} covering ${dayTitle.toLowerCase()} with detailed explanations and practical examples.`
     };
     
     // Remove any problematic keys from the cleaned content
@@ -296,7 +321,8 @@ Return a JSON object with:
         content: normalizedContent.content,
         duration_minutes: normalizedContent.duration_minutes,
         source: normalizedContent.source,
-        type: contentType
+        type: contentType,
+        description: normalizedContent.description
       };
       localStorage.setItem(`ai-content-${slug}`, JSON.stringify(contentToStore));
     }
@@ -308,6 +334,7 @@ Return a JSON object with:
       url: `/ai-content/${slug}`,
       source: normalizedContent.source,
       duration_minutes: normalizedContent.duration_minutes,
+      description: normalizedContent.description,
       split: null,
       isAIGenerated: true,
       contentType: contentType,
@@ -564,6 +591,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             return; // Skip this resource instead of using generic title
           }
           
+          // Add description if not present
+          if (!resource.description) {
+            resource.description = `Learn ${day.title.toLowerCase()} with this comprehensive video tutorial.`;
+          }
+          
           usedResourceUrls.add(resource.url);
           usedResourceTitles.add(resource.title.toLowerCase());
           day.learn.push(resource);
@@ -601,6 +633,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             return; // Skip this resource instead of using generic title
           }
           
+          // Add description if not present
+          if (!resource.description) {
+            resource.description = `Learn ${day.title.toLowerCase()} with this comprehensive article and guide.`;
+          }
+          
           usedResourceUrls.add(resource.url);
           usedResourceTitles.add(resource.title.toLowerCase());
           day.learn.push(resource);
@@ -610,17 +647,30 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         console.log(`No read resources found for day ${day.day}`);
       }
       
-      // Generate AI content ONLY if NO real resources found (0 resources)
+      // STRICT GUIDELINE: Every day must have at least 1 real resource + 1 AI resource
+      // If no real resources found, generate a fallback real resource
       if (day.learn.length === 0) {
-        console.log(`No real resources found for day ${day.day}, generating AI content as last resort...`);
-        try {
-          const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
-          if (geminiArticle) {
-            day.learn.push(geminiArticle);
-          }
-        } catch (error) {
-          console.error(`AI content generation failed for day ${day.day}:`, error);
+        console.log(`No real resources found for day ${day.day}, creating fallback real resource...`);
+        const fallbackResource = {
+          kind: 'read' as const,
+          title: `${day.title} - Complete Guide`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(day.title + ' ' + params.goal + ' tutorial guide')}`,
+          source: 'Google Search',
+          duration_minutes: 15,
+          description: `Comprehensive guide covering ${day.title.toLowerCase()} fundamentals and practical applications.`
+        };
+        day.learn.push(fallbackResource);
+      }
+      
+      // Always add 1 AI-generated resource per day
+      console.log(`Adding AI-generated resource for day ${day.day}...`);
+      try {
+        const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+        if (geminiArticle) {
+          day.learn.push(geminiArticle);
         }
+      } catch (error) {
+        console.error(`AI content generation failed for day ${day.day}:`, error);
       }
       
       // Add practice exercises
