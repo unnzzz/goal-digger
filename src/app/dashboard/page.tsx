@@ -302,7 +302,7 @@ function SectionCard({
   };
 
   const sectionColor = getSectionColor(it.section);
-  const isCompletedValue = it.completed;
+  const isCompletedValue = isCompleted(it);
 
   return (
     <div style={{ 
@@ -698,6 +698,7 @@ export default function Dashboard() {
   const [dailyLoading, setDailyLoading] = useState(true);
   const [dailyErr, setDailyErr] = useState<string | null>(null);
   const [daily, setDaily] = useState<DailyPayload | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // ---- Diary drafts & "Saved!" flash ----
   const [diaryDrafts, setDiaryDrafts] = useState<Record<string, string>>({});
@@ -754,7 +755,8 @@ export default function Dashboard() {
   // Listen for quiz completion events to refresh the dashboard
   useEffect(() => {
     const handleQuizCompletion = () => {
-      loadDaily();
+      // Trigger a re-sort by updating refreshTrigger
+      setRefreshTrigger(prev => prev + 1);
     };
 
     window.addEventListener('quiz-completed', handleQuizCompletion);
@@ -795,7 +797,7 @@ export default function Dashboard() {
       // Finally by section and index
       return order[a.section] - order[b.section] || a.index - b.index;
     });
-  }, [daily]);
+  }, [daily, refreshTrigger]);
 
 
   const completeQuest = useCallback(async (it: DailyItem, e?: React.MouseEvent) => {
