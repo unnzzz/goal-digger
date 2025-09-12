@@ -28,8 +28,30 @@ export async function PUT(req: Request, { params }: { params: { id:string } }) {
 }
 
 export async function DELETE(_: Request, { params }: { params: { id:string } }) {
-  const s = await getServerSession(authOptions);
-  if (!s?.user?.email) return new Response("Unauthorized", { status:401 });
-  await prisma.goal.delete({ where: { id: params.id } });
-  return new Response(null, { status:204 });
+  try {
+    const s = await getServerSession(authOptions);
+    if (!s?.user?.email) return new Response("Unauthorized", { status:401 });
+    
+    const u = await prisma.user.findUnique({ where: { email: s.user.email } });
+    if (!u) return new Response("Unauthorized", { status:401 });
+    
+    // Check if goal exists and belongs to user
+    const goal = await prisma.goal.findFirst({ where: { id: params.id, userId: u.id } });
+    if (!goal) return new Response("Goal not found", { status:404 });
+    
+    // Delete related data first
+    await prisma.questCompletion.deleteMany({ where: { goalId: params.id } });
+    await prisma.diaryEntry.deleteMany({ where: { goalId: params.id } });
+    
+    // Then delete the goal
+    await prisma.goal.delete({ where: { id: params.id } });
+    
+    return new Response(null, { status:204 });
+  } catch (error) {
+    console.error('Delete goal error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete goal' }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  }
 }

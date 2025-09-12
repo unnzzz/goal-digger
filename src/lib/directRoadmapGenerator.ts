@@ -773,7 +773,9 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       
       // Generate quiz for all days
       try {
+        console.log(`Starting quiz generation for day ${day.day}: ${day.title}`);
         const quiz = await generateDailyQuiz(day.title, day.day, params.goal);
+        console.log(`Quiz generation result for day ${day.day}:`, quiz);
         (day as any).quiz = quiz;
         console.log(`Generated quiz for day ${day.day} with ${quiz.length} questions`);
       } catch (error) {
