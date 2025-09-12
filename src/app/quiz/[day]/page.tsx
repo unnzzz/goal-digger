@@ -18,7 +18,7 @@ export default function QuizPage() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState(0);
-  const [maxAttempts] = useState(2);
+  const [maxAttempts] = useState(1);
 
   useEffect(() => {
     // Load quiz data from the current goal's roadmap
@@ -116,6 +116,11 @@ export default function QuizPage() {
       attempts: newAttempts,
       completedAt: new Date().toISOString()
     }));
+    
+    // Also store in a way that can be checked for next day unlock
+    if (finalScore >= 80) {
+      localStorage.setItem(`quiz-passed-day-${dayNumber}`, 'true');
+    }
   };
 
   const handleRetake = () => {
@@ -243,7 +248,7 @@ export default function QuizPage() {
             display: 'inline-block'
           }}>
             <span style={{ fontWeight: '600', color: '#1F2937' }}>
-              {quiz.length} Questions • 80% Required to Pass • Attempt {attempts + 1} of {maxAttempts}
+              {quiz.length} Questions • 80% Required to Pass • 1 Attempt Only
             </span>
           </div>
         </div>
@@ -428,25 +433,7 @@ export default function QuizPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-              {score < 80 && attempts < maxAttempts && (
-                <button
-                  onClick={handleRetake}
-                  style={{
-                    background: 'linear-gradient(135deg, #F59E0B, #F97316)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontFamily: 'Baloo Bhai, cursive'
-                  }}
-                >
-                  Retake Quiz ({maxAttempts - attempts} attempts left)
-                </button>
-              )}
-              {score < 80 && attempts >= maxAttempts && (
+              {score < 80 && (
                 <div style={{
                   background: '#FEE2E2',
                   color: '#991B1B',
@@ -456,7 +443,7 @@ export default function QuizPage() {
                   fontWeight: '600',
                   textAlign: 'center'
                 }}>
-                  No more attempts left. Try again tomorrow!
+                  Quiz failed. Try again tomorrow!
                 </div>
               )}
               <button

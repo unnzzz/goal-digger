@@ -458,6 +458,9 @@ export default function GoalPage({ params }: { params: { id: string } }) {
         }}
       >
         {(roadmap?.days ?? []).map((d, di) => {
+          // Debug: Check if quiz data exists
+          console.log(`Day ${d.day} quiz data:`, (d as any).quiz);
+          
           const isCompletedDay = (day: number) => {
             const learnCompleted = d.learn.every((_, i) => isCompleted(day, "learn", i));
             const practiceCompleted = d.practice.every((_, i) => isCompleted(day, "practice", i));
@@ -930,7 +933,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '14px', color: '#6B7280' }}>+{COINS.practice}</span>
-                              <span style={{ fontSize: '16px' }}>🪙</span>
+                              <img src="/icons/coin.png" alt="coin" style={{ width: '16px', height: '16px' }} />
                             </div>
                           <button
                             type="button"
@@ -1141,7 +1144,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '14px', color: '#6B7280' }}>+{COINS.reflect}</span>
-                          <span style={{ fontSize: '16px' }}>🪙</span>
+                          <img src="/icons/coin.png" alt="coin" style={{ width: '16px', height: '16px' }} />
                         </div>
                       <button
                         type="button"
@@ -1177,6 +1180,11 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                   console.log(`Day ${d.day} - quiz exists:`, !!(d as any).quiz);
                   console.log(`Day ${d.day} - quiz length:`, (d as any).quiz?.length);
                   console.log(`Day ${d.day} - full day data:`, d);
+                  
+                  // Check if quiz has been completed
+                  const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
+                  const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
+                  
                   return (d as any).quiz && (d as any).quiz.length > 0;
                 })() && (
                   <div style={{
@@ -1212,47 +1220,76 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       }
                     </p>
                     
-                    <button 
-                      disabled={!dayCompleted}
-                      style={{
-                        background: dayCompleted 
-                          ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
-                          : '#D1D5DB',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: dayCompleted ? 'pointer' : 'not-allowed',
-                        transition: 'all 0.2s ease',
-                        boxShadow: dayCompleted 
-                          ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
-                          : 'none',
-                        opacity: dayCompleted ? 1 : 0.6
-                      }}
-                      onMouseOver={(e) => {
-                        if (dayCompleted) {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (dayCompleted) {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
-                        }
-                      }}
-                      onClick={() => {
-                        if (dayCompleted) {
-                          window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
-                        }
-                      }}
-                    >
-                      {dayCompleted ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
-                    </button>
+                    {(() => {
+                      const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
+                      const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
+                      const isQuizCompleted = !!quizCompleted;
+                      const isQuizPassed = !!quizPassed;
+                      
+                      if (isQuizPassed) {
+                        return (
+                          <div style={{
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            color: 'white',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}>
+                            ✅ Quiz Completed ({d.day})
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <button 
+                          disabled={!dayCompleted}
+                          style={{
+                            background: dayCompleted 
+                              ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
+                              : '#D1D5DB',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: dayCompleted ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s ease',
+                            boxShadow: dayCompleted 
+                              ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
+                              : 'none',
+                            opacity: dayCompleted ? 1 : 0.6
+                          }}
+                          onMouseOver={(e) => {
+                            if (dayCompleted) {
+                              e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (dayCompleted) {
+                              e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                            }
+                          }}
+                          onClick={() => {
+                            if (dayCompleted) {
+                              window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
+                            }
+                          }}
+                        >
+                          {dayCompleted ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
