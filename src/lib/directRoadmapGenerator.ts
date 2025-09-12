@@ -212,9 +212,11 @@ For ${contentType}:
 - For podcast: Include a detailed script with speaking notes and timing
 - For article: Write 800-1200 words with clear sections
 
+IMPORTANT: The title must be SHORT (max 50 characters) and descriptive, NOT the full content.
+
 Return a JSON object with:
 {
-  "title": "Short, engaging title (max 60 characters) for the ${contentType}",
+  "title": "Short title (max 50 chars) like '${dayTitle} Guide' or '${dayTitle} Basics'",
   "content": "Full ${contentType} content (800-1200 words for article, detailed podcast script for podcast)",
   "duration_minutes": ${contentType === 'podcast' ? '20' : '15'},
   "source": "AI Generated",
@@ -253,9 +255,16 @@ Return a JSON object with:
     // Clean the content object to remove problematic keys BEFORE creating normalizedContent
     let title = content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`;
     
-    // Ensure title is not too long (max 60 characters)
-    if (title.length > 60) {
-      title = title.substring(0, 57) + '...';
+    // Ensure title is not too long (max 50 characters) and is descriptive
+    if (title.length > 50) {
+      // Try to create a better short title
+      const shortTitle = `${dayTitle} ${contentType === 'podcast' ? 'Podcast' : 'Guide'}`;
+      title = shortTitle.length > 50 ? shortTitle.substring(0, 47) + '...' : shortTitle;
+    }
+    
+    // If title is still the full content, create a proper short title
+    if (title.includes('##') || title.includes('###') || title.length > 100) {
+      title = `${dayTitle} ${contentType === 'podcast' ? 'Podcast' : 'Guide'}`;
     }
     
     const cleanedContent = {
@@ -471,14 +480,16 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         `${baseTitle} beginner guide`,
         `${baseTitle} step by step`,
         `${baseTitle} learn`,
-        `${baseTitle} basics`
+        `${baseTitle} basics`,
+        `${baseTitle} video`,
+        `${baseTitle} course`
       ];
       
       // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
       const searchPromises = [];
       
-      // Try multiple search terms for watch resources (increased from 3 to 6)
-      for (let i = 0; i < Math.min(6, searchTerms.length); i++) {
+      // Try multiple search terms for watch resources (increased to 8 for better coverage)
+      for (let i = 0; i < Math.min(8, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -492,8 +503,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         );
       }
       
-      // Try multiple search terms for read resources (increased from 2 to 4)
-      for (let i = 0; i < Math.min(4, searchTerms.length); i++) {
+      // Try multiple search terms for read resources (increased to 6 for better coverage)
+      for (let i = 0; i < Math.min(6, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -599,22 +610,13 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         console.log(`No read resources found for day ${day.day}`);
       }
       
-      // Generate AI content if fewer than 2 learn resources found
-      if (day.learn.length < 2) {
-        const neededResources = 2 - day.learn.length;
-        console.log(`Only ${day.learn.length} real resources found for day ${day.day}, generating ${neededResources} AI content...`);
+      // Generate AI content ONLY if NO real resources found (0 resources)
+      if (day.learn.length === 0) {
+        console.log(`No real resources found for day ${day.day}, generating AI content as last resort...`);
         try {
-          if (neededResources >= 1) {
-            const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
-            if (geminiArticle) {
-              day.learn.push(geminiArticle);
-            }
-          }
-          if (neededResources >= 2) {
-            const geminiPodcast = await generateGeminiContent(day.title, day.day, params.goal, 'podcast');
-            if (geminiPodcast) {
-              day.learn.push(geminiPodcast);
-            }
+          const geminiArticle = await generateGeminiContent(day.title, day.day, params.goal, 'article');
+          if (geminiArticle) {
+            day.learn.push(geminiArticle);
           }
         } catch (error) {
           console.error(`AI content generation failed for day ${day.day}:`, error);
