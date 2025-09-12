@@ -29,7 +29,7 @@ export default function QuizPage() {
     if (!goalId) {
       // Show error modal instead of alert
       setShowResults(true);
-      setFinalScore(0);
+      setScore(0);
       setShowError('Goal ID not found!');
       setTimeout(() => window.close(), 3000);
       return;
@@ -42,7 +42,7 @@ export default function QuizPage() {
     if (quizPassed || quizCompleted) {
       // Quiz already completed, redirect back
       setShowResults(true);
-      setFinalScore(0);
+      setScore(0);
       setShowError('You have already completed this quiz!');
       setTimeout(() => window.close(), 3000);
       return;
