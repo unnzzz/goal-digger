@@ -16,16 +16,28 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load quiz data from localStorage or API
+    // Load quiz data from the current goal's roadmap
     const loadQuiz = async () => {
       try {
-        // Try to get quiz from localStorage first
-        const storedQuiz = localStorage.getItem(`quiz-day-${dayNumber}`);
-        if (storedQuiz) {
-          const quizData = JSON.parse(storedQuiz);
-          setQuiz(quizData);
+        // Get the current goal ID from the URL or localStorage
+        const goalId = new URLSearchParams(window.location.search).get('goalId') || 
+                      localStorage.getItem('currentGoalId');
+        
+        if (goalId) {
+          // Fetch the goal data from the API
+          const response = await fetch(`/api/goals/${goalId}`);
+          if (response.ok) {
+            const data = await response.json();
+            const dayData = data.goal.roadmapJson?.days?.find((d: any) => d.day === dayNumber);
+            if (dayData && dayData.quiz) {
+              console.log('Found quiz data for day', dayNumber, ':', dayData.quiz);
+              setQuiz(dayData.quiz);
+            } else {
+              console.log('No quiz data found for day', dayNumber, 'in roadmap');
+            }
+          }
         } else {
-          // If not in localStorage, try to get from the roadmap
+          // Fallback: try localStorage
           const roadmap = localStorage.getItem('currentRoadmap');
           if (roadmap) {
             const roadmapData = JSON.parse(roadmap);

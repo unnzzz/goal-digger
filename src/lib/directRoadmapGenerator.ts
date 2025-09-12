@@ -913,6 +913,14 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     
     progressCallback?.(100, "Roadmap generation completed!");
     console.log('FAST roadmap generation completed successfully');
+    
+    // Debug: Check if quiz data is included in the roadmap
+    console.log('Final roadmap structure:');
+    roadmap.days.forEach((day, index) => {
+      console.log(`Day ${day.day}: quiz exists:`, !!(day as any).quiz);
+      console.log(`Day ${day.day}: quiz length:`, (day as any).quiz?.length);
+    });
+    
     return roadmap;
     
   } catch (error) {
