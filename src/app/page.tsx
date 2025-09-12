@@ -469,16 +469,13 @@ export default function Home() {
             <ul className="sidebar-list">
               <li>We turn your big goal into a daily roadmap, by finding top rated resources from the internet and reddit</li>
               <li>Each day has 4 parts: Learn, Practice, Reflect, and Quiz.</li>
-              <li>🧠 <strong>Daily Quizzes:</strong> Test your knowledge with interactive quizzes that unlock the next day's quests (80% to pass).</li>
-              <li>📚 <strong>Smart Learning:</strong> AI-generated articles and podcasts when web resources are limited, plus real resources from top websites.</li>
-              <li>🎯 <strong>Progressive Unlocking:</strong> Complete quests to unlock quizzes, pass quizzes to unlock next day's content.</li>
-              <li>We will send you a reminder email daily to remind you to complete your daily tasks, until you complete them all.</li>
-              <li>Once you complete all the tasks for the day, we will stop spamming you with emails.</li>
+              <li>AI-generated articles and podcasts when web resources are limited.</li>
+              <li>Pass quizzes to unlock next day's content.</li>
+              <li>We will send you a reminder email daily to remind you to complete your daily tasks.</li>
               <li>You earn <img src="/icons/coin.png" alt="" width={17} height={17} style={{ verticalAlign: "text-bottom", margin: "0 2px" }} /> coins for completing daily tasks (5 for learn, 10 for practice, 5 for reflect, 50 for quiz).</li>
               <li>Coins can be spent in the "Shop" to buy furniture for your avatar's "Room."</li>
               <li>Each item boosts stats (Intelligence, Strength, Vitality, Aesthetic, Wealth).</li>
               <li>Higher stats unlock rarer themed items and fun statuses (e.g., Code Scholar, Fitness Freak).</li>
-              <li>📊 <strong>Progress Tracking:</strong> Visual progress bars, completion status, and real-time updates across all pages.</li>
             </ul>
           </div>
 
