@@ -139,62 +139,105 @@ function generateBasicTopics(goal: string, totalDays: number): string[] {
 function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, goal: string): any[] {
   const exercises: any[] = [];
   
-  // Generate creative and detailed practice exercises based on the day's topic and overall goal
-  let exercise1Title = `Hands-on Exercise: ${dayTitle} Practice`;
-  let exercise1Description = `Apply the concepts you've learned about ${dayTitle.toLowerCase()} through hands-on practice.`;
-  let exercise2Title = `Creative Challenge: Apply ${dayTitle} Skills`;
-  let exercise2Description = `Take your ${dayTitle.toLowerCase()} skills to the next level with this creative project.`;
+  // Extract the core topic from the day title
+  const coreTopic = dayTitle.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
   
-  // Make exercises more specific and detailed based on the goal and day content
+  // Generate contextual practice exercises based on the specific day title and goal
+  let exercise1Title = '';
+  let exercise1Description = '';
+  let exercise2Title = '';
+  let exercise2Description = '';
+  
+  // Create specific exercises based on the exact day title and goal context
   if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
-    if (dayTitle.toLowerCase().includes('camera') || dayTitle.toLowerCase().includes('exposure')) {
-      exercise1Title = `Camera Mastery Challenge: ${dayTitle} Exploration`;
-      exercise1Description = `Spend 2-3 hours experimenting with different camera settings and exposure techniques. Set up various lighting conditions (indoor, outdoor, low light) and practice adjusting ISO, aperture, and shutter speed. Create a series of 10 test shots showing different exposure scenarios, then analyze what worked best and why. Document your findings and create a personal reference guide.`;
-      exercise2Title = `Cinematic Storytelling Project: ${dayTitle} in Action`;
-      exercise2Description = `Create a 2-3 minute short film that showcases your ${dayTitle.toLowerCase()} skills. Plan a simple story that requires different exposure settings throughout. Use your camera to tell the story visually - perhaps showing a character moving from bright daylight to dim indoor lighting, or capturing the mood of different times of day. Edit your footage and add a voiceover explaining your creative choices.`;
-    } else if (dayTitle.toLowerCase().includes('lighting')) {
-      exercise1Title = `Lighting Workshop: Three-Point Setup Mastery`;
-      exercise1Description = `Set up a complete three-point lighting system in your space. Experiment with different light positions, intensities, and modifiers. Practice lighting different types of subjects (portraits, objects, scenes) and document the results. Try creating different moods - dramatic, soft, high-key, low-key - and understand how each affects the emotional impact of your images.`;
-      exercise2Title = `Mood Lighting Project: Visual Storytelling`;
-      exercise2Description = `Create a series of 5-7 images that tell a story using only lighting. Choose a theme (like "a day in the life" or "emotions") and use different lighting setups to convey different moments or feelings. Experiment with color temperature, shadows, and light direction to create distinct moods. Present your work as a visual narrative with captions explaining your lighting choices.`;
-    } else if (dayTitle.toLowerCase().includes('editing')) {
-      exercise1Title = `Editing Bootcamp: ${dayTitle} Techniques`;
-      exercise1Description = `Practice the specific editing techniques covered in today's lesson. Find or create raw footage and spend 3-4 hours applying different editing methods. Focus on timing, rhythm, and flow. Create multiple versions of the same sequence using different approaches, then compare the results. Pay attention to how editing choices affect the emotional impact and pacing of your story.`;
-      exercise2Title = `Short Film Project: Complete Workflow`;
-      exercise2Description = `Plan, shoot, and edit a complete 3-5 minute short film that demonstrates your ${dayTitle.toLowerCase()} skills. Start with a simple concept and storyboard, then execute the project from pre-production to final export. Focus on applying all the editing techniques you've learned while maintaining a cohesive narrative. Share your finished film and reflect on what you learned throughout the process.`;
+    if (coreTopic.toLowerCase().includes('camera') || coreTopic.toLowerCase().includes('exposure')) {
+      exercise1Title = `Exposure Triangle Mastery: ${coreTopic} Challenge`;
+      exercise1Description = `Set up your camera in manual mode and spend 2 hours creating a visual diary of different exposure scenarios. Find 5 different lighting situations (bright sunlight, indoor tungsten, fluorescent, golden hour, blue hour) and for each, take 3 photos: one correctly exposed, one 2 stops overexposed, and one 2 stops underexposed. Document your ISO, aperture, and shutter speed settings for each shot. Create a reference guide showing how different settings affect the mood and quality of your images.`;
+      exercise2Title = `Cinematic Exposure Story: ${coreTopic} Narrative`;
+      exercise2Description = `Create a 1-minute visual story using only exposure techniques to convey emotion. Choose a simple narrative (like "a day in the life" or "mood changes") and use different exposure settings to tell the story. Start with a bright, overexposed shot (happiness), move to balanced exposure (neutral), then underexposed (melancholy). Edit the sequence and add a voiceover explaining how each exposure choice supports your story. Share your work and explain your creative decisions.`;
+    } else if (coreTopic.toLowerCase().includes('lighting')) {
+      exercise1Title = `Three-Point Lighting Lab: ${coreTopic} Experiment`;
+      exercise1Description = `Set up a complete three-point lighting system in your space using whatever lights you have available (desk lamps, phone flashlights, natural light). Practice lighting a subject (person or object) with different key light positions: 45 degrees, 90 degrees, and 30 degrees. For each position, adjust your fill light and back light to create different moods. Take photos of each setup and create a mood board showing how lighting position affects the emotional impact. Document your setup process and lighting ratios.`;
+      exercise2Title = `Mood Lighting Project: ${coreTopic} Storytelling`;
+      exercise2Description = `Create a series of 6 portraits of the same person using only lighting to convey different emotions: joy, sadness, mystery, confidence, vulnerability, and anger. Use the same background and subject position - only change your lighting setup. Experiment with hard vs soft light, high vs low key, warm vs cool color temperatures. Present your work as a visual story with captions explaining how each lighting choice creates the desired emotional response.`;
+    } else if (coreTopic.toLowerCase().includes('editing')) {
+      exercise1Title = `Rhythm and Pacing Workshop: ${coreTopic} Techniques`;
+      exercise1Description = `Find or shoot 2-3 minutes of raw footage and create 3 different edits with completely different pacing: fast-paced (quick cuts, high energy), slow-paced (long takes, contemplative), and mixed pacing (varied rhythm). Use the same footage but different editing techniques: jump cuts, match cuts, cross-cutting, montage. Export all three versions and analyze how editing choices affect the viewer's emotional experience. Document your editing decisions and their impact.`;
+      exercise2Title = `Complete Short Film: ${coreTopic} Mastery`;
+      exercise2Description = `Plan, shoot, and edit a 2-3 minute short film that demonstrates your editing skills. Choose a simple story that requires different editing techniques: dialogue scenes, action sequences, montages, and transitions. Focus on creating smooth, professional-looking cuts and using editing to enhance your story. Add music and sound effects. Create a director's commentary track explaining your editing choices and how they serve the story.`;
+    } else if (coreTopic.toLowerCase().includes('composition')) {
+      exercise1Title = `Rule of Thirds Challenge: ${coreTopic} Practice`;
+      exercise1Description = `Spend 2 hours shooting 20 different subjects using only the rule of thirds for composition. Find subjects in your environment: people, objects, landscapes, architecture. For each subject, take 3 shots: one with the subject on the left third, one on the right third, and one on the bottom third. Compare how different placements affect the visual impact. Create a portfolio showing your best compositions and explain why each works.`;
+      exercise2Title = `Composition Story: ${coreTopic} Narrative`;
+      exercise2Description = `Create a visual story using only composition to guide the viewer's eye through a sequence. Choose a simple narrative (like "following a path" or "discovering something") and use leading lines, framing, and the rule of thirds to create a compelling visual journey. Shoot 8-10 images that tell your story through composition alone. Present your work as a photo essay with captions explaining how each composition choice advances your narrative.`;
     } else {
-      exercise1Title = `Technical Practice: ${dayTitle} Fundamentals`;
-      exercise1Description = `Dive deep into the technical aspects of ${dayTitle.toLowerCase()}. Spend 2-3 hours practicing the core techniques, experimenting with different approaches, and troubleshooting common challenges. Document your process, take notes on what works and what doesn't, and create a personal reference guide for future projects.`;
-      exercise2Title = `Creative Application: ${dayTitle} in Practice`;
-      exercise2Description = `Apply your ${dayTitle.toLowerCase()} knowledge to a real creative project. Choose something that excites you - perhaps a personal story, a documentary about someone you know, or an experimental piece. Use this project as an opportunity to push your skills further and discover your unique creative voice while applying the techniques you've learned.`;
+      exercise1Title = `Technical Deep Dive: ${coreTopic} Mastery`;
+      exercise1Description = `Spend 3 hours thoroughly exploring the technical aspects of ${coreTopic.toLowerCase()}. Set up controlled experiments to test different techniques, document your findings, and create a personal reference guide. Focus on understanding not just how to do something, but why it works and when to use it. Troubleshoot common problems and document solutions. Create a video tutorial explaining what you learned.`;
+      exercise2Title = `Creative Application: ${coreTopic} Project`;
+      exercise2Description = `Apply your ${coreTopic.toLowerCase()} knowledge to a creative project that excites you. Choose something personal - perhaps documenting a family event, creating an artistic piece, or telling a story that matters to you. Use this project to push your skills further and discover your unique creative voice. Document your process, challenges, and breakthroughs. Share your work and reflect on what you learned.`;
     }
   } else if (goal.toLowerCase().includes('programming') || goal.toLowerCase().includes('coding')) {
-    if (dayTitle.toLowerCase().includes('javascript') || dayTitle.toLowerCase().includes('js')) {
-      exercise1Title = `Code Workshop: ${dayTitle} Deep Dive`;
-      exercise1Description = `Build a comprehensive JavaScript project that demonstrates your understanding of ${dayTitle.toLowerCase()}. Start with a simple concept and gradually add complexity. Focus on writing clean, well-commented code and implementing best practices. Test your code thoroughly and refactor as needed. Document your learning process and challenges you overcame.`;
-      exercise2Title = `Full-Stack Project: ${dayTitle} Application`;
-      exercise2Description = `Create a complete web application using ${dayTitle.toLowerCase()} as a core feature. Plan the project architecture, design the user interface, implement the functionality, and deploy it online. Focus on creating something useful and user-friendly while showcasing your technical skills. Consider adding features like user authentication, data persistence, and responsive design.`;
-    } else if (dayTitle.toLowerCase().includes('react')) {
-      exercise1Title = `Component Library: ${dayTitle} Mastery`;
-      exercise1Description = `Build a collection of reusable React components that demonstrate your understanding of ${dayTitle.toLowerCase()}. Focus on creating components that are modular, well-documented, and easy to use. Implement proper prop validation, error handling, and accessibility features. Create a storybook or documentation site to showcase your components.`;
-      exercise2Title = `React Application: Real-World Project`;
-      exercise2Description = `Develop a complete React application that solves a real problem or provides value to users. Plan the project structure, implement state management, handle routing, and integrate with external APIs if needed. Focus on creating a polished, production-ready application with proper error handling, loading states, and user feedback. Deploy your application and gather user feedback.`;
+    if (coreTopic.toLowerCase().includes('javascript') || coreTopic.toLowerCase().includes('js')) {
+      exercise1Title = `JavaScript Fundamentals Lab: ${coreTopic} Practice`;
+      exercise1Description = `Build a series of small JavaScript projects that demonstrate your understanding of ${coreTopic.toLowerCase()}. Start with simple examples and gradually increase complexity. Focus on writing clean, well-commented code and implementing best practices. Create a portfolio of your work with live demos and source code. Document your learning process and challenges you overcame.`;
+      exercise2Title = `Full-Stack Application: ${coreTopic} Showcase`;
+      exercise2Description = `Create a complete web application using ${coreTopic.toLowerCase()} as a core feature. Plan the project architecture, design the user interface, implement the functionality, and deploy it online. Focus on creating something useful and user-friendly while showcasing your technical skills. Consider adding features like user authentication, data persistence, and responsive design.`;
+    } else if (coreTopic.toLowerCase().includes('react')) {
+      exercise1Title = `React Component Workshop: ${coreTopic} Building`;
+      exercise1Description = `Build a collection of reusable React components that demonstrate your understanding of ${coreTopic.toLowerCase()}. Focus on creating components that are modular, well-documented, and easy to use. Implement proper prop validation, error handling, and accessibility features. Create a storybook or documentation site to showcase your components.`;
+      exercise2Title = `React Application: ${coreTopic} in Action`;
+      exercise2Description = `Develop a complete React application that solves a real problem or provides value to users. Plan the project structure, implement state management, handle routing, and integrate with external APIs if needed. Focus on creating a polished, production-ready application with proper error handling, loading states, and user feedback.`;
+    } else if (coreTopic.toLowerCase().includes('python')) {
+      exercise1Title = `Python Project Lab: ${coreTopic} Implementation`;
+      exercise1Description = `Create a Python project that demonstrates your understanding of ${coreTopic.toLowerCase()}. Choose something practical - perhaps a data analysis script, a web scraper, or a small automation tool. Focus on writing clean, well-documented code and following Python best practices. Test your code thoroughly and handle edge cases. Document your development process and lessons learned.`;
+      exercise2Title = `Python Application: ${coreTopic} Showcase`;
+      exercise2Description = `Build a complete Python application that showcases your ${coreTopic.toLowerCase()} skills. Consider creating a web app with Flask/Django, a data visualization tool, or a machine learning project. Focus on creating something useful and well-architected. Deploy your application and create documentation for other developers.`;
     } else {
-      exercise1Title = `Code Practice: ${dayTitle} Implementation`;
-      exercise1Description = `Spend 3-4 hours coding and experimenting with ${dayTitle.toLowerCase()}. Start with simple examples and gradually increase complexity. Focus on understanding the underlying concepts, not just memorizing syntax. Debug issues as they arise and document your learning process. Create a portfolio of your work to showcase your progress.`;
-      exercise2Title = `Project Showcase: ${dayTitle} Application`;
-      exercise2Description = `Build a complete project that demonstrates your mastery of ${dayTitle.toLowerCase()}. Choose something that interests you and provides real value. Focus on creating clean, maintainable code and a polished user experience. Consider open-sourcing your project and contributing to the developer community. Document your development process and lessons learned.`;
+      exercise1Title = `Code Practice Session: ${coreTopic} Deep Dive`;
+      exercise1Description = `Spend 3-4 hours coding and experimenting with ${coreTopic.toLowerCase()}. Start with simple examples and gradually increase complexity. Focus on understanding the underlying concepts, not just memorizing syntax. Debug issues as they arise and document your learning process. Create a portfolio of your work to showcase your progress.`;
+      exercise2Title = `Technical Project: ${coreTopic} Application`;
+      exercise2Description = `Build a complete project that demonstrates your mastery of ${coreTopic.toLowerCase()}. Choose something that interests you and provides real value. Focus on creating clean, maintainable code and a polished user experience. Consider open-sourcing your project and contributing to the developer community.`;
     }
   } else if (goal.toLowerCase().includes('language') || goal.toLowerCase().includes('spanish') || goal.toLowerCase().includes('french')) {
-    exercise1Title = `Conversation Practice: ${dayTitle} in Action`;
-    exercise1Description = `Find a language exchange partner or use language learning apps to practice ${dayTitle.toLowerCase()} in real conversations. Focus on using the specific vocabulary and grammar structures you've learned. Record yourself speaking and listen back to identify areas for improvement. Practice for at least 30 minutes and keep a journal of new words and phrases you discover.`;
-    exercise2Title = `Creative Writing Challenge: ${dayTitle} Story`;
-    exercise2Description = `Write a short story, poem, or essay using ${dayTitle.toLowerCase()} as a central theme. Aim for 200-300 words and focus on using the language structures you've learned. Share your writing with native speakers for feedback, or post it in language learning communities. Use this as an opportunity to express yourself creatively while practicing your language skills.`;
+    exercise1Title = `Conversation Practice: ${coreTopic} in Action`;
+    exercise1Description = `Find a language exchange partner or use language learning apps to practice ${coreTopic.toLowerCase()} in real conversations. Focus on using the specific vocabulary and grammar structures you've learned. Record yourself speaking and listen back to identify areas for improvement. Practice for at least 30 minutes and keep a journal of new words and phrases you discover.`;
+    exercise2Title = `Creative Writing Challenge: ${coreTopic} Story`;
+    exercise2Description = `Write a short story, poem, or essay using ${coreTopic.toLowerCase()} as a central theme. Aim for 200-300 words and focus on using the language structures you've learned. Share your writing with native speakers for feedback, or post it in language learning communities. Use this as an opportunity to express yourself creatively while practicing your language skills.`;
+  } else if (goal.toLowerCase().includes('cooking') || goal.toLowerCase().includes('chef')) {
+    if (coreTopic.toLowerCase().includes('knife') || coreTopic.toLowerCase().includes('cut')) {
+      exercise1Title = `Knife Skills Mastery: ${coreTopic} Practice`;
+      exercise1Description = `Spend 2 hours practicing different knife cuts with various vegetables. Start with basic cuts (dice, julienne, chiffonade) and progress to advanced techniques. Practice with carrots, onions, celery, and herbs. Focus on proper technique, safety, and consistency. Time yourself and try to improve your speed while maintaining quality. Document your progress with photos and notes.`;
+      exercise2Title = `Knife Skills Showcase: ${coreTopic} Challenge`;
+      exercise2Description = `Create a beautiful vegetable platter using only knife skills to showcase different cuts. Choose 5-6 different vegetables and create a visually stunning arrangement. Practice precision cuts, decorative techniques, and presentation. Take photos of your work and explain the techniques you used. Share your creation and get feedback from others.`;
+    } else if (coreTopic.toLowerCase().includes('sauce') || coreTopic.toLowerCase().includes('sauté')) {
+      exercise1Title = `Sauce Making Lab: ${coreTopic} Experiment`;
+      exercise1Description = `Practice making different types of sauces and cooking techniques. Start with basic sauces (béchamel, velouté, hollandaise) and progress to more complex ones. Experiment with different heat levels, timing, and ingredient ratios. Document your process, note what works and what doesn't, and create a personal recipe collection.`;
+      exercise2Title = `Complete Dish: ${coreTopic} Mastery`;
+      exercise2Description = `Create a complete dish that showcases your sauce-making and cooking skills. Plan a menu item that incorporates multiple techniques you've learned. Focus on presentation, flavor balance, and technical execution. Plate your dish beautifully and document the process. Share your creation and explain the techniques you used.`;
+    } else {
+      exercise1Title = `Cooking Practice: ${coreTopic} Fundamentals`;
+      exercise1Description = `Spend 2-3 hours practicing the specific cooking techniques covered in today's lesson. Focus on proper technique, timing, and temperature control. Experiment with different ingredients and methods. Document your process and create a reference guide for future use.`;
+      exercise2Title = `Creative Cooking: ${coreTopic} Project`;
+      exercise2Description = `Create a unique dish that demonstrates your understanding of ${coreTopic.toLowerCase()}. Use your creativity to combine techniques and ingredients in new ways. Focus on presentation, flavor, and technical execution. Document your creative process and share your creation.`;
+    }
+  } else if (goal.toLowerCase().includes('design') || goal.toLowerCase().includes('ui') || goal.toLowerCase().includes('ux')) {
+    if (coreTopic.toLowerCase().includes('color') || coreTopic.toLowerCase().includes('typography')) {
+      exercise1Title = `Design System Lab: ${coreTopic} Exploration`;
+      exercise1Description = `Create a comprehensive design system focusing on ${coreTopic.toLowerCase()}. Develop a color palette with primary, secondary, and accent colors, or a typography scale with different font weights and sizes. Create examples showing how these elements work together. Document your design decisions and create guidelines for consistent use.`;
+      exercise2Title = `Design Project: ${coreTopic} Application`;
+      exercise2Description = `Apply your ${coreTopic.toLowerCase()} knowledge to a complete design project. Create a mobile app interface, website, or branding project that showcases your design skills. Focus on user experience, visual hierarchy, and aesthetic appeal. Present your work professionally and explain your design choices.`;
+    } else {
+      exercise1Title = `Design Practice: ${coreTopic} Skills`;
+      exercise1Description = `Spend 2-3 hours practicing the specific design techniques covered in today's lesson. Create multiple iterations and experiment with different approaches. Focus on understanding design principles and how they apply to real projects. Document your process and create a portfolio of your work.`;
+      exercise2Title = `Creative Design: ${coreTopic} Project`;
+      exercise2Description = `Create a unique design project that demonstrates your understanding of ${coreTopic.toLowerCase()}. Use your creativity to explore new possibilities and push your skills further. Focus on innovation, user experience, and visual impact. Document your creative process and share your work.`;
+    }
   } else {
-    exercise1Title = `Hands-on Practice: ${dayTitle} Application`;
-    exercise1Description = `Spend 2-3 hours actively practicing the concepts you've learned about ${dayTitle.toLowerCase()}. Create something tangible that demonstrates your understanding. Focus on applying the knowledge in a practical way and documenting your process. Experiment with different approaches and see what works best for you.`;
-    exercise2Title = `Creative Project: ${dayTitle} Showcase`;
-    exercise2Description = `Create a comprehensive project that showcases your ${dayTitle.toLowerCase()} skills. Choose something that excites you and allows you to express your creativity while applying what you've learned. Focus on creating something of value that you can be proud of and share with others. Document your creative process and reflect on what you learned.`;
+    // Generic but contextual exercises for any other goal
+    exercise1Title = `Practical Application: ${coreTopic} Practice`;
+    exercise1Description = `Spend 2-3 hours actively practicing the specific concepts you've learned about ${coreTopic.toLowerCase()}. Create something tangible that demonstrates your understanding. Focus on applying the knowledge in a practical way and documenting your process. Experiment with different approaches and see what works best for you.`;
+    exercise2Title = `Creative Project: ${coreTopic} Showcase`;
+    exercise2Description = `Create a comprehensive project that showcases your ${coreTopic.toLowerCase()} skills. Choose something that excites you and allows you to express your creativity while applying what you've learned. Focus on creating something of value that you can be proud of and share with others. Document your creative process and reflect on what you learned.`;
   }
   
   const exercise1 = {
@@ -503,20 +546,22 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       const baseTitle = day.title.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
       const searchTerms = [
         `${baseTitle} tutorial`,
-        `${baseTitle} how to`,
-        `${baseTitle} beginner guide`,
-        `${baseTitle} step by step`,
-        `${baseTitle} learn`,
-        `${baseTitle} basics`,
-        `${baseTitle} video`,
-        `${baseTitle} course`
+        `${baseTitle} how to guide`,
+        `${baseTitle} beginner tutorial`,
+        `${baseTitle} step by step guide`,
+        `${baseTitle} learn ${baseTitle}`,
+        `${baseTitle} basics tutorial`,
+        `${baseTitle} video tutorial`,
+        `${baseTitle} complete guide`,
+        `${baseTitle} masterclass`,
+        `${baseTitle} workshop`
       ];
       
       // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
       const searchPromises = [];
       
-      // Try multiple search terms for watch resources (increased to 8 for better coverage)
-      for (let i = 0; i < Math.min(8, searchTerms.length); i++) {
+      // Try multiple search terms for watch resources (increased to 10 for better coverage)
+      for (let i = 0; i < Math.min(10, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -530,8 +575,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         );
       }
       
-      // Try multiple search terms for read resources (increased to 6 for better coverage)
-      for (let i = 0; i < Math.min(6, searchTerms.length); i++) {
+      // Try multiple search terms for read resources (increased to 8 for better coverage)
+      for (let i = 0; i < Math.min(8, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -648,18 +693,49 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       }
       
       // STRICT GUIDELINE: Every day must have at least 1 real resource + 1 AI resource
-      // If no real resources found, generate a fallback real resource
+      // If no real resources found, try more aggressive search strategies
       if (day.learn.length === 0) {
-        console.log(`No real resources found for day ${day.day}, creating fallback real resource...`);
-        const fallbackResource = {
-          kind: 'read' as const,
-          title: `${day.title} - Complete Guide`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(day.title + ' ' + params.goal + ' tutorial guide')}`,
-          source: 'Google Search',
-          duration_minutes: 15,
-          description: `Comprehensive guide covering ${day.title.toLowerCase()} fundamentals and practical applications.`
-        };
-        day.learn.push(fallbackResource);
+        console.log(`No real resources found for day ${day.day}, trying aggressive search strategies...`);
+        
+        // Try more specific search terms for this day
+        const specificSearchTerms = [
+          `${day.title} tutorial site:youtube.com`,
+          `${day.title} guide site:medium.com`,
+          `${day.title} course site:udemy.com`,
+          `${day.title} lesson site:skillshare.com`,
+          `${day.title} basics site:freecodecamp.org`,
+          `${day.title} fundamentals site:mdn.mozilla.org`,
+          `${day.title} examples site:github.com`,
+          `${day.title} documentation site:docs.microsoft.com`
+        ];
+        
+        // Try one more aggressive search attempt
+        try {
+          const aggressiveSearch = await fetch(`/api/scrape-resources?q=${encodeURIComponent(specificSearchTerms[0])}&type=read`, {
+            signal: AbortSignal.timeout(45000) // 45 second timeout for aggressive search
+          });
+          
+          if (aggressiveSearch.ok) {
+            const aggressiveData = await aggressiveSearch.json();
+            const aggressiveResources = aggressiveData.resources || [];
+            
+            if (aggressiveResources.length > 0) {
+              const bestResource = aggressiveResources[0];
+              if (bestResource.title && bestResource.url && !bestResource.title.includes('Google')) {
+                bestResource.description = `Comprehensive guide covering ${day.title.toLowerCase()} fundamentals and practical applications.`;
+                day.learn.push(bestResource);
+                console.log(`Found aggressive search resource for day ${day.day}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Aggressive search failed for day ${day.day}:`, error);
+        }
+        
+        // If still no resources, we'll rely on AI content only
+        if (day.learn.length === 0) {
+          console.log(`No real resources found after aggressive search for day ${day.day}, will use AI content only`);
+        }
       }
       
       // Always add 1 AI-generated resource per day

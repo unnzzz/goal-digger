@@ -154,20 +154,23 @@ class AdvancedWebScraper {
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
     const searchVariations = [
       `${cleanQuery} tutorial`,
-      `${cleanQuery} how to`,
-      `${cleanQuery} step by step`,
-      `${cleanQuery} beginner`,
-      `${cleanQuery} learn`,
+      `${cleanQuery} how to guide`,
+      `${cleanQuery} step by step tutorial`,
+      `${cleanQuery} beginner tutorial`,
+      `${cleanQuery} learn ${cleanQuery}`,
       `${cleanQuery} course`,
       `${cleanQuery} lesson`,
-      `${cleanQuery} guide`,
-      `${cleanQuery} basics`,
+      `${cleanQuery} complete guide`,
+      `${cleanQuery} basics tutorial`,
       `${cleanQuery} fundamentals`,
       `${cleanQuery} explained`,
       `${cleanQuery} introduction`,
       `${cleanQuery} crash course`,
       `${cleanQuery} full tutorial`,
-      `${cleanQuery} complete guide`
+      `${cleanQuery} masterclass`,
+      `${cleanQuery} workshop`,
+      `${cleanQuery} training`,
+      `${cleanQuery} walkthrough`
     ];
     
     // Try multiple search variations (increased from 3 to 8 for better coverage)
@@ -408,20 +411,23 @@ class AdvancedWebScraper {
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
     const searchVariations = [
       `${cleanQuery} tutorial`,
-      `${cleanQuery} guide`,
-      `${cleanQuery} how to`,
-      `${cleanQuery} step by step`,
-      `${cleanQuery} beginner`,
-      `${cleanQuery} learn`,
+      `${cleanQuery} complete guide`,
+      `${cleanQuery} how to guide`,
+      `${cleanQuery} step by step guide`,
+      `${cleanQuery} beginner tutorial`,
+      `${cleanQuery} learn ${cleanQuery}`,
       `${cleanQuery} course`,
       `${cleanQuery} lesson`,
-      `${cleanQuery} basics`,
+      `${cleanQuery} basics tutorial`,
       `${cleanQuery} fundamentals`,
       `${cleanQuery} explained`,
       `${cleanQuery} introduction`,
-      `${cleanQuery} complete guide`,
       `${cleanQuery} comprehensive guide`,
-      `${cleanQuery} detailed tutorial`
+      `${cleanQuery} detailed tutorial`,
+      `${cleanQuery} masterclass`,
+      `${cleanQuery} workshop`,
+      `${cleanQuery} training`,
+      `${cleanQuery} walkthrough`
     ];
     
     // Educational domains to prioritize (expanded list)
