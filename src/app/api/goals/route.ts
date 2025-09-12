@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hashRoadmap } from "@/lib/hash";
+import { sendQuestReminderEmail } from "@/lib/quest-email-service";
 
 export async function GET() {
   const s = await getServerSession(authOptions);
@@ -48,6 +49,14 @@ export async function POST(req: Request) {
           roadmapJson: sanitizedRoadmapData // Update the roadmap data as well
         },
       });
+      
+      // Send daily quest email when goal is started
+      try {
+        await sendQuestReminderEmail(u.id, existing.id, new Date().toLocaleDateString());
+      } catch (error) {
+        console.error('Failed to send quest reminder email:', error);
+        // Don't fail the request if email fails
+      }
     }
     return new Response(JSON.stringify({ id: existing.id, existed: true, goal: existing }), {
       headers: { "Content-Type": "application/json" },
@@ -67,6 +76,16 @@ export async function POST(req: Request) {
       contentHash,
     },
   });
+
+  // Send daily quest email if goal is started immediately
+  if (startGoal) {
+    try {
+      await sendQuestReminderEmail(u.id, goal.id, new Date().toLocaleDateString());
+    } catch (error) {
+      console.error('Failed to send quest reminder email:', error);
+      // Don't fail the request if email fails
+    }
+  }
 
   return new Response(JSON.stringify({ id: goal.id, existed: false, goal }), {
     headers: { "Content-Type": "application/json" },

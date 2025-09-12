@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isValidTZ, todayLabel } from "@/lib/time";
+import { sendQuestReminderEmail } from "@/lib/quest-email-service";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -44,6 +45,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       create: { userId: user.id, dateLabel: label, completed: false, lastSentAt: null },
       update: { completed: false, lastSentAt: null },
     });
+
+    // Send daily quest email when goal is started
+    try {
+      await sendQuestReminderEmail(user.id, goalId, label);
+    } catch (error) {
+      console.error('Failed to send quest reminder email:', error);
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({ ok: true, startDate: startDate?.toISOString(), tz, dateLabel: label, remindersPrimed: true }, { headers: { "Cache-Control": "no-store" } });
   } catch (e: any) {
