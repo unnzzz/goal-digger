@@ -307,7 +307,7 @@ npx prisma db seed`}
                     </div>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      {it.owned ? (
+                    {it.owned ? (
                         <span style={{
                           background: '#10B981',
                           color: 'white',
@@ -319,7 +319,7 @@ npx prisma db seed`}
                         }}>
                           ✓ Owned
                         </span>
-                      ) : it.locked ? (
+                    ) : it.locked ? (
                         <button 
                           style={{
                             background: '#6B7280',
@@ -336,8 +336,8 @@ npx prisma db seed`}
                           title={it.reasons.join(", ") || "Locked"}
                         >
                           🔒 Locked
-                        </button>
-                      ) : (
+                      </button>
+                    ) : (
                         <button 
                           onClick={() => buy(it.id)} 
                           disabled={coins < it.cost}
@@ -354,8 +354,8 @@ npx prisma db seed`}
                             transition: 'all 0.3s ease'
                           }}
                         >
-                          Buy
-                        </button>
+                        Buy
+                      </button>
                       )}
                     </div>
                     
@@ -371,9 +371,9 @@ npx prisma db seed`}
                     )}
                   </div>
                 ))}
-              </div>
-            </div>
-          ))}
+                  </div>
+                </div>
+            ))}
         </>
       )}
         </div>

@@ -1171,12 +1171,13 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                 </div>
 
 
-                {/* QUIZ BUTTON - Show if quiz exists */}
+                {/* QUIZ BUTTON - Always show for debugging */}
                 {(() => {
                   console.log(`Day ${d.day} - dayCompleted:`, dayCompleted);
                   console.log(`Day ${d.day} - quiz exists:`, !!(d as any).quiz);
                   console.log(`Day ${d.day} - quiz length:`, (d as any).quiz?.length);
-                  return (d as any).quiz && (d as any).quiz.length > 0;
+                  console.log(`Day ${d.day} - full day data:`, d);
+                  return true; // Always show for debugging
                 })() && (
                   <div style={{
                     background: 'white',
