@@ -233,7 +233,18 @@ function isCompleted(it: DailyItem) {
     // For quiz items, check if quiz has been passed or completed
     const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
     const quizCompleted = localStorage.getItem(`quiz-completed-day-${it.dayNumber}`);
-    return quizPassed || !!quizCompleted;
+    
+    // Only consider completed if quiz was passed (80%+) or has valid completion data
+    if (quizPassed) return true;
+    if (quizCompleted) {
+      try {
+        const completionData = JSON.parse(quizCompleted);
+        return completionData.passed === true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
   }
   return !!it.completed;
 }

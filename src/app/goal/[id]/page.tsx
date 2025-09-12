@@ -1246,7 +1246,17 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
                       const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
                       
-                      if (quizPassed || quizCompleted) {
+                      // Only consider completed if quiz was passed (80%+) or has valid completion data
+                      const isQuizActuallyCompleted = quizPassed || (quizCompleted && (() => {
+                        try {
+                          const completionData = JSON.parse(quizCompleted);
+                          return completionData.passed === true;
+                        } catch {
+                          return false;
+                        }
+                      })());
+                      
+                      if (isQuizActuallyCompleted) {
                         return (
                           <div style={{
                             background: 'linear-gradient(135deg, #10B981, #059669)',
@@ -1266,7 +1276,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                         );
                       }
                       
-                        const isQuizAlreadyCompleted = quizPassed || quizCompleted;
+                        const isQuizAlreadyCompleted = isQuizActuallyCompleted;
                         const canTakeQuiz = quizUnlocked && !isQuizAlreadyCompleted;
                         
                         return (
