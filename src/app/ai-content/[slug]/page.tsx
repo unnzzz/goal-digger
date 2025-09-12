@@ -200,18 +200,3 @@ export default function AIContentPage() {
     </div>
   );
 }
-
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease'
-          }}
-          onMouseOver={(e) => (e.target as HTMLButtonElement).style.background = '#5a2d91'}
-          onMouseOut={(e) => (e.target as HTMLButtonElement).style.background = '#6A3EE8'}
-        >
-          ← Back to Roadmap
-        </button>
-      </div>
-    </div>
-  );
-}
