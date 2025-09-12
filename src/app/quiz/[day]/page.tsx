@@ -1,0 +1,431 @@
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+export default function QuizPage() {
+  const params = useParams();
+  const router = useRouter();
+  const dayNumber = parseInt(params.day as string);
+  
+  const [quiz, setQuiz] = useState<any>(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load quiz data from localStorage or API
+    const loadQuiz = async () => {
+      try {
+        // Try to get quiz from localStorage first
+        const storedQuiz = localStorage.getItem(`quiz-day-${dayNumber}`);
+        if (storedQuiz) {
+          const quizData = JSON.parse(storedQuiz);
+          setQuiz(quizData);
+        } else {
+          // If not in localStorage, try to get from the roadmap
+          const roadmap = localStorage.getItem('currentRoadmap');
+          if (roadmap) {
+            const roadmapData = JSON.parse(roadmap);
+            const dayData = roadmapData.days.find((d: any) => d.day === dayNumber);
+            if (dayData && dayData.quiz) {
+              setQuiz(dayData.quiz);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading quiz:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuiz();
+  }, [dayNumber]);
+
+  const handleAnswerChange = (questionIndex: number, answer: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionIndex]: answer
+    }));
+  };
+
+  const calculateScore = () => {
+    if (!quiz) return 0;
+    
+    let correct = 0;
+    quiz.forEach((question: any, index: number) => {
+      if (answers[index] === question.correct_answer) {
+        correct++;
+      }
+    });
+    
+    return Math.round((correct / quiz.length) * 100);
+  };
+
+  const handleSubmit = () => {
+    const finalScore = calculateScore();
+    setScore(finalScore);
+    setSubmitted(true);
+    setShowResults(true);
+    
+    // Store quiz completion
+    localStorage.setItem(`quiz-completed-day-${dayNumber}`, JSON.stringify({
+      score: finalScore,
+      passed: finalScore >= 80,
+      completedAt: new Date().toISOString()
+    }));
+  };
+
+  const handleRetake = () => {
+    setAnswers({});
+    setSubmitted(false);
+    setShowResults(false);
+    setScore(0);
+  };
+
+  const handleBackToGoal = () => {
+    router.back();
+  };
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Baloo Bhai, cursive'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '16px',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>🧠</div>
+          <div>Loading quiz...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quiz || quiz.length === 0) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Baloo Bhai, cursive'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '16px',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          maxWidth: '500px'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+          <h2 style={{ color: '#1F2937', marginBottom: '16px' }}>Quiz Not Available</h2>
+          <p style={{ color: '#6B7280', marginBottom: '24px' }}>
+            No quiz found for Day {dayNumber}. Please complete the learn, practice, and reflect quests first.
+          </p>
+          <button
+            onClick={handleBackToGoal}
+            style={{
+              background: 'linear-gradient(135deg, #6A3EE8, #8B5CF6)',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: 'Baloo Bhai, cursive'
+            }}
+          >
+            Back to Goal
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px',
+      fontFamily: 'Baloo Bhai, cursive'
+    }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        background: 'white',
+        borderRadius: '16px',
+        padding: '40px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+      }}>
+        {/* Header */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '40px',
+          paddingBottom: '20px',
+          borderBottom: '2px solid #E5E7EB'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧠</div>
+          <h1 style={{
+            color: '#1F2937',
+            fontSize: '32px',
+            marginBottom: '8px',
+            fontWeight: '700'
+          }}>
+            Day {dayNumber} Quiz
+          </h1>
+          <p style={{
+            color: '#6B7280',
+            fontSize: '18px',
+            marginBottom: '16px'
+          }}>
+            Test your knowledge! Score 80% or higher to unlock the next day's quests.
+          </p>
+          <div style={{
+            background: '#F3F4F6',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            display: 'inline-block'
+          }}>
+            <span style={{ fontWeight: '600', color: '#1F2937' }}>
+              {quiz.length} Questions • 80% Required to Pass
+            </span>
+          </div>
+        </div>
+
+        {!showResults ? (
+          /* Quiz Questions */
+          <div>
+            {quiz.map((question: any, questionIndex: number) => (
+              <div key={questionIndex} style={{
+                marginBottom: '32px',
+                padding: '24px',
+                background: '#F9FAFB',
+                borderRadius: '12px',
+                border: '1px solid #E5E7EB'
+              }}>
+                <h3 style={{
+                  color: '#1F2937',
+                  fontSize: '20px',
+                  marginBottom: '20px',
+                  fontWeight: '600'
+                }}>
+                  {questionIndex + 1}. {question.question}
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {Object.entries(question.options).map(([key, value]) => (
+                    <label key={key} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '16px 20px',
+                      background: answers[questionIndex] === key ? '#EDE9FE' : 'white',
+                      border: answers[questionIndex] === key ? '2px solid #8B5CF6' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontWeight: '500'
+                    }}>
+                      <input
+                        type="radio"
+                        name={`question-${questionIndex}`}
+                        value={key}
+                        checked={answers[questionIndex] === key}
+                        onChange={(e) => handleAnswerChange(questionIndex, e.target.value)}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          accentColor: '#8B5CF6'
+                        }}
+                      />
+                      <span style={{
+                        color: answers[questionIndex] === key ? '#1F2937' : '#6B7280',
+                        fontSize: '16px'
+                      }}>
+                        {key}. {String(value)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Submit Button */}
+            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+              <button
+                onClick={handleSubmit}
+                disabled={Object.keys(answers).length !== quiz.length}
+                style={{
+                  background: Object.keys(answers).length === quiz.length 
+                    ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
+                    : '#D1D5DB',
+                  color: 'white',
+                  border: 'none',
+                  padding: '16px 32px',
+                  borderRadius: '12px',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  cursor: Object.keys(answers).length === quiz.length ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'Baloo Bhai, cursive',
+                  boxShadow: Object.keys(answers).length === quiz.length 
+                    ? '0 8px 20px rgba(139, 92, 246, 0.3)' 
+                    : 'none'
+                }}
+              >
+                Submit Quiz
+              </button>
+              <p style={{
+                color: '#6B7280',
+                fontSize: '14px',
+                marginTop: '12px'
+              }}>
+                Answer all questions to submit
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Results */
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: '64px',
+              marginBottom: '24px'
+            }}>
+              {score >= 80 ? '🎉' : '😔'}
+            </div>
+            
+            <h2 style={{
+              color: score >= 80 ? '#10B981' : '#EF4444',
+              fontSize: '32px',
+              marginBottom: '16px',
+              fontWeight: '700'
+            }}>
+              {score >= 80 ? 'Congratulations!' : 'Try Again'}
+            </h2>
+            
+            <div style={{
+              background: score >= 80 ? '#D1FAE5' : '#FEE2E2',
+              color: score >= 80 ? '#065F46' : '#991B1B',
+              padding: '20px',
+              borderRadius: '12px',
+              marginBottom: '24px',
+              fontSize: '24px',
+              fontWeight: '600'
+            }}>
+              Score: {score}%
+            </div>
+            
+            <p style={{
+              color: '#6B7280',
+              fontSize: '18px',
+              marginBottom: '32px',
+              lineHeight: '1.6'
+            }}>
+              {score >= 80 
+                ? `Great job! You've unlocked Day ${dayNumber + 1}'s quests. Keep up the excellent work!`
+                : `You need 80% to pass. Don't worry, you can retake the quiz to improve your score.`
+              }
+            </p>
+
+            {/* Show correct answers */}
+            <div style={{
+              background: '#F9FAFB',
+              padding: '24px',
+              borderRadius: '12px',
+              marginBottom: '32px',
+              textAlign: 'left'
+            }}>
+              <h3 style={{
+                color: '#1F2937',
+                fontSize: '20px',
+                marginBottom: '16px',
+                textAlign: 'center'
+              }}>
+                Quiz Review
+              </h3>
+              {quiz.map((question: any, questionIndex: number) => (
+                <div key={questionIndex} style={{
+                  marginBottom: '16px',
+                  padding: '16px',
+                  background: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid #E5E7EB'
+                }}>
+                  <div style={{
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '8px'
+                  }}>
+                    {questionIndex + 1}. {question.question}
+                  </div>
+                  <div style={{
+                    color: answers[questionIndex] === question.correct_answer ? '#10B981' : '#EF4444',
+                    fontWeight: '500'
+                  }}>
+                    Your answer: {answers[questionIndex]} {answers[questionIndex] === question.correct_answer ? '✓' : '✗'}
+                  </div>
+                  <div style={{ color: '#6B7280', fontSize: '14px' }}>
+                    Correct answer: {question.correct_answer}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              {score < 80 && (
+                <button
+                  onClick={handleRetake}
+                  style={{
+                    background: 'linear-gradient(135deg, #F59E0B, #F97316)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontFamily: 'Baloo Bhai, cursive'
+                  }}
+                >
+                  Retake Quiz
+                </button>
+              )}
+              <button
+                onClick={handleBackToGoal}
+                style={{
+                  background: 'linear-gradient(135deg, #6A3EE8, #8B5CF6)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'Baloo Bhai, cursive'
+                }}
+              >
+                Back to Goal
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -50,9 +50,11 @@ export default function AIContentPage() {
     const slug = params.slug as string;
     const contentKey = `ai-content-${slug}`;
     console.log('Looking for AI content with key:', contentKey);
+    console.log('Available localStorage keys:', Object.keys(localStorage).filter(k => k.startsWith('ai-content')));
     
     const storedContent = localStorage.getItem(contentKey);
     console.log('Stored content found:', !!storedContent);
+    console.log('Stored content length:', storedContent?.length);
     
     if (storedContent) {
       try {

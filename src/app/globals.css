@@ -1402,6 +1402,7 @@ a:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(106, 62, 232, 0.3);
+  font-family: 'Baloo Bhai', cursive;
 }
 
 .edit-btn:hover {

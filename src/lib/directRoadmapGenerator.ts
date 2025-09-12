@@ -369,8 +369,23 @@ Return a JSON object with:
       };
       console.log('Storing AI content with slug:', slug);
       console.log('Content to store:', contentToStore);
-      localStorage.setItem(`ai-content-${slug}`, JSON.stringify(contentToStore));
-      console.log('AI content stored successfully');
+      console.log('Content title length:', normalizedContent.title?.length);
+      console.log('Content content length:', normalizedContent.content?.length);
+      
+      try {
+        localStorage.setItem(`ai-content-${slug}`, JSON.stringify(contentToStore));
+        console.log('AI content stored successfully');
+        
+        // Verify storage
+        const stored = localStorage.getItem(`ai-content-${slug}`);
+        console.log('Verification - stored content exists:', !!stored);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          console.log('Verification - parsed content:', parsed);
+        }
+      } catch (error) {
+        console.error('Error storing AI content:', error);
+      }
     }
     
     // Return clean structure without problematic keys

@@ -1320,8 +1320,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                         e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
                       }}
                       onClick={() => {
-                        // TODO: Navigate to quiz page
-                        alert('Quiz functionality coming soon!');
+                        window.open(`/quiz/${d.day}`, '_blank');
                       }}
                     >
                       Take Quiz ({d.day})
