@@ -367,7 +367,10 @@ Return a JSON object with:
         type: contentType,
         description: normalizedContent.description
       };
+      console.log('Storing AI content with slug:', slug);
+      console.log('Content to store:', contentToStore);
       localStorage.setItem(`ai-content-${slug}`, JSON.stringify(contentToStore));
+      console.log('AI content stored successfully');
     }
     
     // Return clean structure without problematic keys
