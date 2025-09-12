@@ -299,41 +299,9 @@ export default function Home() {
                         Regenerate
                       </button>
                     )}
-                    <button 
-                      className="btn-ghost edit-btn"
-                      onClick={() => {
-                        setIsEditing(!isEditing);
-                        if (!isEditing) {
-                          loadSavedGoals();
-                        }
-                      }}
-                    >
-                      {isEditing ? "Done Editing" : "Edit Roadmap"}
-                    </button>
                   </div>
                 </div>
                 <div className="roadmap-actions">
-                  {isEditing && savedGoals.length > 0 && (
-                    <div className="load-goal-section">
-                      <label className="form-label">Load Saved Goal:</label>
-                      <select 
-                        className="goal-select"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            loadGoal(e.target.value);
-                          }
-                        }}
-                        defaultValue=""
-                      >
-                        <option value="">Select a saved goal...</option>
-                        {savedGoals.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.title} {g.startDate ? '(Started)' : '(Not Started)'}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
                   <input
                     type="text"
                     placeholder="Add a name for your goal..."

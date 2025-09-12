@@ -592,7 +592,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                   
                   <div style={{ padding: '16px', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '16px' }}>🌱</span>
+                      <span style={{ fontSize: '16px' }}>📚</span>
                       <span style={{ 
                         background: '#3B82F6', 
                         color: 'white', 

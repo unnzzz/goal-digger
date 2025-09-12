@@ -2,11 +2,14 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import AppLayout from '../../../components/AppLayout';
+import { useUserData } from '@/hooks/useUserData';
 
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
   const dayNumber = parseInt(params.day as string);
+  const { userData } = useUserData();
   
   const [quiz, setQuiz] = useState<any>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -14,6 +17,8 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [attempts, setAttempts] = useState(0);
+  const [maxAttempts] = useState(2);
 
   useEffect(() => {
     // Load quiz data from the current goal's roadmap
@@ -77,21 +82,47 @@ export default function QuizPage() {
     return Math.round((correct / quiz.length) * 100);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const finalScore = calculateScore();
+    const newAttempts = attempts + 1;
     setScore(finalScore);
     setSubmitted(true);
     setShowResults(true);
+    setAttempts(newAttempts);
+    
+    // Award coins if passed (80% or higher)
+    if (finalScore >= 80) {
+      try {
+        const response = await fetch('/api/coins/award', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: 50, // Quiz completion reward
+            reason: `Quiz Day ${dayNumber} - Score: ${finalScore}%`
+          })
+        });
+        if (response.ok) {
+          console.log('Coins awarded for quiz completion');
+        }
+      } catch (error) {
+        console.error('Failed to award coins:', error);
+      }
+    }
     
     // Store quiz completion
     localStorage.setItem(`quiz-completed-day-${dayNumber}`, JSON.stringify({
       score: finalScore,
       passed: finalScore >= 80,
+      attempts: newAttempts,
       completedAt: new Date().toISOString()
     }));
   };
 
   const handleRetake = () => {
+    if (attempts >= maxAttempts) {
+      alert('You have reached the maximum number of attempts (2). Please try again tomorrow.');
+      return;
+    }
     setAnswers({});
     setSubmitted(false);
     setShowResults(false);
@@ -99,92 +130,89 @@ export default function QuizPage() {
   };
 
   const handleBackToGoal = () => {
-    router.back();
+    // Get goal ID from URL params or localStorage
+    const goalId = new URLSearchParams(window.location.search).get('goalId') || 
+                  localStorage.getItem('currentGoalId');
+    if (goalId) {
+      router.push(`/goal/${goalId}`);
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Baloo Bhai, cursive'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '40px',
-          borderRadius: '16px',
-          textAlign: 'center',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '24px', marginBottom: '16px' }}>🧠</div>
-          <div>Loading quiz...</div>
+      <AppLayout activePage="quiz">
+        <div className="content-main" style={{ padding: "32px" }}>
+          <div style={{
+            background: 'white',
+            padding: '40px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            fontFamily: 'Baloo Bhai, cursive'
+          }}>
+            <div style={{ fontSize: '24px', marginBottom: '16px' }}>🧠</div>
+            <div>Loading quiz...</div>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (!quiz || quiz.length === 0) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Baloo Bhai, cursive'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '40px',
-          borderRadius: '16px',
-          textAlign: 'center',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-          maxWidth: '500px'
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-          <h2 style={{ color: '#1F2937', marginBottom: '16px' }}>Quiz Not Available</h2>
-          <p style={{ color: '#6B7280', marginBottom: '24px' }}>
-            No quiz found for Day {dayNumber}. Please complete the learn, practice, and reflect quests first.
-          </p>
-          <button
-            onClick={handleBackToGoal}
-            style={{
-              background: 'linear-gradient(135deg, #6A3EE8, #8B5CF6)',
-              color: 'white',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontFamily: 'Baloo Bhai, cursive'
-            }}
-          >
-            Back to Goal
-          </button>
+      <AppLayout activePage="quiz">
+        <div className="content-main" style={{ padding: "32px" }}>
+          <div style={{
+            background: 'white',
+            padding: '40px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            maxWidth: '500px',
+            margin: '0 auto',
+            fontFamily: 'Baloo Bhai, cursive'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+            <h2 style={{ color: '#1F2937', marginBottom: '16px' }}>Quiz Not Available</h2>
+            <p style={{ color: '#6B7280', marginBottom: '24px' }}>
+              No quiz found for Day {dayNumber}. Please complete the learn, practice, and reflect quests first.
+            </p>
+            <button
+              onClick={handleBackToGoal}
+              style={{
+                background: 'linear-gradient(135deg, #6A3EE8, #8B5CF6)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontFamily: 'Baloo Bhai, cursive'
+              }}
+            >
+              Back to Goal
+            </button>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px',
-      fontFamily: 'Baloo Bhai, cursive'
-    }}>
-      <div style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        background: 'white',
-        borderRadius: '16px',
-        padding: '40px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-      }}>
+    <AppLayout activePage="quiz">
+      <div className="content-main" style={{ padding: "32px" }}>
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          background: 'white',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          fontFamily: 'Baloo Bhai, cursive'
+        }}>
         {/* Header */}
         <div style={{
           textAlign: 'center',
@@ -215,7 +243,7 @@ export default function QuizPage() {
             display: 'inline-block'
           }}>
             <span style={{ fontWeight: '600', color: '#1F2937' }}>
-              {quiz.length} Questions • 80% Required to Pass
+              {quiz.length} Questions • 80% Required to Pass • Attempt {attempts + 1} of {maxAttempts}
             </span>
           </div>
         </div>
@@ -400,7 +428,7 @@ export default function QuizPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-              {score < 80 && (
+              {score < 80 && attempts < maxAttempts && (
                 <button
                   onClick={handleRetake}
                   style={{
@@ -415,8 +443,21 @@ export default function QuizPage() {
                     fontFamily: 'Baloo Bhai, cursive'
                   }}
                 >
-                  Retake Quiz
+                  Retake Quiz ({maxAttempts - attempts} attempts left)
                 </button>
+              )}
+              {score < 80 && attempts >= maxAttempts && (
+                <div style={{
+                  background: '#FEE2E2',
+                  color: '#991B1B',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  textAlign: 'center'
+                }}>
+                  No more attempts left. Try again tomorrow!
+                </div>
               )}
               <button
                 onClick={handleBackToGoal}
@@ -437,7 +478,8 @@ export default function QuizPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
