@@ -1264,8 +1264,13 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                   </div>
                 )}
 
-                {/* QUIZ BUTTON - Only show if learn, practice, and reflect are completed */}
-                {dayCompleted && (d as any).quiz && (d as any).quiz.length > 0 && (
+                {/* QUIZ BUTTON - Show if quiz exists */}
+                {(() => {
+                  console.log(`Day ${d.day} - dayCompleted:`, dayCompleted);
+                  console.log(`Day ${d.day} - quiz exists:`, !!(d as any).quiz);
+                  console.log(`Day ${d.day} - quiz length:`, (d as any).quiz?.length);
+                  return (d as any).quiz && (d as any).quiz.length > 0;
+                })() && (
                   <div style={{
                     background: 'white',
                     borderRadius: '12px',
@@ -1293,37 +1298,52 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       fontSize: '14px', 
                       color: '#6B7280' 
                     }}>
-                      Test your knowledge! Score 80% or higher to unlock the next day's quests.
+                      {dayCompleted 
+                        ? "Test your knowledge! Score 80% or higher to unlock the next day's quests."
+                        : "Complete all quests above to unlock this quiz."
+                      }
                     </p>
                     
                     <button 
+                      disabled={!dayCompleted}
                       style={{
-                        background: 'linear-gradient(135deg, #8B5CF6, #A855F7)',
+                        background: dayCompleted 
+                          ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
+                          : '#D1D5DB',
                         color: 'white',
                         border: 'none',
                         padding: '12px 24px',
                         borderRadius: '8px',
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: 'pointer',
+                        cursor: dayCompleted ? 'pointer' : 'not-allowed',
                         transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                        boxShadow: dayCompleted 
+                          ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
+                          : 'none',
+                        opacity: dayCompleted ? 1 : 0.6
                       }}
                       onMouseOver={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                        if (dayCompleted) {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                        }
                       }}
                       onMouseOut={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                        if (dayCompleted) {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                        }
                       }}
                       onClick={() => {
-                        window.open(`/quiz/${d.day}`, '_blank');
+                        if (dayCompleted) {
+                          window.open(`/quiz/${d.day}`, '_blank');
+                        }
                       }}
                     >
-                      Take Quiz ({d.day})
+                      {dayCompleted ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
                     </button>
                   </div>
                 )}

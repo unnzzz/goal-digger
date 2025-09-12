@@ -351,7 +351,7 @@ Return a JSON object with:
     delete (content as any).podcast_script;
     delete (content as any).article;
     
-    const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
+    const slug = `${dayTitle.toLowerCase().replace(/[:\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}-${contentType}-day-${dayNumber}`;
     
     // Use the cleaned content for normalizedContent
     const normalizedContent = { ...cleanedContent };
@@ -771,16 +771,13 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       const practiceExercises = generateCreativePracticeExercises(day.title, day.day, params.goal);
       day.practice.push(...practiceExercises);
       
-      // Generate quiz (simplified - only if we have resources)
-      if (day.learn.length > 0) {
-        try {
-          const quiz = await generateDailyQuiz(day.title, day.day, params.goal);
-          (day as any).quiz = quiz;
-        } catch (error) {
-          console.error(`Quiz generation failed for day ${day.day}:`, error);
-          (day as any).quiz = [];
-        }
-      } else {
+      // Generate quiz for all days
+      try {
+        const quiz = await generateDailyQuiz(day.title, day.day, params.goal);
+        (day as any).quiz = quiz;
+        console.log(`Generated quiz for day ${day.day} with ${quiz.length} questions`);
+      } catch (error) {
+        console.error(`Quiz generation failed for day ${day.day}:`, error);
         (day as any).quiz = [];
       }
       

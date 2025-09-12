@@ -48,7 +48,10 @@ export default function AIContentPage() {
   useEffect(() => {
     // Extract content from URL or localStorage
     const slug = params.slug as string;
-    const contentKey = `ai-content-${slug}`;
+    const decodedSlug = decodeURIComponent(slug);
+    const contentKey = `ai-content-${decodedSlug}`;
+    console.log('Original slug:', slug);
+    console.log('Decoded slug:', decodedSlug);
     console.log('Looking for AI content with key:', contentKey);
     console.log('Available localStorage keys:', Object.keys(localStorage).filter(k => k.startsWith('ai-content')));
     
