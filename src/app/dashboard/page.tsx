@@ -228,6 +228,15 @@ function diaryKeyFor(it: DailyItem) {
   return `${it.goalId}-${it.dayNumber}-${it.section}-${it.index}`;
 }
 
+function isCompleted(it: DailyItem) {
+  if (it.section === "quiz") {
+    // For quiz items, check localStorage for completion status
+    const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
+    return quizPassed;
+  }
+  return !!it.completed;
+}
+
 function SectionCard({ 
   it, 
   openDiary, 
@@ -266,7 +275,7 @@ function SectionCard({
   };
 
   const sectionColor = getSectionColor(it.section);
-  const isCompleted = it.completed;
+  const isCompletedValue = it.completed;
 
   return (
     <div style={{ 
@@ -277,7 +286,7 @@ function SectionCard({
       marginBottom: "16px",
       boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
       position: "relative",
-      opacity: isCompleted ? 0.7 : 1
+      opacity: isCompletedValue ? 0.7 : 1
     }}>
       {/* Section Color Bar */}
       <div style={{
@@ -359,17 +368,17 @@ function SectionCard({
               }} />
             </span>
             <button
-              className={`btn ${isCompleted ? "disabled" : ""}`}
+              className={`btn ${isCompletedValue ? "disabled" : ""}`}
               onClick={(e) => completeQuest(it, e)}
-              disabled={isCompleted}
-              title={isCompleted ? "Already completed" : it.section === "quiz" ? "Take quiz" : "Mark complete"}
+              disabled={isCompletedValue}
+              title={isCompletedValue ? "Already completed" : it.section === "quiz" ? "Take quiz" : "Mark complete"}
               style={{
                 padding: "8px 16px",
                 fontSize: "14px",
                 fontWeight: "600"
               }}
             >
-              {isCompleted ? "Completed" : it.section === "quiz" ? "Take Quiz" : "Complete"}
+              {isCompletedValue ? "Completed" : it.section === "quiz" ? "Take Quiz" : "Complete"}
             </button>
           </div>
         </div>
@@ -426,7 +435,8 @@ function SectionCard({
             <button
               className="btn"
               onClick={() => {
-                if (!isCompleted(it)) {
+                const completed = isCompleted(it);
+                if (!completed) {
                   window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
                 }
               }}
@@ -759,14 +769,6 @@ export default function Dashboard() {
     });
   }, [daily]);
 
-  const isCompleted = (it: DailyItem) => {
-    if (it.section === "quiz") {
-      // For quiz items, check localStorage for completion status
-      const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
-      return quizPassed;
-    }
-    return !!it.completed;
-  };
 
   const completeQuest = useCallback(async (it: DailyItem, e?: React.MouseEvent) => {
     e?.preventDefault();
