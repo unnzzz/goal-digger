@@ -21,6 +21,15 @@ export default function QuizPage() {
   const [maxAttempts] = useState(1);
 
   useEffect(() => {
+    // Check if quiz has already been completed
+    const quizPassed = localStorage.getItem(`quiz-passed-day-${dayNumber}`) === 'true';
+    if (quizPassed) {
+      // Quiz already completed, redirect back
+      alert('You have already completed this quiz!');
+      window.close();
+      return;
+    }
+
     // Load quiz data from the current goal's roadmap
     const loadQuiz = async () => {
       try {
@@ -138,14 +147,7 @@ export default function QuizPage() {
   };
 
   const handleRetake = () => {
-    if (attempts >= maxAttempts) {
-      alert('You have reached the maximum number of attempts (2). Please try again tomorrow.');
-      return;
-    }
-    setAnswers({});
-    setSubmitted(false);
-    setShowResults(false);
-    setScore(0);
+    alert('You have already completed this quiz. Only one attempt is allowed.');
   };
 
   const handleBackToGoal = () => {

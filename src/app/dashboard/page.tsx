@@ -230,11 +230,35 @@ function diaryKeyFor(it: DailyItem) {
 
 function isCompleted(it: DailyItem) {
   if (it.section === "quiz") {
-    // For quiz items, check localStorage for completion status
+    // For quiz items, check if quiz has been passed
     const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
     return quizPassed;
   }
   return !!it.completed;
+}
+
+function isQuizUnlocked(it: DailyItem, dailyItems: DailyItem[]) {
+  if (it.section !== "quiz") return false;
+  
+  // Quiz is unlocked only if all other quests for that day are completed
+  // We need to check if learn, practice, and reflect quests are completed
+  const dayItems = dailyItems.filter(item => 
+    item.goalId === it.goalId && item.dayNumber === it.dayNumber
+  );
+  
+  const learnCompleted = dayItems
+    .filter(item => item.section === "learn")
+    .every(item => item.completed);
+    
+  const practiceCompleted = dayItems
+    .filter(item => item.section === "practice")
+    .every(item => item.completed);
+    
+  const reflectCompleted = dayItems
+    .filter(item => item.section === "reflect")
+    .every(item => item.completed);
+  
+  return learnCompleted && practiceCompleted && reflectCompleted;
 }
 
 function SectionCard({ 
@@ -246,7 +270,8 @@ function SectionCard({
   onDiaryChange, 
   onDiaryKeyDown, 
   saveDiary, 
-  completeQuest 
+  completeQuest,
+  dailyItems
 }: { 
   it: DailyItem;
   openDiary: Record<string, boolean>;
@@ -257,6 +282,7 @@ function SectionCard({
   onDiaryKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, it: DailyItem) => void;
   saveDiary: (it: DailyItem) => void;
   completeQuest: (it: DailyItem, e?: React.MouseEvent) => void;
+  dailyItems: DailyItem[];
 }) {
   const meta = SECTION_META[it.section];
   const coins = COINS[it.section];
@@ -436,24 +462,25 @@ function SectionCard({
               className="btn"
               onClick={() => {
                 const completed = isCompleted(it);
-                if (!completed) {
+                const unlocked = isQuizUnlocked(it, dailyItems);
+                if (!completed && unlocked) {
                   window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
                 }
               }}
-              disabled={isCompleted(it)}
+              disabled={isCompleted(it) || !isQuizUnlocked(it, dailyItems)}
               style={{
-                background: isCompleted(it) ? "#10B981" : "#8B5CF6",
+                background: isCompleted(it) ? "#10B981" : isQuizUnlocked(it, dailyItems) ? "#8B5CF6" : "#D1D5DB",
                 color: "white",
                 padding: "8px 16px",
                 borderRadius: "6px",
                 fontSize: "14px",
                 fontWeight: "600",
                 border: "none",
-                cursor: isCompleted(it) ? "not-allowed" : "pointer",
-                opacity: isCompleted(it) ? 0.8 : 1
+                cursor: (isCompleted(it) || !isQuizUnlocked(it, dailyItems)) ? "not-allowed" : "pointer",
+                opacity: (isCompleted(it) || !isQuizUnlocked(it, dailyItems)) ? 0.8 : 1
               }}
             >
-              {isCompleted(it) ? "✅ Quiz Completed" : "Take Quiz"}
+              {isCompleted(it) ? "✅ Quiz Completed" : isQuizUnlocked(it, dailyItems) ? "Take Quiz" : "Complete Quests First"}
             </button>
           </div>
         ) : it.section !== "reflect" && (it.title || it.url) ? (
@@ -1247,6 +1274,7 @@ export default function Dashboard() {
                                   onDiaryKeyDown={onDiaryKeyDown}
                                   saveDiary={saveDiary}
                                   completeQuest={completeQuest}
+                                  dailyItems={daily?.items || []}
                                 />
                               ))}
                             </div>
@@ -1338,6 +1366,7 @@ export default function Dashboard() {
                                 onDiaryKeyDown={onDiaryKeyDown}
                                 saveDiary={saveDiary}
                                 completeQuest={completeQuest}
+                                dailyItems={daily?.items || []}
                               />
                             ))}
                           </div>
