@@ -23,6 +23,7 @@ type Day = {
   learn: Resource[];
   practice: Resource[];
   reflect: string;
+  quiz?: any[];
 };
 
 type RoadmapT = {
@@ -36,7 +37,7 @@ type DailyItem = {
   goalId: string;
   goalTitle: string;
   dayNumber: number;
-  section: "learn" | "practice" | "reflect";
+  section: "learn" | "practice" | "reflect" | "quiz";
   index: number;
   kind?: "watch" | "listen" | "read";
   title?: string;
@@ -45,6 +46,7 @@ type DailyItem = {
   split?: SplitT;
   reflectText?: string;
   completed?: boolean;
+  quizData?: any[];
 };
 
 function isValidTZ(tz: string) {
@@ -125,8 +127,16 @@ export async function GET(req: NextRequest) {
         select: { section: true, index: true },
       });
 
+      const quizCompletions = await prisma.quizCompletion.findMany({
+        where: { userId: user.id, goalId: g.id, dayNumber: dn },
+        select: { passed: true },
+      });
+
       const isCompleted = (section: "learn" | "practice" | "reflect", index: number) =>
         completions.some((c) => c.section === section && c.index === index);
+
+      const isQuizCompleted = () =>
+        quizCompletions.some((qc) => qc.passed);
 
       day.learn.forEach((r, i) => {
         items.push({
@@ -169,6 +179,20 @@ export async function GET(req: NextRequest) {
         reflectText: day.reflect,
         completed: isCompleted("reflect", 0),
       });
+
+      // Add quiz item if quiz exists for this day
+      if ((day as any).quiz && (day as any).quiz.length > 0) {
+        items.push({
+          goalId: g.id,
+          goalTitle: g.title,
+          dayNumber: dn,
+          section: "quiz",
+          index: 0,
+          title: `Quiz: Day ${dn}`,
+          completed: isQuizCompleted(),
+          quizData: (day as any).quiz,
+        });
+      }
     }
 
     return new Response(JSON.stringify({ date: todayISO, items, tz }), {

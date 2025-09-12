@@ -10,7 +10,7 @@ import AppLayout from '../../components/AppLayout';
 import { useAvatar } from '../../contexts/AvatarContext';
 import { getMessageForAction } from '../../lib/avatarMessages';
 
-const COINS = { learn: 5, practice: 10, reflect: 5 } as const;
+const COINS = { learn: 5, practice: 10, reflect: 5, quiz: 50 } as const;
 
 type SplitT = { total_parts: number; part_number: number; range?: string | null } | null;
 
@@ -18,7 +18,7 @@ type DailyItem = {
   goalId: string;
   goalTitle: string;
   dayNumber: number;
-  section: "learn" | "practice" | "reflect";
+  section: "learn" | "practice" | "reflect" | "quiz";
   index: number;
   kind?: "watch" | "listen" | "read";
   title?: string;
@@ -27,6 +27,7 @@ type DailyItem = {
   split?: SplitT;
   reflectText?: string;
   completed?: boolean;
+  quizData?: any[];
 };
 
 type DailyPayload = { date: string; items: DailyItem[]; tz?: string };
@@ -47,6 +48,7 @@ const SECTION_META: Record<
   learn: { label: "LEARN", icon: "📚", tint: "#EAF7FF" },
   practice: { label: "PRACTICE", icon: "🛠️", tint: "#FFF3E0" },
   reflect: { label: "REFLECT", icon: "💭", tint: "#F3E5F5" },
+  quiz: { label: "QUIZ", icon: "🧠", tint: "#F3E8FF" },
 };
 
 function colorFromKey(key: string) {
@@ -258,6 +260,7 @@ function SectionCard({
       case "learn": return "#3B82F6"; // Blue
       case "practice": return "#10B981"; // Green  
       case "reflect": return "#F59E0B"; // Orange
+      case "quiz": return "#8B5CF6"; // Purple
       default: return "#6B7280"; // Gray
     }
   };
@@ -359,14 +362,14 @@ function SectionCard({
               className={`btn ${isCompleted ? "disabled" : ""}`}
               onClick={(e) => completeQuest(it, e)}
               disabled={isCompleted}
-              title={isCompleted ? "Already completed" : "Mark complete"}
+              title={isCompleted ? "Already completed" : it.section === "quiz" ? "Take quiz" : "Mark complete"}
               style={{
                 padding: "8px 16px",
                 fontSize: "14px",
                 fontWeight: "600"
               }}
             >
-              {isCompleted ? "Completed" : "Complete"}
+              {isCompleted ? "Completed" : it.section === "quiz" ? "Take Quiz" : "Complete"}
             </button>
           </div>
         </div>
@@ -374,7 +377,72 @@ function SectionCard({
 
       {/* Content */}
       <div style={{ marginLeft: "16px" }}>
-        {it.section !== "reflect" && (it.title || it.url) ? (
+        {it.section === "quiz" ? (
+          <div style={{
+            background: "#F9FAFB",
+            border: "1px solid #E5E7EB",
+            borderRadius: "8px",
+            padding: "16px",
+            marginBottom: "12px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <span style={{
+                background: "#8B5CF6",
+                color: "white",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                fontWeight: "600",
+                textTransform: "uppercase"
+              }}>
+                🧠 QUIZ
+              </span>
+              <span style={{
+                background: "#E5E7EB",
+                color: "#6B7280",
+                padding: "4px 8px",
+                borderRadius: "12px",
+                fontSize: "12px",
+                fontWeight: "500"
+              }}>
+                {it.quizData?.length || 0} questions
+              </span>
+            </div>
+            <h4 style={{ 
+              fontSize: "16px", 
+              fontWeight: "600", 
+              color: "#1F2937", 
+              margin: "0 0 8px 0" 
+            }}>
+              {it.title}
+            </h4>
+            <p style={{ 
+              fontSize: "14px", 
+              color: "#6B7280", 
+              margin: "0 0 12px 0" 
+            }}>
+              Test your knowledge and unlock the next day's quests! Score 80% or higher to pass.
+            </p>
+            <button
+              className="btn"
+              onClick={() => {
+                window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
+              }}
+              style={{
+                background: "#8B5CF6",
+                color: "white",
+                padding: "8px 16px",
+                borderRadius: "6px",
+                fontSize: "14px",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              {isCompleted ? "View Results" : "Take Quiz"}
+            </button>
+          </div>
+        ) : it.section !== "reflect" && (it.title || it.url) ? (
           <div style={{
             background: "#F9FAFB",
             border: "1px solid #E5E7EB",
@@ -658,7 +726,7 @@ export default function Dashboard() {
 
   const items = useMemo(() => {
     if (!daily?.items) return [];
-    const order: Record<DailyItem["section"], number> = { learn: 0, practice: 1, reflect: 2 };
+    const order: Record<DailyItem["section"], number> = { learn: 0, practice: 1, reflect: 2, quiz: 3 };
     return [...daily.items].sort((a, b) => {
       // First sort by completion status (incomplete first, completed last)
       const aCompleted = !!a.completed;
@@ -683,6 +751,12 @@ export default function Dashboard() {
     e?.preventDefault();
     e?.stopPropagation();
     if (isCompleted(it)) return;
+
+    // For quiz sections, redirect to quiz page instead of marking complete
+    if (it.section === "quiz") {
+      window.open(`/quiz/${it.dayNumber}?goalId=${it.goalId}`, '_blank');
+      return;
+    }
 
     const res = await fetch(`/api/goals/${it.goalId}/complete`, {
       method: "POST",
