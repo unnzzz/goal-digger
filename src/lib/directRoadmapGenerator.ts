@@ -214,7 +214,7 @@ For ${contentType}:
 
 Return a JSON object with:
 {
-  "title": "Specific, engaging title for the ${contentType}",
+  "title": "Short, engaging title (max 60 characters) for the ${contentType}",
   "content": "Full ${contentType} content (800-1200 words for article, detailed podcast script for podcast)",
   "duration_minutes": ${contentType === 'podcast' ? '20' : '15'},
   "source": "AI Generated",
@@ -251,8 +251,15 @@ Return a JSON object with:
     }
     
     // Clean the content object to remove problematic keys BEFORE creating normalizedContent
+    let title = content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`;
+    
+    // Ensure title is not too long (max 60 characters)
+    if (title.length > 60) {
+      title = title.substring(0, 57) + '...';
+    }
+    
     const cleanedContent = {
-      title: content.title || `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
+      title: title,
       content: content.content || content.podcast_script || content.article || 'Content not available',
       duration_minutes: content.duration_minutes || (contentType === 'podcast' ? 20 : 15),
       source: content.source || 'AI Generated',
@@ -459,11 +466,12 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       // Create more specific and diverse search terms for better resource discovery
       const baseTitle = day.title.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
       const searchTerms = [
-        `${baseTitle} tutorial step by step`,
-        `${baseTitle} how to guide`,
-        `${baseTitle} beginner tutorial`,
-        `${baseTitle} learn basics`,
-        `${baseTitle} complete guide`
+        `${baseTitle} tutorial`,
+        `${baseTitle} how to`,
+        `${baseTitle} beginner guide`,
+        `${baseTitle} step by step`,
+        `${baseTitle} learn`,
+        `${baseTitle} basics`
       ];
       
       // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
@@ -516,6 +524,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       });
       
       // Process watch resources (aggregated from multiple searches)
+      console.log(`Processing ${watchResources.length} watch resources for day ${day.day}`);
       if (watchResources.length > 0) {
         const newResources = watchResources.filter((resource: any) => {
           if (usedResourceUrls.has(resource.url)) return false;
@@ -530,6 +539,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
           if (existingUrls.includes(resource.url)) return false;
           return true;
         });
+        console.log(`After deduplication: ${newResources.length} unique watch resources`);
         
         const resourcesToAdd = newResources.slice(0, 2);
         resourcesToAdd.forEach((resource: any) => {
@@ -538,14 +548,16 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             return;
           }
           
-          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
-            resource.title = `Video Tutorial - Day ${day.day}`;
+          // Only use real titles, don't generate generic ones
+          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http') || resource.title.includes('Video Tutorial') || resource.title.includes('Article')) {
+            return; // Skip this resource instead of using generic title
           }
+          
           usedResourceUrls.add(resource.url);
           usedResourceTitles.add(resource.title.toLowerCase());
           day.learn.push(resource);
         });
-        console.log(`Found ${resourcesToAdd.length} watch resources for day ${day.day}`);
+        console.log(`Added ${resourcesToAdd.length} watch resources for day ${day.day}`);
       } else {
         console.log(`No watch resources found for day ${day.day}`);
       }
@@ -573,9 +585,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
             return;
           }
           
-          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http')) {
-            resource.title = `Article - Day ${day.day}`;
+          // Only use real titles, don't generate generic ones
+          if (!resource.title || resource.title.trim() === '' || resource.title.includes('http') || resource.title.includes('Video Tutorial') || resource.title.includes('Article')) {
+            return; // Skip this resource instead of using generic title
           }
+          
           usedResourceUrls.add(resource.url);
           usedResourceTitles.add(resource.title.toLowerCase());
           day.learn.push(resource);
