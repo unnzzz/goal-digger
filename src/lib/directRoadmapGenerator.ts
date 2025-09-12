@@ -300,6 +300,13 @@ Return a JSON object with:
       jsonText = text.split('```json')[1].split('```')[0].trim();
     } else if (text.includes('```')) {
       jsonText = text.split('```')[1].split('```')[0].trim();
+    } else if (text.includes('{') && text.includes('}')) {
+      // Try to extract JSON from the text directly
+      const startIndex = text.indexOf('{');
+      const lastIndex = text.lastIndexOf('}');
+      if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+        jsonText = text.substring(startIndex, lastIndex + 1);
+      }
     }
     
     // Clean up the JSON text
@@ -308,15 +315,21 @@ Return a JSON object with:
     let content;
     try {
       content = JSON.parse(jsonText);
+      
+      // Validate required fields
+      if (!content.title || !content.content) {
+        throw new Error('Missing required fields');
+      }
+      
+      // Ensure title is short (max 50 chars)
+      if (content.title.length > 50) {
+        content.title = content.title.substring(0, 47) + '...';
+      }
+      
     } catch (parseError) {
       console.error('JSON parsing failed for AI content, using fallback structure');
-      content = {
-        title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
-        content: `This ${contentType} about "${dayTitle}" is being generated. Please try again later.`,
-        duration_minutes: contentType === 'podcast' ? 20 : 15,
-        source: 'AI Generated (Fallback)',
-        type: contentType
-      };
+      // Don't show fallback content, return null instead
+      return null;
     }
     
     // Clean the content object to remove problematic keys BEFORE creating normalizedContent
@@ -578,8 +591,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       // AGGRESSIVE: Try multiple search strategies in parallel for maximum resource discovery
       const searchPromises = [];
       
-      // Try multiple search terms for watch resources (increased to 10 for better coverage)
-      for (let i = 0; i < Math.min(10, searchTerms.length); i++) {
+      // Try multiple search terms for watch resources (increased to 15 for 60-70% watch resources)
+      for (let i = 0; i < Math.min(15, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -593,8 +606,8 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         );
       }
       
-      // Try multiple search terms for read resources (increased to 8 for better coverage)
-      for (let i = 0; i < Math.min(8, searchTerms.length); i++) {
+      // Try multiple search terms for read resources (reduced to 5 for 60-70% watch resources)
+      for (let i = 0; i < Math.min(5, searchTerms.length); i++) {
         searchPromises.push(
           fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
@@ -642,7 +655,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         });
         console.log(`After deduplication: ${newResources.length} unique watch resources`);
         
-        const resourcesToAdd = newResources.slice(0, 2);
+        const resourcesToAdd = newResources.slice(0, 3); // Increased from 2 to 3 for more watch resources
         resourcesToAdd.forEach((resource: any) => {
           // Skip empty or invalid resources
           if (!resource || typeof resource !== 'object' || Object.keys(resource).length === 0) {
