@@ -1246,15 +1246,9 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
                       const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
                       
-                      // Only consider completed if quiz was passed (80%+) or has valid completion data
-                      const isQuizActuallyCompleted = quizPassed || (quizCompleted && (() => {
-                        try {
-                          const completionData = JSON.parse(quizCompleted);
-                          return completionData.passed === true;
-                        } catch {
-                          return false;
-                        }
-                      })());
+                      // Quiz is completed if it has been attempted (regardless of score)
+                      // Quiz is "passed" if score >= 80% (for coins and next day unlock)
+                      const isQuizActuallyCompleted = quizPassed || !!quizCompleted;
                       
                       if (isQuizActuallyCompleted) {
                         return (

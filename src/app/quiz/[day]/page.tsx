@@ -21,9 +21,11 @@ export default function QuizPage() {
   const [maxAttempts] = useState(1);
 
   useEffect(() => {
-    // Check if quiz has already been completed
+    // Check if quiz has already been completed (any attempt)
     const quizPassed = localStorage.getItem(`quiz-passed-day-${dayNumber}`) === 'true';
-    if (quizPassed) {
+    const quizCompleted = localStorage.getItem(`quiz-completed-day-${dayNumber}`);
+    
+    if (quizPassed || quizCompleted) {
       // Quiz already completed, redirect back
       alert('You have already completed this quiz!');
       window.close();
@@ -130,7 +132,7 @@ export default function QuizPage() {
       }
     }
     
-    // Store quiz completion
+    // Store quiz completion (always completed after one attempt)
     localStorage.setItem(`quiz-completed-day-${dayNumber}`, JSON.stringify({
       score: finalScore,
       passed: finalScore >= 80,
@@ -138,12 +140,13 @@ export default function QuizPage() {
       completedAt: new Date().toISOString()
     }));
     
-    // Also store in a way that can be checked for next day unlock
+    // Store passed status only if score >= 80% (for coins and next day unlock)
     if (finalScore >= 80) {
       localStorage.setItem(`quiz-passed-day-${dayNumber}`, 'true');
-      // Dispatch event to refresh dashboard
-      window.dispatchEvent(new Event('quiz-completed'));
     }
+    
+    // Always dispatch event to refresh dashboard (quiz is completed regardless of score)
+    window.dispatchEvent(new Event('quiz-completed'));
   };
 
   const handleRetake = () => {

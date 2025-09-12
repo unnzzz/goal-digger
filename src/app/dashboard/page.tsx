@@ -230,21 +230,13 @@ function diaryKeyFor(it: DailyItem) {
 
 function isCompleted(it: DailyItem) {
   if (it.section === "quiz") {
-    // For quiz items, check if quiz has been passed or completed
+    // For quiz items, check if quiz has been completed (any attempt)
     const quizPassed = localStorage.getItem(`quiz-passed-day-${it.dayNumber}`) === 'true';
     const quizCompleted = localStorage.getItem(`quiz-completed-day-${it.dayNumber}`);
     
-    // Only consider completed if quiz was passed (80%+) or has valid completion data
-    if (quizPassed) return true;
-    if (quizCompleted) {
-      try {
-        const completionData = JSON.parse(quizCompleted);
-        return completionData.passed === true;
-      } catch {
-        return false;
-      }
-    }
-    return false;
+    // Quiz is completed if it has been attempted (regardless of score)
+    // Quiz is "passed" if score >= 80% (for coins and next day unlock)
+    return quizPassed || !!quizCompleted;
   }
   return !!it.completed;
 }
