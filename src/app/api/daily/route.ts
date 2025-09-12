@@ -127,10 +127,18 @@ export async function GET(req: NextRequest) {
         select: { section: true, index: true },
       });
 
-      const quizCompletions = await prisma.quizCompletion.findMany({
-        where: { userId: user.id, goalId: g.id, dayNumber: dn },
-        select: { passed: true },
-      });
+      // Try to get quiz completions, but handle case where table doesn't exist yet
+      let quizCompletions: any[] = [];
+      try {
+        quizCompletions = await prisma.quizCompletion.findMany({
+          where: { userId: user.id, goalId: g.id, dayNumber: dn },
+          select: { passed: true },
+        });
+      } catch (error) {
+        // QuizCompletion table might not exist yet, use empty array
+        console.log('QuizCompletion table not available yet, using empty array');
+        quizCompletions = [];
+      }
 
       const isCompleted = (section: "learn" | "practice" | "reflect", index: number) =>
         completions.some((c) => c.section === section && c.index === index);

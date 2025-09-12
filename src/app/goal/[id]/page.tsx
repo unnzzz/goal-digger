@@ -469,7 +469,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
             
             // Check if quiz is required and completed
             const quizRequired = d.quiz && d.quiz.length > 0;
-            const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-day-${day}`) === 'true' : true;
+            const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true' : true;
             
             return learnCompleted && practiceCompleted && reflectCompleted && quizCompleted;
           };
@@ -1183,15 +1183,15 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                 {/* QUIZ BUTTON - Show if quiz exists */}
                 {(() => {
                   console.log(`Day ${d.day} - dayCompleted:`, dayCompleted);
-                  console.log(`Day ${d.day} - quiz exists:`, !!(d as any).quiz);
-                  console.log(`Day ${d.day} - quiz length:`, (d as any).quiz?.length);
+                  console.log(`Day ${d.day} - quiz exists:`, !!d.quiz);
+                  console.log(`Day ${d.day} - quiz length:`, d.quiz?.length);
                   console.log(`Day ${d.day} - full day data:`, d);
                   
                   // Check if quiz has been completed
                   const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
                   const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
                   
-                  return (d as any).quiz && (d as any).quiz.length > 0;
+                  return d.quiz && d.quiz.length > 0;
                 })() && (
                   <div style={{
                     background: 'white',
