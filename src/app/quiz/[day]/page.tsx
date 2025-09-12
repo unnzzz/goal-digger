@@ -93,19 +93,31 @@ export default function QuizPage() {
     // Award coins if passed (80% or higher)
     if (finalScore >= 80) {
       try {
-        const response = await fetch('/api/coins/award', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: 50, // Quiz completion reward
-            reason: `Quiz Day ${dayNumber} - Score: ${finalScore}%`
-          })
-        });
-        if (response.ok) {
-          console.log('Coins awarded for quiz completion');
+        const goalId = new URLSearchParams(window.location.search).get('goalId') || 
+                      localStorage.getItem('currentGoalId');
+        
+        if (goalId) {
+          const response = await fetch('/api/quiz/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              goalId: goalId,
+              dayNumber: dayNumber,
+              score: finalScore
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Quiz completed successfully:', data);
+            // Refresh user data to show updated coins
+            window.dispatchEvent(new Event("coins:refresh"));
+          } else {
+            console.error('Failed to complete quiz:', await response.text());
+          }
         }
       } catch (error) {
-        console.error('Failed to award coins:', error);
+        console.error('Failed to complete quiz:', error);
       }
     }
     

@@ -465,7 +465,12 @@ export default function GoalPage({ params }: { params: { id: string } }) {
             const learnCompleted = d.learn.every((_, i) => isCompleted(day, "learn", i));
             const practiceCompleted = d.practice.every((_, i) => isCompleted(day, "practice", i));
             const reflectCompleted = isCompleted(day, "reflect", 0);
-            return learnCompleted && practiceCompleted && reflectCompleted;
+            
+            // Check if quiz is required and completed
+            const quizRequired = (d as any).quiz && (d as any).quiz.length > 0;
+            const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-day-${day}`) === 'true' : true;
+            
+            return learnCompleted && practiceCompleted && reflectCompleted && quizCompleted;
           };
 
           const dayCompleted = isCompletedDay(d.day);

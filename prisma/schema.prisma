@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl= env("DIRECT_URL")
 }
 
 model User {
@@ -26,6 +25,7 @@ model User {
   diary         DiaryEntry[]
   goals         Goal[]
   completions   QuestCompletion[]
+  quizCompletions QuizCompletion[]
   reminders     ReminderState[]
   items         UserItem[]
 }
@@ -57,6 +57,7 @@ model Goal {
   diary        DiaryEntry[]
   user         User              @relation(fields: [userId], references: [id])
   completions  QuestCompletion[]
+  quizCompletions QuizCompletion[]
 
   @@unique([userId, contentHash])
 }
@@ -89,6 +90,21 @@ model QuestCompletion {
   completedAt  DateTime @default(now())
   goal         Goal     @relation(fields: [goalId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
+}
+
+model QuizCompletion {
+  id           String   @id @default(cuid())
+  userId       String
+  goalId       String
+  dayNumber    Int
+  score        Int
+  passed       Boolean
+  coinsAwarded Int
+  completedAt  DateTime @default(now())
+  goal         Goal     @relation(fields: [goalId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, goalId, dayNumber])
 }
 
 model VerificationToken {
