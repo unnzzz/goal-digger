@@ -31,6 +31,7 @@ type Day = {
   learn: Resource[];
   practice: Resource[];
   reflect: string;
+  quiz?: any[];
 };
 
 type Roadmap = { goal: string; total_days: number; daily_minutes: number; days: Day[] };
