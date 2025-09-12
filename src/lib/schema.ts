@@ -24,6 +24,7 @@ export const Day = z.object({
   learn: z.array(Resource),        // no .min()
   practice: z.array(Resource),     // no .min()
   reflect: z.string(),
+  quiz: z.array(z.any()).optional(), // Quiz questions
 });
 
 export const Roadmap = z.object({

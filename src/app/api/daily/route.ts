@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
       });
 
       // Add quiz item if quiz exists for this day
-      if ((day as any).quiz && (day as any).quiz.length > 0) {
+      if (day.quiz && day.quiz.length > 0) {
         items.push({
           goalId: g.id,
           goalTitle: g.title,
@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
           index: 0,
           title: `Quiz: Day ${dn}`,
           completed: isQuizCompleted(),
-          quizData: (day as any).quiz,
+          quizData: day.quiz,
         });
       }
     }

@@ -776,11 +776,11 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
         console.log(`Starting quiz generation for day ${day.day}: ${day.title}`);
         const quiz = await generateDailyQuiz(day.title, day.day, params.goal);
         console.log(`Quiz generation result for day ${day.day}:`, quiz);
-        (day as any).quiz = quiz;
+        day.quiz = quiz;
         console.log(`Generated quiz for day ${day.day} with ${quiz.length} questions`);
       } catch (error) {
         console.error(`Quiz generation failed for day ${day.day}:`, error);
-        (day as any).quiz = [];
+        day.quiz = [];
       }
       
       console.log(`Day ${day.day} completed with ${day.learn.length} learn, ${day.practice.length} practice resources`);
@@ -917,8 +917,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Debug: Check if quiz data is included in the roadmap
     console.log('Final roadmap structure:');
     roadmap.days.forEach((day, index) => {
-      console.log(`Day ${day.day}: quiz exists:`, !!(day as any).quiz);
-      console.log(`Day ${day.day}: quiz length:`, (day as any).quiz?.length);
+      console.log(`Day ${day.day}: quiz exists:`, !!day.quiz);
+      console.log(`Day ${day.day}: quiz length:`, day.quiz?.length);
     });
     
     return roadmap;

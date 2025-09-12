@@ -459,7 +459,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
       >
         {(roadmap?.days ?? []).map((d, di) => {
           // Debug: Check if quiz data exists
-          console.log(`Day ${d.day} quiz data:`, (d as any).quiz);
+          console.log(`Day ${d.day} quiz data:`, d.quiz);
           
           const isCompletedDay = (day: number) => {
             const learnCompleted = d.learn.every((_, i) => isCompleted(day, "learn", i));
@@ -467,7 +467,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
             const reflectCompleted = isCompleted(day, "reflect", 0);
             
             // Check if quiz is required and completed
-            const quizRequired = (d as any).quiz && (d as any).quiz.length > 0;
+            const quizRequired = d.quiz && d.quiz.length > 0;
             const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-day-${day}`) === 'true' : true;
             
             return learnCompleted && practiceCompleted && reflectCompleted && quizCompleted;
@@ -1226,6 +1226,11 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                     </p>
                     
                     {(() => {
+                      // Only show quiz button if quiz exists for this day
+                      if (!d.quiz || d.quiz.length === 0) {
+                        return null;
+                      }
+                      
                       const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
                       const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
                       const isQuizCompleted = !!quizCompleted;
