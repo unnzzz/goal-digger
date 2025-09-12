@@ -781,8 +781,8 @@ export default function Dashboard() {
     const order: Record<DailyItem["section"], number> = { learn: 0, practice: 1, reflect: 2, quiz: 3 };
     return [...daily.items].sort((a, b) => {
       // First sort by completion status (incomplete first, completed last)
-      const aCompleted = !!a.completed;
-      const bCompleted = !!b.completed;
+      const aCompleted = isCompleted(a);
+      const bCompleted = isCompleted(b);
       if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
       
       // Then by goal title
