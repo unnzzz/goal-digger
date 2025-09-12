@@ -471,7 +471,17 @@ export default function GoalPage({ params }: { params: { id: string } }) {
             const quizRequired = d.quiz && d.quiz.length > 0;
             const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true' : true;
             
+            // Day is fully completed when all quests AND quiz (if required) are done
             return learnCompleted && practiceCompleted && reflectCompleted && quizCompleted;
+          };
+
+          const isQuizUnlocked = (day: number) => {
+            const learnCompleted = d.learn.every((_, i) => isCompleted(day, "learn", i));
+            const practiceCompleted = d.practice.every((_, i) => isCompleted(day, "practice", i));
+            const reflectCompleted = isCompleted(day, "reflect", 0);
+            
+            // Quiz is unlocked when all quests are completed
+            return learnCompleted && practiceCompleted && reflectCompleted;
           };
 
           const dayCompleted = isCompletedDay(d.day);
@@ -1220,7 +1230,7 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       fontSize: '14px', 
                       color: '#6B7280' 
                     }}>
-                      {dayCompleted 
+                      {isQuizUnlocked(d.day) 
                         ? "Test your knowledge! Score 80% or higher to unlock the next day's quests."
                         : "Complete all quests above to unlock this quiz."
                       }
@@ -1232,12 +1242,10 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                         return null;
                       }
                       
-                      const quizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
-                      const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
-                      const isQuizCompleted = !!quizCompleted;
-                      const isQuizPassed = !!quizPassed;
+                      const quizUnlocked = isQuizUnlocked(d.day);
+                      const quizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
                       
-                      if (isQuizPassed) {
+                      if (quizPassed) {
                         return (
                           <div style={{
                             background: 'linear-gradient(135deg, #10B981, #059669)',
@@ -1259,9 +1267,9 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       
                       return (
                         <button 
-                          disabled={!dayCompleted}
+                          disabled={!quizUnlocked}
                           style={{
-                            background: dayCompleted 
+                            background: quizUnlocked 
                               ? 'linear-gradient(135deg, #8B5CF6, #A855F7)' 
                               : '#D1D5DB',
                             color: 'white',
@@ -1270,34 +1278,34 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                             borderRadius: '8px',
                             fontSize: '14px',
                             fontWeight: '600',
-                            cursor: dayCompleted ? 'pointer' : 'not-allowed',
+                            cursor: quizUnlocked ? 'pointer' : 'not-allowed',
                             transition: 'all 0.2s ease',
-                            boxShadow: dayCompleted 
+                            boxShadow: quizUnlocked 
                               ? '0 4px 12px rgba(139, 92, 246, 0.3)' 
                               : 'none',
-                            opacity: dayCompleted ? 1 : 0.6
+                            opacity: quizUnlocked ? 1 : 0.6
                           }}
                           onMouseOver={(e) => {
-                            if (dayCompleted) {
+                            if (quizUnlocked) {
                               e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED, #9333EA)';
                               e.currentTarget.style.transform = 'translateY(-2px)';
                               e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
                             }
                           }}
                           onMouseOut={(e) => {
-                            if (dayCompleted) {
+                            if (quizUnlocked) {
                               e.currentTarget.style.background = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
                               e.currentTarget.style.transform = 'translateY(0)';
                               e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
                             }
                           }}
                           onClick={() => {
-                            if (dayCompleted) {
+                            if (quizUnlocked) {
                               window.open(`/quiz/${d.day}?goalId=${goal.id}`, '_blank');
                             }
                           }}
                         >
-                          {dayCompleted ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
+                          {quizUnlocked ? `Take Quiz (${d.day})` : `Complete Quests First (${d.day})`}
                         </button>
                       );
                     })()}
