@@ -469,7 +469,10 @@ export default function GoalPage({ params }: { params: { id: string } }) {
             
             // Check if quiz is required and completed
             const quizRequired = d.quiz && d.quiz.length > 0;
-            const quizCompleted = quizRequired ? localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`) === 'true' : true;
+            // Check both new format (with goalId) and old format (without goalId) for backward compatibility
+            const newQuizPassed = localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`) === 'true';
+            const oldQuizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
+            const quizCompleted = quizRequired ? (newQuizPassed || oldQuizPassed) : true;
             
             // Day is fully completed when all quests AND quiz (if required) are done
             return learnCompleted && practiceCompleted && reflectCompleted && quizCompleted;
@@ -1198,8 +1201,14 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                   console.log(`Day ${d.day} - full day data:`, d);
                   
                   // Check if quiz has been completed
-                  const quizCompleted = localStorage.getItem(`quiz-completed-${goal.id}-day-${d.day}`);
-                  const quizPassed = localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`);
+                  // Check both new format (with goalId) and old format (without goalId) for backward compatibility
+                  const newQuizCompleted = localStorage.getItem(`quiz-completed-${goal.id}-day-${d.day}`);
+                  const newQuizPassed = localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`);
+                  const oldQuizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
+                  const oldQuizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`);
+                  
+                  const quizCompleted = newQuizCompleted || oldQuizCompleted;
+                  const quizPassed = newQuizPassed || oldQuizPassed;
                   
                   return d.quiz && d.quiz.length > 0;
                 })() && (
@@ -1243,8 +1252,14 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                       }
                       
                       const quizUnlocked = isQuizUnlocked(d.day);
-                      const quizPassed = localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`) === 'true';
-                      const quizCompleted = localStorage.getItem(`quiz-completed-${goal.id}-day-${d.day}`);
+                      // Check both new format (with goalId) and old format (without goalId) for backward compatibility
+                      const newQuizPassed = localStorage.getItem(`quiz-passed-${goal.id}-day-${d.day}`) === 'true';
+                      const newQuizCompleted = localStorage.getItem(`quiz-completed-${goal.id}-day-${d.day}`);
+                      const oldQuizPassed = localStorage.getItem(`quiz-passed-day-${d.day}`) === 'true';
+                      const oldQuizCompleted = localStorage.getItem(`quiz-completed-day-${d.day}`);
+                      
+                      const quizPassed = newQuizPassed || oldQuizPassed;
+                      const quizCompleted = newQuizCompleted || oldQuizCompleted;
                       
                       // Quiz is completed if it has been attempted (regardless of score)
                       // Quiz is "passed" if score >= 80% (for coins and next day unlock)

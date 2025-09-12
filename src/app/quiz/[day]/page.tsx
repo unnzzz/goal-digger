@@ -36,8 +36,14 @@ export default function QuizPage() {
     }
     
     // Check if quiz has already been completed (any attempt)
-    const quizPassed = localStorage.getItem(`quiz-passed-${goalId}-day-${dayNumber}`) === 'true';
-    const quizCompleted = localStorage.getItem(`quiz-completed-${goalId}-day-${dayNumber}`);
+    // Check both new format (with goalId) and old format (without goalId) for backward compatibility
+    const newQuizPassed = localStorage.getItem(`quiz-passed-${goalId}-day-${dayNumber}`) === 'true';
+    const newQuizCompleted = localStorage.getItem(`quiz-completed-${goalId}-day-${dayNumber}`);
+    const oldQuizPassed = localStorage.getItem(`quiz-passed-day-${dayNumber}`) === 'true';
+    const oldQuizCompleted = localStorage.getItem(`quiz-completed-day-${dayNumber}`);
+    
+    const quizPassed = newQuizPassed || oldQuizPassed;
+    const quizCompleted = newQuizCompleted || oldQuizCompleted;
     
     if (quizPassed || quizCompleted) {
       // Quiz already completed, redirect back
