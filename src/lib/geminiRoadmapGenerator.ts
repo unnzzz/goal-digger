@@ -12,11 +12,27 @@ export async function generateRoadmapWithGemini(params: RoadmapParams, progressC
   try {
     console.log('Generating roadmap with direct scraping for:', params.goal);
     
+    // Check for abort signal
+    if (abortSignal?.aborted) {
+      throw new Error('Generation aborted');
+    }
+    
+    // Update progress
+    progressCallback?.(15, "Generating roadmap structure...");
+    
     // Use the direct scraping approach
     const roadmap = await generateRoadmapWithDirectScraping({
       goal: params.goal,
       days: params.total_days || 30
     });
+    
+    // Check for abort signal again
+    if (abortSignal?.aborted) {
+      throw new Error('Generation aborted');
+    }
+    
+    // Update progress
+    progressCallback?.(25, "Roadmap structure generated...");
     
     console.log('Direct roadmap generation completed successfully');
     return roadmap;
