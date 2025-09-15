@@ -38,12 +38,34 @@ interface RoadmapGenerationProviderProps {
 }
 
 export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps> = ({ children }) => {
-  const [generationState, setGenerationState] = useState<GenerationState>(generationService.getState());
-  const [goalName, setGoalName] = useState(generationService.getState().goalName);
+  const [generationState, setGenerationState] = useState<GenerationState>(() => {
+    // Initialize with current state, but don't trigger re-renders
+    const state = generationService.getState();
+    console.log('RoadmapGenerationContext: Initializing with state:', state);
+    return state;
+  });
+  const [goalName, setGoalName] = useState(() => {
+    const state = generationService.getState();
+    return state.goalName;
+  });
 
   // Subscribe to service updates
   useEffect(() => {
     console.log('RoadmapGenerationContext: Setting up subscription');
+    
+    // Use a small delay to ensure the service has had time to restore from localStorage
+    const syncWithService = () => {
+      const currentState = generationService.getState();
+      console.log('RoadmapGenerationContext: Current service state:', currentState);
+      setGenerationState(currentState);
+      setGoalName(currentState.goalName);
+    };
+    
+    // Sync immediately
+    syncWithService();
+    
+    // Also sync after a small delay to catch any state restoration
+    const timeoutId = setTimeout(syncWithService, 100);
     
     const unsubscribe = generationService.subscribe(() => {
       console.log('RoadmapGenerationContext: Received update from service');
@@ -55,6 +77,7 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
 
     return () => {
       console.log('RoadmapGenerationContext: Cleaning up subscription');
+      clearTimeout(timeoutId);
       unsubscribe();
     };
   }, []);
