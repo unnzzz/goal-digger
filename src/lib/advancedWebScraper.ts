@@ -374,7 +374,7 @@ class AdvancedWebScraper {
               url: href.startsWith('http') ? href : `https://vimeo.com${href}`,
               source: 'Vimeo',
               duration_minutes: 15,
-              description: this.extractDescription($, element, searchTerm)
+              description: this.extractDescription($, element, query)
             });
           }
         });
@@ -404,7 +404,7 @@ class AdvancedWebScraper {
               url: href.startsWith('http') ? href : `https://dailymotion.com${href}`,
               source: 'Dailymotion',
               duration_minutes: 15,
-              description: this.extractDescription($, element, searchTerm)
+              description: this.extractDescription($, element, query)
             });
           }
         });
@@ -714,7 +714,7 @@ class AdvancedWebScraper {
               url: href.startsWith('http') ? href : `https://reddit.com${href}`,
               source: 'Reddit',
               duration_minutes: 5,
-              description: this.extractDescription($, element, searchTerm)
+              description: this.extractDescription($, element, query)
             });
           }
         });
