@@ -333,7 +333,38 @@ class GenerationService {
       this.totalDays = state.totalDays;
       this.goalName = state.goalName;
       // Don't restore data/error as they might be stale
+      
+      // Resume the generation process
+      console.log('Resuming generation process for goal:', this.goal);
+      this.resumeGeneration();
     }
+  }
+
+  // Resume generation process
+  private resumeGeneration() {
+    if (!this.isGenerating || !this.goal) {
+      console.log('Cannot resume generation: not generating or no goal');
+      return;
+    }
+
+    console.log('Resuming generation with current state:', {
+      goal: this.goal,
+      progress: this.progress,
+      statusMessage: this.statusMessage
+    });
+
+    // Create new abort controller for resumed generation
+    this.controller = new AbortController();
+
+    // Prepare request data
+    const requestData = {
+      goal: this.goal,
+      daily_minutes: this.dailyMinutes,
+      total_days: this.totalDays,
+    };
+
+    // Resume the generation process
+    this.performGeminiGeneration(requestData);
   }
 
   // Destroy the service (cleanup)
