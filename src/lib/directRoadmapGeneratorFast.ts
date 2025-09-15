@@ -213,7 +213,7 @@ Return a JSON object with:
     }
     
     const content = JSON.parse(jsonText);
-    const slug = `${dayTitle.toLowerCase().replace(/\s+/g, '-')}-${contentType}-day-${dayNumber}`;
+    const slug = `${goal.toLowerCase().replace(/\s+/g, '-')}-day-${dayNumber}-${contentType}`;
     
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
