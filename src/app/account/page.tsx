@@ -104,6 +104,18 @@ export default function AccountPage(){
               📧 {me.email}
             </div>
             <div style={{
+              fontSize: '14px',
+              color: '#856404',
+              marginBottom: '16px',
+              padding: '8px 12px',
+              background: '#FFF3CD',
+              border: '1px solid #FFEAA7',
+              borderRadius: '6px',
+              fontFamily: "'Baloo Bhai', sans-serif"
+            }}>
+              📧 <strong>Email Notifications:</strong> Reminder and goal emails from Goal Digger might end up in your spam folder. Please check your spam folder too!
+            </div>
+            <div style={{
               fontSize: '18px',
               color: '#6B7280',
               marginBottom: '16px',

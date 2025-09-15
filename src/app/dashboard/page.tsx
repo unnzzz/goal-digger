@@ -1082,7 +1082,21 @@ export default function Dashboard() {
             </div>
           )}
           {!goalsLoading && !goalsErr && goals.length === 0 && (
-            <div className="meta">No goals yet. Generate a roadmap to get started.</div>
+            <div className="meta">
+              No goals yet. Generate a roadmap to get started.
+              <br />
+              <div style={{ 
+                marginTop: '12px', 
+                padding: '12px', 
+                background: '#FFF3CD', 
+                border: '1px solid #FFEAA7', 
+                borderRadius: '8px', 
+                fontSize: '14px',
+                color: '#856404'
+              }}>
+                📧 <strong>Email Notifications:</strong> Reminder and goal emails from Goal Digger might end up in your spam folder. Please check your spam folder too!
+              </div>
+            </div>
           )}
 
           <div

@@ -280,6 +280,20 @@ export default function Home() {
           </form>
         </div>
 
+        {/* Email Notification Notice */}
+        <div style={{
+          margin: '24px 0',
+          padding: '16px',
+          background: '#FFF3CD',
+          border: '1px solid #FFEAA7',
+          borderRadius: '12px',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#856404',
+          fontFamily: "'Baloo Bhai', sans-serif"
+        }}>
+          📧 <strong>Email Notifications:</strong> Reminder and goal emails from Goal Digger might end up in your spam folder. Please check your spam folder too!
+        </div>
 
           {/* Roadmap Display */}
       {data && (
