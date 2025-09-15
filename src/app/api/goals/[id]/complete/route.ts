@@ -30,15 +30,34 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Allow access to next day if current day's quiz has been completed
     let maxAllowedDay = todayN;
     if (dayNumber > todayN) {
-      // Check if the previous day's quiz was completed
+      // Check if the previous day's quiz was passed (80%+ score)
       const previousDay = dayNumber - 1;
       if (previousDay >= 1) {
-        // Check if previous day's quiz was completed (this would be in localStorage on client side)
-        // For now, we'll allow access to next day if it's only 1 day ahead
-        if (dayNumber === todayN + 1) {
-          maxAllowedDay = dayNumber;
-        } else {
-          return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
+        // Check if previous day's quiz was passed in the database
+        try {
+          const previousQuizCompletion = await prisma.quizCompletion.findFirst({
+            where: { 
+              userId: user.id, 
+              goalId, 
+              dayNumber: previousDay,
+              passed: true // Only allow if quiz was passed (80%+)
+            }
+          });
+          
+          if (previousQuizCompletion && dayNumber === todayN + 1) {
+            maxAllowedDay = dayNumber;
+          } else {
+            return NextResponse.json({ error: "You must pass the previous day's quiz (80%+) to unlock the next day" }, { status: 400 });
+          }
+        } catch (error) {
+          // QuizCompletion table might not exist yet
+          console.log('QuizCompletion table not available, checking localStorage via client');
+          // For now, allow access if it's only 1 day ahead (client will handle localStorage check)
+          if (dayNumber === todayN + 1) {
+            maxAllowedDay = dayNumber;
+          } else {
+            return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
+          }
         }
       } else {
         return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });

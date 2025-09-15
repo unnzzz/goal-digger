@@ -72,6 +72,79 @@ async function generateCreativePracticeExercises(dayTitle: string, dayNumber: nu
   return exercises;
 }
 
+// Generate daily quiz questions using Gemini
+async function generateDailyQuiz(dayTitle: string, dayNumber: number, goal: string): Promise<any[]> {
+  try {
+    const quizPrompt = `Create a 5-10 question multiple choice quiz about "${dayTitle}" for someone learning "${goal}".
+
+Requirements:
+- 5-10 questions total
+- Each question should have 4 multiple choice options (A, B, C, D)
+- Only one correct answer per question
+- Questions should test understanding of the day's topic
+- Include practical application questions
+- Make questions progressively challenging
+- Be specific to the goal and day topic
+
+Return a JSON array of questions:
+[
+  {
+    "question": "What is the main concept of ${dayTitle}?",
+    "options": {
+      "A": "Option 1",
+      "B": "Option 2", 
+      "C": "Option 3",
+      "D": "Option 4"
+    },
+    "correct": "A",
+    "explanation": "Brief explanation of why this is correct"
+  }
+]`;
+
+    const result = await model.generateContent(quizPrompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extract JSON from response
+    let jsonText = text;
+    if (text.includes('```json')) {
+      jsonText = text.split('```json')[1].split('```')[0].trim();
+    } else if (text.includes('```')) {
+      jsonText = text.split('```')[1].split('```')[0].trim();
+    }
+    
+    const quiz = JSON.parse(jsonText);
+    return quiz;
+  } catch (error) {
+    console.error('Quiz generation failed:', error);
+    // Return a simple fallback quiz
+    return [
+      {
+        question: `What did you learn about ${dayTitle} today?`,
+        options: {
+          "A": "Basic concepts",
+          "B": "Advanced techniques", 
+          "C": "Both A and B",
+          "D": "Nothing"
+        },
+        correct: "C",
+        explanation: "You should have learned both basic concepts and some advanced techniques."
+      },
+      {
+        question: `How confident do you feel about ${dayTitle}?`,
+        options: {
+          "A": "Very confident",
+          "B": "Somewhat confident",
+          "C": "Not very confident",
+          "D": "Not confident at all"
+        },
+        correct: "B",
+        explanation: "It's normal to feel somewhat confident as you're still learning."
+      }
+    ];
+  }
+}
+
 // Generate AI content for a specific day
 async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article'): Promise<ResourceT | null> {
   try {
@@ -344,21 +417,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Add practice exercises
     const practiceResources: ResourceT[] = practiceExercises;
     
-    // Create quiz questions
-    const quizQuestions = [
-      {
-        question: `What is the main focus of ${dayTitle}?`,
-        options: ['A', 'B', 'C', 'D'],
-        correct: 'A',
-        explanation: `The main focus of ${dayTitle} is...`
-      },
-      {
-        question: `Which technique is most important for ${dayTitle}?`,
-        options: ['A', 'B', 'C', 'D'],
-        correct: 'B',
-        explanation: `The most important technique for ${dayTitle} is...`
-      }
-    ];
+    // Generate quiz questions using AI
+    const quizQuestions = await generateDailyQuiz(dayTitle, dayNumber, goal);
     
     // Update the day with resources
     day.practice = practiceResources;
