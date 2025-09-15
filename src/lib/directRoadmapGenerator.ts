@@ -75,6 +75,8 @@ async function generateCreativePracticeExercises(dayTitle: string, dayNumber: nu
 // Generate AI content for a specific day
 async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'podcast'): Promise<ResourceT | null> {
   try {
+    console.log(`Generating ${contentType} for: ${dayTitle}`);
+    
     const prompt = `Create a comprehensive ${contentType} about "${dayTitle}" for someone learning "${goal}".
 
 Requirements:
@@ -94,6 +96,8 @@ Return ONLY a JSON object with this exact structure:
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+    
+    console.log(`${contentType} generation response:`, text.substring(0, 200) + '...');
     
     // Extract JSON from response
     let jsonText = text;
@@ -122,10 +126,11 @@ Return ONLY a JSON object with this exact structure:
     return cleanResource;
     
   } catch (error) {
-    console.error(`AI ${contentType} generation failed:`, error);
+    console.error(`AI ${contentType} generation failed for "${dayTitle}":`, error);
     
     // If quota exceeded, return a fallback content
     if (error instanceof Error && error.message && error.message.includes('429')) {
+      console.log(`Quota exceeded for ${contentType}, using fallback`);
       return {
         kind: contentType === 'podcast' ? 'listen' : 'read',
         title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
@@ -137,6 +142,7 @@ Return ONLY a JSON object with this exact structure:
       };
     }
     
+    console.log(`Returning null for failed ${contentType} generation`);
     return null;
   }
 }
@@ -223,8 +229,11 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     const practiceExercises = await generateCreativePracticeExercises(dayTitle, dayNumber, goal);
     
     // Generate AI content
+    console.log(`Generating AI content for day ${dayNumber}: ${dayTitle}`);
     const article = await generateGeminiContent(dayTitle, dayNumber, goal, 'article');
     const podcast = await generateGeminiContent(dayTitle, dayNumber, goal, 'podcast');
+    
+    console.log(`AI content results - Article: ${article ? 'SUCCESS' : 'FAILED'}, Podcast: ${podcast ? 'SUCCESS' : 'FAILED'}`);
     
     // Scrape real web resources via server-side API
     console.log(`Scraping resources for: ${dayTitle}`);
