@@ -118,92 +118,102 @@ export async function GET(req: NextRequest) {
       const rm = g.roadmapJson as unknown as RoadmapT | null;
       if (!rm || !Array.isArray(rm.days) || !rm.total_days) continue;
 
-      const dn = dayNumberFrom(new Date(g.startDate), todayISO);
-      if (dn < 1 || dn > rm.total_days) continue;
+      const currentDay = dayNumberFrom(new Date(g.startDate), todayISO);
+      if (currentDay < 1 || currentDay > rm.total_days) continue;
 
-      const day = rm.days.find((d) => d.day === dn) || rm.days[dn - 1];
-      if (!day) continue;
-
-      const completions = await prisma.questCompletion.findMany({
-        where: { userId: user.id, goalId: g.id, dayNumber: dn },
-        select: { section: true, index: true },
+      // Get all completions for this goal (all days)
+      const allCompletions = await prisma.questCompletion.findMany({
+        where: { userId: user.id, goalId: g.id },
+        select: { dayNumber: true, section: true, index: true },
       });
 
-      // Try to get quiz completions, but handle case where table doesn't exist yet
-      let quizCompletions: any[] = [];
+      // Get all quiz completions for this goal (all days)
+      let allQuizCompletions: any[] = [];
       try {
-        quizCompletions = await prisma.quizCompletion.findMany({
-          where: { userId: user.id, goalId: g.id, dayNumber: dn },
-          select: { passed: true },
+        allQuizCompletions = await prisma.quizCompletion.findMany({
+          where: { userId: user.id, goalId: g.id },
+          select: { dayNumber: true, passed: true },
         });
       } catch (error) {
-        // QuizCompletion table might not exist yet, use empty array
         console.log('QuizCompletion table not available yet, using empty array');
-        quizCompletions = [];
+        allQuizCompletions = [];
       }
 
-      const isCompleted = (section: "learn" | "practice" | "reflect", index: number) =>
-        completions.some((c) => c.section === section && c.index === index);
+      // Process all days up to and including the current day
+      for (let dn = 1; dn <= currentDay; dn++) {
+        const day = rm.days.find((d) => d.day === dn) || rm.days[dn - 1];
+        if (!day) continue;
 
-      const isQuizCompleted = () =>
-        quizCompletions.some((qc) => qc.passed);
+        // Get completions for this specific day
+        const dayCompletions = allCompletions.filter(c => c.dayNumber === dn);
+        const dayQuizCompletions = allQuizCompletions.filter(qc => qc.dayNumber === dn);
 
-      day.learn.forEach((r, i) => {
-        items.push({
-          goalId: g.id,
-          goalTitle: g.title,
-          dayNumber: dn,
-          section: "learn",
-          index: i,
-          kind: r.kind,
-          title: r.title,
-          url: r.url,
-          duration_minutes: r.duration_minutes ?? null,
-          split: r.split ?? null,
-          completed: isCompleted("learn", i),
-          description: r.description ?? undefined,
+        const isCompleted = (section: "learn" | "practice" | "reflect", index: number) =>
+          dayCompletions.some((c) => c.section === section && c.index === index);
+
+        const isQuizCompleted = () =>
+          dayQuizCompletions.some((qc) => qc.passed);
+
+        // Add learn resources
+        day.learn.forEach((r, i) => {
+          items.push({
+            goalId: g.id,
+            goalTitle: g.title,
+            dayNumber: dn,
+            section: "learn",
+            index: i,
+            kind: r.kind,
+            title: r.title,
+            url: r.url,
+            duration_minutes: r.duration_minutes ?? null,
+            split: r.split ?? null,
+            completed: isCompleted("learn", i),
+            description: r.description ?? undefined,
+          });
         });
-      });
 
-      day.practice.forEach((r, i) => {
-        items.push({
-          goalId: g.id,
-          goalTitle: g.title,
-          dayNumber: dn,
-          section: "practice",
-          index: i,
-          kind: r.kind,
-          title: r.title,
-          url: r.url,
-          duration_minutes: r.duration_minutes ?? null,
-          split: r.split ?? null,
-          completed: isCompleted("practice", i),
-          description: r.description ?? undefined,
+        // Add practice resources
+        day.practice.forEach((r, i) => {
+          items.push({
+            goalId: g.id,
+            goalTitle: g.title,
+            dayNumber: dn,
+            section: "practice",
+            index: i,
+            kind: r.kind,
+            title: r.title,
+            url: r.url,
+            duration_minutes: r.duration_minutes ?? null,
+            split: r.split ?? null,
+            completed: isCompleted("practice", i),
+            description: r.description ?? undefined,
+          });
         });
-      });
 
-      items.push({
-        goalId: g.id,
-        goalTitle: g.title,
-        dayNumber: dn,
-        section: "reflect",
-        index: 0,
-        reflectText: day.reflect,
-        completed: isCompleted("reflect", 0),
-      });
-
-      // Add quiz item if quiz exists for this day
-      if (day.quiz && day.quiz.length > 0) {
+        // Add reflect quest
         items.push({
           goalId: g.id,
           goalTitle: g.title,
           dayNumber: dn,
-          section: "quiz",
+          section: "reflect",
           index: 0,
-          title: `Quiz: Day ${dn}`,
-          completed: isQuizCompleted(),
-          quizData: day.quiz,
+          reflectText: day.reflect,
+          completed: isCompleted("reflect", 0),
         });
+
+        // Add quiz item if quiz exists for this day
+        if (day.quiz && day.quiz.length > 0) {
+          items.push({
+            goalId: g.id,
+            goalTitle: g.title,
+            dayNumber: dn,
+            section: "quiz",
+            index: 0,
+            title: `Quiz: Day ${dn}`,
+            completed: isQuizCompleted(),
+            quizData: day.quiz,
+          });
+        }
       }
     }
 
