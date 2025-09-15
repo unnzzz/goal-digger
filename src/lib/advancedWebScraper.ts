@@ -151,8 +151,12 @@ class AdvancedWebScraper {
   async searchYouTube(query: string, goal?: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
-    // Clean up the query and create comprehensive search variations
+    // Clean up the query but preserve goal context
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
+    
+    // If the query already contains the goal, use it as-is
+    const hasGoalContext = goal && query.toLowerCase().includes(goal.toLowerCase());
+    const finalQuery = hasGoalContext ? query : cleanQuery;
     
     // Create more specific search variations based on the goal context
     let searchVariations = [];
@@ -162,26 +166,26 @@ class AdvancedWebScraper {
       const mainGoal = goalWords[0] || goal.toLowerCase();
       
       searchVariations = [
-        `${mainGoal} ${cleanQuery} tutorial`,
-        `${mainGoal} ${cleanQuery} how to`,
-        `${cleanQuery} for ${mainGoal}`,
-        `${mainGoal} ${cleanQuery} beginner`,
-        `${mainGoal} ${cleanQuery} basics`,
-        `${mainGoal} ${cleanQuery} step by step`,
-        `${mainGoal} ${cleanQuery} course`,
-        `${mainGoal} ${cleanQuery} lesson`,
-        `${mainGoal} ${cleanQuery} guide`,
-        `${mainGoal} ${cleanQuery} explained`,
-        `${mainGoal} ${cleanQuery} introduction`,
-        `${mainGoal} ${cleanQuery} masterclass`,
-        `${mainGoal} ${cleanQuery} workshop`,
-        `${mainGoal} ${cleanQuery} training`,
-        `${mainGoal} ${cleanQuery} walkthrough`,
-        `${cleanQuery} tutorial ${mainGoal}`,
-        `${cleanQuery} how to ${mainGoal}`,
-        `${cleanQuery} ${mainGoal} guide`,
-        `${cleanQuery} ${mainGoal} course`,
-        `${cleanQuery} ${mainGoal} lesson`
+        `${mainGoal} ${finalQuery} tutorial`,
+        `${mainGoal} ${finalQuery} how to`,
+        `${finalQuery} for ${mainGoal}`,
+        `${mainGoal} ${finalQuery} beginner`,
+        `${mainGoal} ${finalQuery} basics`,
+        `${mainGoal} ${finalQuery} step by step`,
+        `${mainGoal} ${finalQuery} course`,
+        `${mainGoal} ${finalQuery} lesson`,
+        `${mainGoal} ${finalQuery} guide`,
+        `${mainGoal} ${finalQuery} explained`,
+        `${mainGoal} ${finalQuery} introduction`,
+        `${mainGoal} ${finalQuery} masterclass`,
+        `${mainGoal} ${finalQuery} workshop`,
+        `${mainGoal} ${finalQuery} training`,
+        `${mainGoal} ${finalQuery} walkthrough`,
+        `${finalQuery} tutorial ${mainGoal}`,
+        `${finalQuery} how to ${mainGoal}`,
+        `${finalQuery} ${mainGoal} guide`,
+        `${finalQuery} ${mainGoal} course`,
+        `${finalQuery} ${mainGoal} lesson`
       ];
     } else {
       searchVariations = [
@@ -424,8 +428,12 @@ class AdvancedWebScraper {
   async searchArticles(query: string, goal?: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
-    // Clean up the query and create comprehensive search variations
+    // Clean up the query but preserve goal context
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
+    
+    // If the query already contains the goal, use it as-is
+    const hasGoalContext = goal && query.toLowerCase().includes(goal.toLowerCase());
+    const finalQuery = hasGoalContext ? query : cleanQuery;
     
     // Create more specific search variations based on the goal context
     let searchVariations = [];
@@ -435,26 +443,26 @@ class AdvancedWebScraper {
       const mainGoal = goalWords[0] || goal.toLowerCase();
       
       searchVariations = [
-        `${mainGoal} ${cleanQuery} tutorial`,
-        `${mainGoal} ${cleanQuery} guide`,
-        `${mainGoal} ${cleanQuery} how to`,
-        `${cleanQuery} for ${mainGoal}`,
-        `${mainGoal} ${cleanQuery} beginner`,
-        `${mainGoal} ${cleanQuery} basics`,
-        `${mainGoal} ${cleanQuery} step by step`,
-        `${mainGoal} ${cleanQuery} course`,
-        `${mainGoal} ${cleanQuery} lesson`,
-        `${mainGoal} ${cleanQuery} explained`,
-        `${mainGoal} ${cleanQuery} introduction`,
-        `${mainGoal} ${cleanQuery} comprehensive guide`,
-        `${mainGoal} ${cleanQuery} detailed tutorial`,
-        `${mainGoal} ${cleanQuery} masterclass`,
-        `${mainGoal} ${cleanQuery} workshop`,
-        `${mainGoal} ${cleanQuery} training`,
-        `${cleanQuery} tutorial ${mainGoal}`,
-        `${cleanQuery} guide ${mainGoal}`,
-        `${cleanQuery} how to ${mainGoal}`,
-        `${cleanQuery} ${mainGoal} course`
+        `${mainGoal} ${finalQuery} tutorial`,
+        `${mainGoal} ${finalQuery} guide`,
+        `${mainGoal} ${finalQuery} how to`,
+        `${finalQuery} for ${mainGoal}`,
+        `${mainGoal} ${finalQuery} beginner`,
+        `${mainGoal} ${finalQuery} basics`,
+        `${mainGoal} ${finalQuery} step by step`,
+        `${mainGoal} ${finalQuery} course`,
+        `${mainGoal} ${finalQuery} lesson`,
+        `${mainGoal} ${finalQuery} explained`,
+        `${mainGoal} ${finalQuery} introduction`,
+        `${mainGoal} ${finalQuery} comprehensive guide`,
+        `${mainGoal} ${finalQuery} detailed tutorial`,
+        `${mainGoal} ${finalQuery} masterclass`,
+        `${mainGoal} ${finalQuery} workshop`,
+        `${mainGoal} ${finalQuery} training`,
+        `${finalQuery} tutorial ${mainGoal}`,
+        `${finalQuery} guide ${mainGoal}`,
+        `${finalQuery} how to ${mainGoal}`,
+        `${finalQuery} ${mainGoal} course`
       ];
     } else {
       searchVariations = [

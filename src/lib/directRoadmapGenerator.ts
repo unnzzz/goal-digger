@@ -297,10 +297,15 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Scrape real web resources via server-side API
     console.log(`Scraping resources for: ${dayTitle}`);
     
+    // Create goal-specific search queries
+    const watchQuery = `${goal} ${dayTitle}`;
+    const readQuery = `${goal} ${dayTitle}`;
+    const listenQuery = `${goal} ${dayTitle}`;
+    
     const [watchResponse, readResponse, listenResponse] = await Promise.all([
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=watch&goal=${encodeURIComponent(goal)}`),
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=read&goal=${encodeURIComponent(goal)}`),
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=listen&goal=${encodeURIComponent(goal)}`)
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(watchQuery)}&type=watch&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(readQuery)}&type=read&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(listenQuery)}&type=listen&goal=${encodeURIComponent(goal)}`)
     ]);
     
     const watchData = await watchResponse.json();
