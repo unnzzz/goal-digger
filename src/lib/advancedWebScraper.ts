@@ -250,7 +250,7 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-                description: this.extractDescription($, element, searchTerm)
+                description: this.extractDescription($, element, query)
               });
             }
           }
@@ -301,7 +301,7 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-                description: this.extractDescription($, element, searchTerm)
+                description: this.extractDescription($, element, query)
               });
             }
           }
@@ -343,7 +343,7 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-                description: this.extractDescription($, element, searchTerm)
+                description: this.extractDescription($, element, query)
               });
             }
           }
@@ -545,7 +545,7 @@ class AdvancedWebScraper {
                     url: href,
                     source: url.hostname,
                     duration_minutes: 10,
-                    description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 8)
+                    description: this.extractDescription($, element, query) + Math.floor(Math.random() * 8)
                   });
                 }
               } catch (e) {
