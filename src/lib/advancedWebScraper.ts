@@ -751,24 +751,30 @@ class AdvancedWebScraper {
         results = await this.searchArticles(query, goal);
         console.log(`Article search found ${results.length} results`);
         
+        // Filter out any YouTube videos that might have been returned
+        results = results.filter(result => !result.url.includes('youtube.com') && !result.url.includes('youtu.be'));
+        
         // If article search fails, try alternative sources
         if (results.length === 0) {
           console.log('Article search failed, trying alternative sources...');
           results = await this.searchAlternativeArticles(query);
+          // Filter out YouTube videos from alternative sources too
+          results = results.filter(result => !result.url.includes('youtube.com') && !result.url.includes('youtu.be'));
         }
       } else if (type === 'listen') {
         // Try to find real podcast resources
         results = await this.searchPodcasts(query);
         console.log(`Podcast search found ${results.length} results`);
         
-        // If no real podcasts found, generate search links
+        // If no real podcasts found, generate better podcast URLs
         if (results.length === 0) {
           results = [
             {
               title: `${query} Podcast Episode`,
-              url: `https://spotify.com/search/${encodeURIComponent(query)}`,
+              url: `https://open.spotify.com/search/${encodeURIComponent(query)}`,
               source: 'Spotify',
-              duration_minutes: 20
+              duration_minutes: 20,
+              description: `Listen to podcasts about ${query.toLowerCase()} on Spotify`
             }
           ];
         }

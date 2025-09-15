@@ -322,6 +322,20 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     learnResources.push(...readResources.slice(0, 1));
     learnResources.push(...listenResources.slice(0, 1));
     
+    // Remove duplicates based on URL
+    const seenUrls = new Set<string>();
+    const uniqueResources: ResourceT[] = [];
+    
+    for (const resource of learnResources) {
+      if (!seenUrls.has(resource.url)) {
+        seenUrls.add(resource.url);
+        uniqueResources.push(resource);
+      }
+    }
+    
+    // Update the day with unique resources
+    day.learn = uniqueResources;
+    
     // Add practice exercises
     const practiceResources: ResourceT[] = practiceExercises;
     
@@ -342,7 +356,6 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     ];
     
     // Update the day with resources
-    day.learn = learnResources;
     day.practice = practiceResources;
     day.quiz = quizQuestions;
   }
