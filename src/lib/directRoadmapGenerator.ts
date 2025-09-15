@@ -111,12 +111,15 @@ Return ONLY a JSON object with this exact structure:
     
     // Create a slug for the content
     const slug = `${goal.toLowerCase().replace(/\s+/g, '-')}-day-${dayNumber}-${contentType}`;
+    const url = `/ai-content/${slug}`;
+    
+    console.log(`Generated ${contentType} URL: ${url}`);
     
     // Return clean structure without problematic keys
     const cleanResource = {
       kind: contentType === 'podcast' ? 'listen' as const : 'read' as const,
       title: content.title,
-      url: `/ai-content/${slug}`,
+      url: url,
       source: content.source,
       duration_minutes: contentType === 'podcast' ? 20 : 15,
       description: content.content.substring(0, 200) + '...',
