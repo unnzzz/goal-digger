@@ -169,6 +169,12 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
       const contentKey = `ai-content-${slug}`;
+      
+      // For podcasts, add audio URL
+      if (contentType === 'podcast') {
+        content.audioUrl = `/api/tts?text=${encodeURIComponent(content.content)}&voice=en-US-Standard-A`;
+      }
+      
       localStorage.setItem(contentKey, JSON.stringify(content));
       console.log(`Stored AI content in localStorage with key: ${contentKey}`);
     }

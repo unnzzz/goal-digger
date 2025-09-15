@@ -177,9 +177,27 @@ export default function AIContentPage() {
               textAlign: 'center'
             }}>
               <p style={{ margin: '0 0 15px 0', color: '#1E40AF' }}>
-                <strong>Note:</strong> This is a text-based podcast script. For audio playback, 
-                use a text-to-speech tool or read it aloud.
+                <strong>Listen to the podcast:</strong> Click below to hear the full audio version.
               </p>
+              <button
+                onClick={() => {
+                  const ttsUrl = `/api/tts?text=${encodeURIComponent(content?.content || '')}&voice=en-US-Standard-A`;
+                  window.open(ttsUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                }}
+                style={{
+                  background: '#3B82F6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                🎧 Listen to Podcast
+              </button>
               <button
                 onClick={() => {
                   if ('speechSynthesis' in window) {
@@ -192,17 +210,17 @@ export default function AIContentPage() {
                   }
                 }}
                 style={{
-                  background: '#3B82F6',
+                  background: '#10B981',
                   color: 'white',
                   border: 'none',
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                  fontSize: '16px',
                   fontWeight: '600',
                   cursor: 'pointer'
                 }}
               >
-                🔊 Play Audio
+                🔊 Quick Play
               </button>
             </div>
           </div>
