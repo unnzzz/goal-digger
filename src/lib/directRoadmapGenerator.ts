@@ -33,23 +33,6 @@ const model = genAI.getGenerativeModel({
   }
 });
 
-// Generate generic day topics for fallback
-function generateGenericTopics(totalDays: number): string[] {
-  const genericTopics = [
-    'Introduction and Basics',
-    'Fundamental Concepts',
-    'Core Techniques',
-    'Practical Applications',
-    'Advanced Methods',
-    'Problem Solving',
-    'Best Practices and Industry Standards',
-    'Tools and Resources',
-    'Project-Based Learning',
-    'Review and Mastery'
-  ];
-  
-  return genericTopics.slice(0, totalDays);
-}
 
 // Generate creative practice exercises for each day
 async function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, goal: string): Promise<any[]> {
@@ -165,21 +148,76 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
   const { goal, days } = params;
   const totalDays = Math.min(days, 30); // Cap at 30 days
   
-  // Generate day topics
-  const topics = generateGenericTopics(totalDays);
-  
-  const roadmap: RoadmapT = {
-    goal,
-    total_days: totalDays,
-    daily_minutes: 60,
-    days: []
-  };
-  
-  for (let i = 0; i < totalDays; i++) {
-    const dayNumber = i + 1;
-    const dayTitle = `Day ${dayNumber}: ${topics[i]}`;
+  // Generate specific day topics using AI
+  const structurePrompt = `Generate a detailed learning roadmap for: "${goal}"
+Total days: ${totalDays}
+
+Create a JSON roadmap structure with:
+- Each day has a UNIQUE, SPECIFIC topic related to the goal
+- Focus on practical, actionable learning with clear progression
+- Progress from beginner to intermediate
+- Each day title should be DISTINCT and describe a specific skill/concept
+- Avoid generic titles like "basics" or "fundamentals" - be specific
+
+EXAMPLES of good specific titles for horse riding:
+- "Horse Grooming and Basic Care Techniques"
+- "Mounting and Dismounting Safely"
+- "Basic Walk and Halt Commands"
+- "Trotting: Finding Your Rhythm"
+- "Cantering: The Three-Beat Gait"
+- "Jumping Basics: Approach and Takeoff"
+- "Trail Riding Safety and Navigation"
+
+IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations. Just the raw JSON object.
+
+{
+  "goal": "${goal}",
+  "total_days": ${totalDays},
+  "daily_minutes": 60,
+  "days": [
+    {
+      "day": 1,
+      "title": "Specific, unique topic title",
+      "minutes": 60,
+      "learn": [],
+      "practice": [],
+      "reflect": "Specific reflection question about today's learning"
+    }
+  ]
+}`;
+
+  let roadmap: RoadmapT;
+  try {
+    const result = await model.generateContent(structurePrompt);
+    const response = await result.response;
+    const text = response.text();
     
-    console.log(`Processing day ${dayNumber}: ${topics[i]}`);
+    let roadmapJson = text;
+    if (text.includes('```json')) {
+      roadmapJson = text.split('```json')[1].split('```')[0].trim();
+    } else if (text.includes('```')) {
+      roadmapJson = text.split('```')[1].split('```')[0].trim();
+    }
+    
+    roadmap = JSON.parse(roadmapJson);
+  } catch (error) {
+    console.error('Failed to generate roadmap structure:', error);
+    // Fallback to basic structure
+    roadmap = {
+      goal,
+      total_days: totalDays,
+      daily_minutes: 60,
+      days: []
+    };
+  }
+  
+  // Process each day to add resources
+  for (let i = 0; i < roadmap.days.length; i++) {
+    const day = roadmap.days[i];
+    const dayNumber = day.day;
+    const dayTitle = day.title;
+    
+    console.log(`Processing day ${dayNumber}: ${dayTitle}`);
     
     // Generate practice exercises
     const practiceExercises = await generateCreativePracticeExercises(dayTitle, dayNumber, goal);
@@ -189,12 +227,12 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
     const podcast = await generateGeminiContent(dayTitle, dayNumber, goal, 'podcast');
     
     // Scrape real web resources via server-side API
-    console.log(`Scraping resources for: ${topics[i]}`);
+    console.log(`Scraping resources for: ${dayTitle}`);
     
     const [watchResponse, readResponse, listenResponse] = await Promise.all([
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=watch&goal=${encodeURIComponent(goal)}`),
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=read&goal=${encodeURIComponent(goal)}`),
-      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=listen&goal=${encodeURIComponent(goal)}`)
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=watch&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=read&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(dayTitle)}&type=listen&goal=${encodeURIComponent(goal)}`)
     ]);
     
     const watchData = await watchResponse.json();
@@ -220,36 +258,26 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
     // Add practice exercises
     const practiceResources: ResourceT[] = practiceExercises;
     
-    // Create reflect prompt
-    const reflectPrompt = `Reflect on what you learned about "${topics[i]}" today. What was the most important concept? How will you apply it? What questions do you still have?`;
-    
     // Create quiz questions
     const quizQuestions = [
       {
-        question: `What is the main focus of ${topics[i]}?`,
+        question: `What is the main focus of ${dayTitle}?`,
         options: ['A', 'B', 'C', 'D'],
         correct: 'A',
-        explanation: `The main focus of ${topics[i]} is...`
+        explanation: `The main focus of ${dayTitle} is...`
       },
       {
-        question: `Which technique is most important for ${topics[i]}?`,
+        question: `Which technique is most important for ${dayTitle}?`,
         options: ['A', 'B', 'C', 'D'],
         correct: 'B',
-        explanation: `The most important technique for ${topics[i]} is...`
+        explanation: `The most important technique for ${dayTitle} is...`
       }
     ];
     
-    const day = {
-      day: dayNumber,
-      title: dayTitle,
-      minutes: 60,
-      learn: learnResources,
-      practice: practiceResources,
-      reflect: reflectPrompt,
-      quiz: quizQuestions
-    };
-    
-    roadmap.days.push(day);
+    // Update the day with resources
+    day.learn = learnResources;
+    day.practice = practiceResources;
+    day.quiz = quizQuestions;
   }
   
   return roadmap;
