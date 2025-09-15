@@ -44,8 +44,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             }
           });
           
-          if (previousQuizCompletion && dayNumber === todayN + 1) {
-            maxAllowedDay = dayNumber;
+          if (previousQuizCompletion) {
+            maxAllowedDay = dayNumber; // Allow access to any future day if previous day quiz was passed
           } else {
             return NextResponse.json({ error: "You must pass the previous day's quiz (80%+) to unlock the next day" }, { status: 400 });
           }
