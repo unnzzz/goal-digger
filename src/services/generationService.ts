@@ -31,6 +31,30 @@ class GenerationService {
         console.error('Error in generation service listener:', error);
       }
     });
+    
+    // Save state to localStorage
+    this.saveState();
+  }
+
+  // Save current state to localStorage
+  private saveState() {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const state = {
+        isGenerating: this.isGenerating,
+        progress: this.progress,
+        statusMessage: this.statusMessage,
+        goal: this.goal,
+        dailyMinutes: this.dailyMinutes,
+        totalDays: this.totalDays,
+        goalName: this.goalName,
+        // Don't save data/error as they might be large
+      };
+      localStorage.setItem('generationServiceState', JSON.stringify(state));
+    } catch (error) {
+      console.error('Failed to save generation state:', error);
+    }
   }
 
   // Get current state
@@ -209,6 +233,9 @@ class GenerationService {
       console.log('GenerationService: Gemini generation completed successfully');
       this.notify();
       
+      // Clear saved state since generation is complete
+      this.clearSavedState();
+      
     } catch (e: any) {
       // Check if the error is due to abortion
       if (e.name === 'AbortError' || e.message?.includes('aborted')) {
@@ -224,6 +251,9 @@ class GenerationService {
       this.error = e?.message || "Generation failed";
       this.isGenerating = false;
       this.notify();
+      
+      // Clear saved state since generation failed
+      this.clearSavedState();
     }
   }
 
@@ -251,6 +281,20 @@ class GenerationService {
     this.totalDays = 10;
     this.goalName = '';
     this.notify();
+    
+    // Clear saved state
+    this.clearSavedState();
+  }
+
+  // Clear saved state from localStorage
+  private clearSavedState() {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.removeItem('generationServiceState');
+    } catch (error) {
+      console.error('Failed to clear generation state:', error);
+    }
   }
 
   // Set goal name
@@ -272,6 +316,11 @@ class GenerationService {
     return !this.isDestroyed;
   }
 
+  // Check if there's an ongoing generation
+  hasOngoingGeneration() {
+    return this.isGenerating;
+  }
+
   // Destroy the service (cleanup)
   destroy() {
     this.isDestroyed = true;
@@ -290,6 +339,29 @@ function getGenerationService(): GenerationService {
   if (!generationServiceInstance) {
     console.log('Creating new GenerationService instance');
     generationServiceInstance = new GenerationService();
+    
+    // Restore state from localStorage if available
+    if (typeof window !== 'undefined') {
+      try {
+        const savedState = localStorage.getItem('generationServiceState');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          if (state.isGenerating) {
+            console.log('Restoring generation state from localStorage:', state);
+            generationServiceInstance.isGenerating = state.isGenerating;
+            generationServiceInstance.progress = state.progress;
+            generationServiceInstance.statusMessage = state.statusMessage;
+            generationServiceInstance.goal = state.goal;
+            generationServiceInstance.dailyMinutes = state.dailyMinutes;
+            generationServiceInstance.totalDays = state.totalDays;
+            generationServiceInstance.goalName = state.goalName;
+            // Don't restore data/error as they might be stale
+          }
+        }
+      } catch (error) {
+        console.log('Failed to restore generation state:', error);
+      }
+    }
   } else {
     console.log('Using existing GenerationService instance, current state:', generationServiceInstance.getState());
   }
