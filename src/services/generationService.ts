@@ -93,8 +93,8 @@ class GenerationService {
         return;
       }
       
-      this.statusMessage = "Generating roadmap structure...";
-      this.progress = 10;
+      this.statusMessage = "Initializing roadmap generation...";
+      this.progress = 5;
       this.notify();
 
       // Import the Gemini generator
@@ -106,8 +106,8 @@ class GenerationService {
         return;
       }
       
-      this.statusMessage = "Creating daily learning topics...";
-      this.progress = 20;
+      this.statusMessage = "Generating roadmap structure...";
+      this.progress = 10;
       this.notify();
 
       // Generate roadmap with Gemini and web scraping
@@ -128,48 +128,77 @@ class GenerationService {
         return;
       }
       
-      this.statusMessage = "Finding real resources...";
-      this.progress = 30;
+      this.statusMessage = "Creating daily learning topics...";
+      this.progress = 20;
       this.notify();
 
-      // Simulate progress during resource finding
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Simulate progress during topic creation
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during resource finding');
+        console.log('GenerationService: Generation was aborted during topic creation');
         return;
       }
       
-      this.statusMessage = "Scraping educational content...";
-      this.progress = 50;
+      this.statusMessage = "Generating AI content...";
+      this.progress = 40;
       this.notify();
 
-      // Simulate progress during scraping
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Simulate progress during AI content generation
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during scraping');
+        console.log('GenerationService: Generation was aborted during AI content generation');
         return;
       }
       
-      this.statusMessage = "Processing daily resources...";
-      this.progress = 70;
+      this.statusMessage = "Scraping real resources...";
+      this.progress = 60;
       this.notify();
 
-      // Simulate progress during processing
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Simulate progress during resource scraping
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during processing');
+        console.log('GenerationService: Generation was aborted during resource scraping');
+        return;
+      }
+      
+      this.statusMessage = "Generating practice exercises...";
+      this.progress = 75;
+      this.notify();
+
+      // Simulate progress during practice generation
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during practice generation');
+        return;
+      }
+      
+      this.statusMessage = "Creating quiz questions...";
+      this.progress = 85;
+      this.notify();
+
+      // Simulate progress during quiz generation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Check if generation was aborted
+      if (this.controller?.signal.aborted) {
+        console.log('GenerationService: Generation was aborted during quiz generation');
         return;
       }
       
       this.statusMessage = "Finalizing roadmap...";
-      this.progress = 90;
+      this.progress = 95;
       this.notify();
+
+      // Simulate final processing
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       this.data = result;
       this.statusMessage = "Complete!";
