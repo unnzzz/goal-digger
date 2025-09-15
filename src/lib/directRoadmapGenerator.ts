@@ -83,8 +83,10 @@ Requirements:
 - Make it educational and practical
 - Include specific examples and actionable advice
 - Write in an engaging, conversational tone
-- Length: ${contentType === 'article' ? '800-1200' : '15-20'} words
+- Length: ${contentType === 'article' ? '800-1200' : '400-600'} words
 - Focus on the specific topic: ${dayTitle}
+- For podcast: Write as a conversational script that can be read aloud
+- For article: Write as a detailed, well-structured article
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -122,17 +124,29 @@ Return ONLY a JSON object with this exact structure:
     let content;
     try {
       content = JSON.parse(jsonText);
+      console.log(`Successfully parsed ${contentType} content:`, content);
     } catch (parseError) {
-      console.error(`JSON parsing failed, creating fallback content for ${contentType}`);
-      // Create fallback content from the raw text
+      console.error(`JSON parsing failed for ${contentType}, trying to extract content manually:`, parseError);
+      
+      // Try to extract content more aggressively
       const titleMatch = jsonText.match(/"title":\s*"([^"]+)"/);
       const contentMatch = jsonText.match(/"content":\s*"([^"]+)"/);
       
-      content = {
-        title: titleMatch ? titleMatch[1] : `${dayTitle} - ${contentType === 'article' ? 'Article' : 'Podcast'}`,
-        content: contentMatch ? contentMatch[1] : `Learn about ${dayTitle} for ${goal}. This is AI-generated content about ${dayTitle}.`,
-        source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
-      };
+      if (titleMatch && contentMatch) {
+        content = {
+          title: titleMatch[1],
+          content: contentMatch[1],
+          source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
+        };
+        console.log(`Successfully extracted ${contentType} content manually:`, content);
+      } else {
+        console.error(`Could not extract content, using fallback for ${contentType}`);
+        content = {
+          title: `${dayTitle} - ${contentType === 'article' ? 'Article' : 'Podcast'}`,
+          content: `Learn about ${dayTitle} for ${goal}. This is AI-generated content about ${dayTitle}.`,
+          source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
+        };
+      }
     }
     
     // Create a slug for the content
