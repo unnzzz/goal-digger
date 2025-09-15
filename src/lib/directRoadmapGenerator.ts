@@ -75,29 +75,44 @@ async function generateCreativePracticeExercises(dayTitle: string, dayNumber: nu
 // Generate daily quiz questions using Gemini
 async function generateDailyQuiz(dayTitle: string, dayNumber: number, goal: string): Promise<any[]> {
   try {
-    const quizPrompt = `Create a 5-10 question multiple choice quiz about "${dayTitle}" for someone learning "${goal}".
+    console.log(`Generating quiz for: ${dayTitle} (Day ${dayNumber}) - Goal: ${goal}`);
+    
+    const quizPrompt = `You are an expert educator creating a comprehensive quiz for someone learning "${goal}" on day ${dayNumber} about "${dayTitle}".
 
-Requirements:
-- 5-10 questions total
-- Each question should have 4 multiple choice options (A, B, C, D)
-- Only one correct answer per question
-- Questions should test understanding of the day's topic
-- Include practical application questions
-- Make questions progressively challenging
-- Be specific to the goal and day topic
+Create exactly 8 high-quality multiple choice questions that test practical knowledge and understanding.
 
-Return a JSON array of questions:
+QUESTION REQUIREMENTS:
+- Each question must be specific to the goal "${goal}" and topic "${dayTitle}"
+- Test practical application, not just memorization
+- Include beginner, intermediate, and advanced questions
+- Questions should be clear and unambiguous
+- Avoid obvious or trick questions
+
+ANSWER REQUIREMENTS:
+- Each question has exactly 4 options (A, B, C, D)
+- Only ONE correct answer per question
+- Wrong answers should be plausible but clearly incorrect
+- Options should be similar in length and complexity
+- Avoid "All of the above" or "None of the above" options
+
+EXPLANATION REQUIREMENTS:
+- Provide clear, educational explanations for the correct answer
+- Explain why other options are wrong
+- Include practical tips or additional context
+- Keep explanations concise but informative
+
+Return ONLY a valid JSON array with this exact structure:
 [
   {
-    "question": "What is the main concept of ${dayTitle}?",
+    "question": "Specific question about the topic",
     "options": {
-      "A": "Option 1",
-      "B": "Option 2", 
-      "C": "Option 3",
-      "D": "Option 4"
+      "A": "First option",
+      "B": "Second option",
+      "C": "Third option", 
+      "D": "Fourth option"
     },
     "correct": "A",
-    "explanation": "Brief explanation of why this is correct"
+    "explanation": "Clear explanation of why this is correct and why others are wrong"
   }
 ]`;
 
@@ -105,41 +120,129 @@ Return a JSON array of questions:
     const response = await result.response;
     const text = response.text();
     
-    // Extract JSON from response
+    console.log('Raw AI response for quiz:', text.substring(0, 300) + '...');
+    
+    // Multiple attempts to extract JSON
     let jsonText = text;
+    
+    // Method 1: Look for ```json blocks
     if (text.includes('```json')) {
-      jsonText = text.split('```json')[1].split('```')[0].trim();
-    } else if (text.includes('```')) {
-      jsonText = text.split('```')[1].split('```')[0].trim();
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+    }
+    // Method 2: Look for ``` blocks
+    else if (text.includes('```')) {
+      const codeMatch = text.match(/```\s*([\s\S]*?)\s*```/);
+      if (codeMatch) {
+        jsonText = codeMatch[1].trim();
+      }
+    }
+    // Method 3: Look for array pattern
+    else {
+      const arrayMatch = text.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        jsonText = arrayMatch[0];
+      }
     }
     
+    // Clean up common issues
+    jsonText = jsonText
+      .replace(/^[^{[]*/, '') // Remove text before first [ or {
+      .replace(/[^}\]]*$/, '') // Remove text after last } or ]
+      .trim();
+    
+    console.log('Extracted JSON for quiz:', jsonText.substring(0, 200) + '...');
+    
     const quiz = JSON.parse(jsonText);
+    
+    // Validate quiz structure
+    if (!Array.isArray(quiz) || quiz.length === 0) {
+      throw new Error('Invalid quiz format: not an array or empty');
+    }
+    
+    // Validate each question
+    for (let i = 0; i < quiz.length; i++) {
+      const q = quiz[i];
+      if (!q.question || !q.options || !q.correct || !q.explanation) {
+        throw new Error(`Invalid question ${i}: missing required fields`);
+      }
+      if (!['A', 'B', 'C', 'D'].includes(q.correct)) {
+        throw new Error(`Invalid question ${i}: correct answer must be A, B, C, or D`);
+      }
+      if (!q.options.A || !q.options.B || !q.options.C || !q.options.D) {
+        throw new Error(`Invalid question ${i}: missing options A, B, C, or D`);
+      }
+    }
+    
+    console.log('Quiz generated successfully:', quiz.length, 'questions');
     return quiz;
+    
   } catch (error) {
     console.error('Quiz generation failed:', error);
-    // Return a simple fallback quiz
+    console.log('Using fallback quiz for:', dayTitle);
+    
+    // Return a contextual fallback quiz
+    const coreTopic = dayTitle.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
+    const goalWords = goal.toLowerCase().split(' ').filter(word => word.length > 3);
+    const mainGoal = goalWords[0] || 'learning';
+    
     return [
       {
-        question: `What did you learn about ${dayTitle} today?`,
+        question: `What is the primary focus of ${coreTopic} in ${goal}?`,
         options: {
-          "A": "Basic concepts",
-          "B": "Advanced techniques", 
-          "C": "Both A and B",
-          "D": "Nothing"
+          "A": `Understanding basic ${mainGoal} concepts`,
+          "B": `Mastering advanced ${mainGoal} techniques`, 
+          "C": `Both foundational and practical ${mainGoal} skills`,
+          "D": `Memorizing ${mainGoal} terminology only`
         },
         correct: "C",
-        explanation: "You should have learned both basic concepts and some advanced techniques."
+        explanation: `Effective ${goal} learning requires both foundational understanding and practical application skills.`
       },
       {
-        question: `How confident do you feel about ${dayTitle}?`,
+        question: `Which approach is most effective for learning ${coreTopic}?`,
         options: {
-          "A": "Very confident",
-          "B": "Somewhat confident",
-          "C": "Not very confident",
-          "D": "Not confident at all"
+          "A": "Reading theory only",
+          "B": "Practicing without understanding", 
+          "C": "Combining theory with hands-on practice",
+          "D": "Watching videos passively"
         },
-        correct: "B",
-        explanation: "It's normal to feel somewhat confident as you're still learning."
+        correct: "C",
+        explanation: "The most effective learning combines theoretical understanding with practical application and hands-on experience."
+      },
+      {
+        question: `What should you do if you struggle with ${coreTopic}?`,
+        options: {
+          "A": "Give up and move to the next topic",
+          "B": "Keep trying the same approach repeatedly", 
+          "C": "Seek help, practice more, and try different methods",
+          "D": "Skip it and hope it makes sense later"
+        },
+        correct: "C",
+        explanation: "When struggling with a topic, it's important to seek help, practice more, and try different learning approaches rather than giving up."
+      },
+      {
+        question: `How can you measure your progress in ${coreTopic}?`,
+        options: {
+          "A": "By completing all exercises perfectly",
+          "B": "By comparing yourself to others only", 
+          "C": "By tracking improvement over time and applying knowledge",
+          "D": "By finishing as quickly as possible"
+        },
+        correct: "C",
+        explanation: "Progress is best measured by tracking your improvement over time and your ability to apply knowledge in practical situations."
+      },
+      {
+        question: `What's the most important aspect of mastering ${coreTopic}?`,
+        options: {
+          "A": "Speed of completion",
+          "B": "Perfect memorization", 
+          "C": "Understanding and practical application",
+          "D": "Avoiding mistakes entirely"
+        },
+        correct: "C",
+        explanation: "Mastery comes from deep understanding and the ability to apply knowledge practically, not just memorization or speed."
       }
     ];
   }
