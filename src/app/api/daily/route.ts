@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
           duration_minutes: r.duration_minutes ?? null,
           split: r.split ?? null,
           completed: isCompleted("learn", i),
-          description: r.description ?? null,
+          description: r.description ?? undefined,
         });
       });
 
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
           duration_minutes: r.duration_minutes ?? null,
           split: r.split ?? null,
           completed: isCompleted("practice", i),
-          description: r.description ?? null,
+          description: r.description ?? undefined,
         });
       });
 
