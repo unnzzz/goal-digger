@@ -19,6 +19,22 @@ export async function GET(
 ) {
   try {
     const { slug } = params;
+    console.log(`AI content API called with slug: ${slug}`);
+    
+    // Simple test response first
+    if (slug === 'test') {
+      return new NextResponse(`
+        <html>
+          <body>
+            <h1>Test Page</h1>
+            <p>API route is working!</p>
+            <a href="javascript:history.back()">← Back</a>
+          </body>
+        </html>
+      `, {
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
     
     // Parse the slug to extract information
     // Format: goal-day-number-type (e.g., "learn-horse-riding-day-1-article")
@@ -27,7 +43,9 @@ export async function GET(
     const dayNumber = parts[parts.length - 2]; // day number
     const goal = parts.slice(0, -2).join(' ').replace(/-/g, ' '); // goal name
     
-    // Reconstruct the day title (this is a simplified approach)
+    console.log(`Parsed slug: ${slug} -> goal: "${goal}", day: ${dayNumber}, type: ${type}`);
+    
+    // For now, let's use a more generic approach since we don't have the exact day title
     const dayTitle = `Day ${dayNumber}: ${goal.charAt(0).toUpperCase() + goal.slice(1)}`;
     
     console.log(`Generating AI content for slug: ${slug}, type: ${type}, goal: ${goal}`);
