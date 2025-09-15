@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
       try {
         allQuizCompletions = await prisma.quizCompletion.findMany({
           where: { userId: user.id, goalId: g.id },
-          select: { dayNumber: true, passed: true },
+          select: { dayNumber: true, passed: true, score: true },
         });
       } catch (error) {
         console.log('QuizCompletion table not available yet, using empty array');
@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
           dayCompletions.some((c) => c.section === section && c.index === index);
 
         const isQuizCompleted = () =>
-          dayQuizCompletions.some((qc) => qc.passed);
+          dayQuizCompletions.length > 0; // Quiz is completed if any attempt was made (regardless of score)
 
         // Add learn resources
         day.learn.forEach((r, i) => {
