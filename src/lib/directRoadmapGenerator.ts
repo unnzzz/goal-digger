@@ -228,3 +228,6 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
   
   return roadmap;
 }
+
+// Export the function with the expected name
+export const generateRoadmapWithDirectScraping = generateDirectRoadmap;

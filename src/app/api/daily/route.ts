@@ -14,6 +14,7 @@ type Resource = {
   source: string | null;
   duration_minutes: number | null;
   split: SplitT;
+  description?: string | null;
 };
 
 type Day = {
