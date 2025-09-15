@@ -21,7 +21,7 @@ model User {
   statVIT       Int               @default(0)
   statAES       Int               @default(0)
   statWLH       Int               @default(0)
-  emailVerified DateTime?
+  emailVerified DateTime @default(now())
   diary         DiaryEntry[]
   goals         Goal[]
   completions   QuestCompletion[]
@@ -107,13 +107,6 @@ model QuizCompletion {
   @@unique([userId, goalId, dayNumber])
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@index([identifier])
-}
 
 model ShopItem {
   id        String       @id @default(cuid())

@@ -60,32 +60,7 @@ export async function middleware(req: NextRequest) {
     return redirectTo("/login", req, { callbackUrl: pathname + search });
   }
 
-  // 4) Email verification gate
-  //    We accept either a boolean "verified" or a Date-ish "emailVerified" claim on the JWT,
-  //    depending on how you've set your NextAuth callbacks.
-  const verifiedClaim =
-    (token as any)?.verified ??
-    (token as any)?.emailVerified ??
-    null;
-
-  // Interpret strings/dates as truthy if present
-  const isVerified =
-    typeof verifiedClaim === "boolean"
-      ? verifiedClaim
-      : !!verifiedClaim; // e.g., a non-empty ISO date string
-
-  // If not verified, only allow the verification pages; otherwise redirect there
-  if (!isVerified) {
-    const allowedWhileUnverified =
-      pathname.startsWith("/verify") ||
-      pathname.startsWith("/verify-email") ||
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/signup");
-    if (!allowedWhileUnverified) {
-      const email = (token as any)?.email || "";
-      return redirectTo("/verify", req, { email });
-    }
-  }
+  // 4) Email verification removed - users are immediately verified after signup
 
   // 5) All checks passed → continue
   return NextResponse.next();

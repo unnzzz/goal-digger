@@ -21,10 +21,7 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // Require email verification
-        if (!user.emailVerified) {
-          return null;
-        }
+        // Email verification removed - users can login immediately after signup
 
         return { 
           id: user.id, 

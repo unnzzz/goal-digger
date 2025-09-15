@@ -2,8 +2,6 @@ export const runtime = 'nodejs';
 
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import { sendVerificationEmail } from "@/lib/mailer";
 
 function json(body: any, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -46,54 +44,26 @@ export async function POST(req: Request) {
 
     if (!email || !password) return json({ error: "email and password required" }, 400);
 
-    // If user already exists and is verified, block; if unverified, allow resending a token and updating fields
+    // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing?.emailVerified) return json({ error: "email already in use" }, 409);
+    if (existing) return json({ error: "email already in use" }, 409);
 
-    // Create or update user (unverified)
+    // Create user with immediate email verification
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = existing
-      ? await prisma.user.update({
-          where: { id: existing.id },
-          data: {
-            passwordHash,
-            name,
-            // only update avatar if client sent a valid one; otherwise keep existing
-            ...(avatarKey ? { avatarKey } : {}),
-          },
-        })
-      : await prisma.user.create({
-          data: {
-            email,
-            passwordHash,
-            name,
-            coins: 0,
-            // stats default to 0 via schema; just set avatar if provided
-            avatarKey,
-          },
-        });
-
-    // Create verification token (replace any previous)
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
-
-    // Ensure you have a VerificationToken model in Prisma with fields:
-    // identifier (String), token (String @unique), expires (DateTime)
-    await prisma.verificationToken.deleteMany({ where: { identifier: email } });
-    await prisma.verificationToken.create({
-      data: { identifier: email, token, expires },
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        name,
+        coins: 0,
+        emailVerified: new Date(), // Immediately verify the user
+        avatarKey,
+      },
     });
 
-    const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const verifyUrl = `${base}/api/auth/verify?token=${encodeURIComponent(
-      token
-    )}&email=${encodeURIComponent(email)}`;
-
-    await sendVerificationEmail(email, verifyUrl);
-
     return json(
-      { ok: true, message: "Check your email for a verification link." },
+      { ok: true, message: "Account created successfully! You can now sign in." },
       201
     );
   } catch (err: any) {

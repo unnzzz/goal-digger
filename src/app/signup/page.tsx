@@ -186,22 +186,8 @@ export default function SignupPage() {
         </div>
         
         <div className="verification-info">
-          <h3>📧 Email Verification Required</h3>
-          <p>After signing up, you'll receive a verification email. Click the link in the email to activate your account, then you can sign in.</p>
-          <div className="verification-steps">
-            <div className="step">
-              <span className="step-number">1</span>
-              <span>Check your email inbox</span>
-            </div>
-            <div className="step">
-              <span className="step-number">2</span>
-              <span>Click the verification link</span>
-            </div>
-            <div className="step">
-              <span className="step-number">3</span>
-              <span>Return here to sign in</span>
-            </div>
-          </div>
+          <h3>🎉 Ready to Start Your Journey!</h3>
+          <p>After signing up, you'll be able to log in immediately and start creating your learning goals.</p>
         </div>
       </div>
 
@@ -266,12 +252,12 @@ export default function SignupPage() {
                 fontFamily: "'Baloo Bhai', sans-serif",
               }}
             >
-              Please check your email and click the verification link to activate your account.
+              Your account has been created successfully! You can now sign in and start your learning journey.
             </p>
             <button
               onClick={() => {
                 setShowSuccessModal(false);
-                router.push("/login?message=Account created! Check your email for verification link.");
+                router.push("/login?message=Account created successfully! You can now sign in.");
               }}
               style={{
                 backgroundColor: 'linear-gradient(45deg, #8B5CF6, #A78BFA)',
