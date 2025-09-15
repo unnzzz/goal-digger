@@ -224,8 +224,8 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
           <Image
             src={`/avatars/full-body/${userData.avatarKey}.png`}
             alt="Avatar"
-            width={120}
-            height={180}
+            width={60}
+            height={90}
             className="avatar-image"
             onError={(e) => {
               // Fallback to regular avatar if full-body doesn't exist

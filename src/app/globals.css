@@ -2531,17 +2531,17 @@ a:hover {
 .avatar-image {
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
   transition: all 0.3s ease;
-  width: 150px !important;
-  height: 200px !important;
+  width: 75px !important;
+  height: 100px !important;
 }
 
 /* Avatar Chatbox */
 .avatar-chatbox {
   position: fixed;
   left: 20px;
-  bottom: 200px;
+  bottom: 100px;
   z-index: 60;
-  max-width: 200px;
+  max-width: 100px;
   transition: all 0.3s ease;
   pointer-events: none;
 }
@@ -2549,10 +2549,10 @@ a:hover {
 .avatar-chatbox-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 12px 16px;
-  border-radius: 20px 20px 20px 4px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 10px 10px 10px 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 7px;
   font-family: 'Baloo Bhai', sans-serif;
   font-weight: 500;
   line-height: 1.4;
@@ -2564,13 +2564,13 @@ a:hover {
 
 .avatar-chatbox-tail {
   position: absolute;
-  bottom: -8px;
-  left: 20px;
+  bottom: -4px;
+  left: 10px;
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #667eea;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #667eea;
   transition: all 0.3s ease;
 }
 
@@ -3225,17 +3225,17 @@ a:hover {
   }
   
   .room-page .avatar-image {
-    width: 80px !important;
-    height: 110px !important;
+    width: 40px !important;
+    height: 55px !important;
   }
   
   .room-page .avatar-chatbox {
     display: block;
     position: fixed;
     left: 10px;
-    bottom: 210px;
+    bottom: 105px;
     z-index: 60;
-    max-width: 160px;
+    max-width: 80px;
   }
 }
 

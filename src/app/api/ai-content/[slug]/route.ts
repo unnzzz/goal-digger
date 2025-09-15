@@ -159,7 +159,7 @@ Return ONLY a JSON object with this exact structure:
             <strong>Duration:</strong> ${type === 'article' ? '15 min' : '20 min'}
         </div>
         <div class="content">${content.content}</div>
-        <a href="javascript:history.back()" class="back-button">← Back to Roadmap</a>
+        <a href="/dashboard" class="back-button">← Back to Roadmap</a>
     </div>
 </body>
 </html>`;
@@ -216,7 +216,7 @@ Return ONLY a JSON object with this exact structure:
     <div class="container">
         <h1>Content Unavailable</h1>
         <p>This AI-generated content is temporarily unavailable. Please try again later.</p>
-        <a href="javascript:history.back()" class="back-button">← Back to Roadmap</a>
+        <a href="/dashboard" class="back-button">← Back to Roadmap</a>
     </div>
 </body>
 </html>`;

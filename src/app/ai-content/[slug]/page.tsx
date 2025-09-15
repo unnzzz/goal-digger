@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 // Format content for better display
@@ -48,6 +48,7 @@ function formatContent(content: string): string {
 
 export default function AIContentPage() {
   const params = useParams();
+  const router = useRouter();
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -159,7 +160,14 @@ export default function AIContentPage() {
         textAlign: 'center'
       }}>
         <button
-          onClick={() => window.history.back()}
+          onClick={() => {
+            // Try to go back in history, if that fails, go to dashboard
+            if (window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/dashboard');
+            }
+          }}
           style={{
             background: '#6A3EE8',
             color: 'white',
