@@ -3,8 +3,14 @@
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-// Format markdown content for better display
-function formatMarkdownContent(content: string): string {
+// Format content for better display
+function formatContent(content: string): string {
+  // If content already contains HTML tags, return as-is
+  if (content.includes('<p>') || content.includes('<strong>') || content.includes('<ul>') || content.includes('<h')) {
+    return content;
+  }
+  
+  // Otherwise, format as markdown
   return content
     // Headers
     .replace(/^### (.*$)/gim, '<h3 style="color: #1F2937; font-size: 20px; font-weight: 600; margin: 24px 0 12px 0; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px;">$1</h3>')
@@ -144,7 +150,7 @@ export default function AIContentPage() {
             fontSize: '16px'
           }}
         >
-          {formatMarkdownContent(content?.content || 'Content not available.')}
+          <div dangerouslySetInnerHTML={{ __html: formatContent(content?.content || 'Content not available.') }} />
         </div>
       </div>
 
