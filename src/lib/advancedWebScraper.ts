@@ -250,7 +250,6 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
@@ -302,7 +301,6 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
@@ -345,7 +343,6 @@ class AdvancedWebScraper {
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
                 duration_minutes: 15,
-              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
