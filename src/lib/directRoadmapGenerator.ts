@@ -107,7 +107,33 @@ Return ONLY a JSON object with this exact structure:
       jsonText = text.split('```')[1].split('```')[0].trim();
     }
     
-    const content = JSON.parse(jsonText);
+    console.log(`Raw JSON text: ${jsonText.substring(0, 500)}...`);
+    
+    // Try to fix common JSON issues
+    jsonText = jsonText
+      .replace(/\n/g, ' ')  // Remove newlines
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .replace(/([^\\])\\([^"\\\/bfnrt])/g, '$1\\\\$2')  // Fix unescaped backslashes
+      .replace(/([^\\])"([^"]*)"([^,}\]]*)([,\}\]])/g, '$1"$2"$4')  // Fix missing commas
+      .trim();
+    
+    console.log(`Cleaned JSON text: ${jsonText.substring(0, 500)}...`);
+    
+    let content;
+    try {
+      content = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error(`JSON parsing failed, creating fallback content for ${contentType}`);
+      // Create fallback content from the raw text
+      const titleMatch = jsonText.match(/"title":\s*"([^"]+)"/);
+      const contentMatch = jsonText.match(/"content":\s*"([^"]+)"/);
+      
+      content = {
+        title: titleMatch ? titleMatch[1] : `${dayTitle} - ${contentType === 'article' ? 'Article' : 'Podcast'}`,
+        content: contentMatch ? contentMatch[1] : `Learn about ${dayTitle} for ${goal}. This is AI-generated content about ${dayTitle}.`,
+        source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
+      };
+    }
     
     // Create a slug for the content
     const slug = `${goal.toLowerCase().replace(/\s+/g, '-')}-day-${dayNumber}-${contentType}`;

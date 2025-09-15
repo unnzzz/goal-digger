@@ -36,6 +36,22 @@ export async function GET(
       });
     }
     
+    // For debugging, let's return a simple response for any slug
+    if (slug.includes('learn-spanish')) {
+      return new NextResponse(`
+        <html>
+          <body>
+            <h1>Debug: API Route Working</h1>
+            <p>Slug: ${slug}</p>
+            <p>This confirms the API route is being called!</p>
+            <a href="javascript:history.back()">← Back</a>
+          </body>
+        </html>
+      `, {
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
+    
     // Parse the slug to extract information
     // Format: goal-day-number-type (e.g., "learn-horse-riding-day-1-article")
     const parts = slug.split('-');
