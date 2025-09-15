@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RoadmapT, ResourceT } from './schema';
+import { generatePracticeQuests } from './practiceQuestGenerator';
 
 // Clear any problematic content from localStorage
 function clearProblematicContent() {
@@ -142,14 +143,40 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
   // Extract the core topic from the day title
   const coreTopic = dayTitle.replace(/day \d+:/gi, '').replace(/:/g, '').trim();
   
-  // Generate contextual practice exercises based on the specific day title and goal
+  // Generate contextual practice exercises using AI for any goal
   let exercise1Title = '';
   let exercise1Description = '';
   let exercise2Title = '';
   let exercise2Description = '';
   
-  // Create specific exercises based on the exact day title and goal context
-  if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
+  // Use AI to generate contextually relevant practice exercises
+  const practiceQuests = await generatePracticeQuests(goal, dayTitle, dayNumber);
+  exercise1Title = practiceQuests.exercise1Title;
+  exercise1Description = practiceQuests.exercise1Description;
+  exercise2Title = practiceQuests.exercise2Title;
+  exercise2Description = practiceQuests.exercise2Description;
+  
+  // AI handles all practice quest generation - no hardcoded categories needed
+      exercise1Description = `Practice smooth transitions between gaits for 45 minutes. Start with walk to trot, then trot to canter, and back down. Focus on using your seat, legs, and hands effectively. Practice maintaining rhythm and balance during transitions. Work on both upward and downward transitions. Record yourself riding and analyze your technique.`;
+      exercise2Title = `Gait Mastery Challenge: ${coreTopic} Precision`;
+      exercise2Description = `Create a pattern or course that requires specific gait changes at certain points. Practice riding the pattern multiple times, focusing on precise transitions and maintaining the correct gait for the required distance. Time yourself and work on consistency. Have someone observe and provide feedback on your technique.`;
+    } else if (coreTopic.toLowerCase().includes('jump') || coreTopic.toLowerCase().includes('obstacle')) {
+      exercise1Title = `Jumping Foundation: ${coreTopic} Basics`;
+      exercise1Description = `Set up ground poles and practice approaching, going over, and landing from small jumps. Focus on maintaining rhythm, balance, and proper position. Start with poles on the ground, then raise them slightly. Practice different approaches and landing techniques. Work on building confidence and consistency.`;
+      exercise2Title = `Jumping Course Challenge: ${coreTopic} Application`;
+      exercise2Description = `Create a simple jumping course with 3-4 obstacles. Practice riding the course multiple times, focusing on smooth transitions between jumps and maintaining rhythm. Work on different approaches and landing techniques. Time yourself and work on consistency. Have someone observe and provide feedback.`;
+    } else if (coreTopic.toLowerCase().includes('balance') || coreTopic.toLowerCase().includes('seat')) {
+      exercise1Title = `Balance and Seat Development: ${coreTopic} Foundation`;
+      exercise1Description = `Practice riding without stirrups for 30 minutes to develop your seat and balance. Start with walk, then progress to trot. Focus on maintaining proper posture and using your core muscles. Practice different exercises like leg yields and circles. Work on building strength and stability in the saddle.`;
+      exercise2Title = `Seat Confidence Challenge: ${coreTopic} Mastery`;
+      exercise2Description = `Practice riding with your eyes closed for short periods to develop feel and balance. Work on different exercises like posting trot without stirrups and maintaining balance during transitions. Practice different riding positions and movements. Focus on developing a deep, secure seat.`;
+    } else {
+      exercise1Title = `Horse Riding Practice: ${coreTopic} Skills`;
+      exercise1Description = `Spend 45 minutes practicing the specific riding techniques covered in today's lesson. Focus on proper form, balance, and communication with the horse. Practice different exercises and movements. Work on building confidence and consistency. Document your progress and note areas for improvement.`;
+      exercise2Title = `Riding Challenge: ${coreTopic} Application`;
+      exercise2Description = `Create a practice session that challenges your ${coreTopic.toLowerCase()} skills. Set up exercises or patterns that require you to use the techniques you've learned. Practice different scenarios and situations. Work on building confidence and problem-solving skills. Have someone observe and provide feedback.`;
+    }
+  } else if (goal.toLowerCase().includes('filmmaking') || goal.toLowerCase().includes('film')) {
     if (coreTopic.toLowerCase().includes('camera') || coreTopic.toLowerCase().includes('exposure')) {
       exercise1Title = `Exposure Triangle Mastery: ${coreTopic} Challenge`;
       exercise1Description = `Set up your camera in manual mode and spend 2 hours creating a visual diary of different exposure scenarios. Find 5 different lighting situations (bright sunlight, indoor tungsten, fluorescent, golden hour, blue hour) and for each, take 3 photos: one correctly exposed, one 2 stops overexposed, and one 2 stops underexposed. Document your ISO, aperture, and shutter speed settings for each shot. Create a reference guide showing how different settings affect the mood and quality of your images.`;
@@ -232,12 +259,66 @@ function generateCreativePracticeExercises(dayTitle: string, dayNumber: number, 
       exercise2Title = `Creative Design: ${coreTopic} Project`;
       exercise2Description = `Create a unique design project that demonstrates your understanding of ${coreTopic.toLowerCase()}. Use your creativity to explore new possibilities and push your skills further. Focus on innovation, user experience, and visual impact. Document your creative process and share your work.`;
     }
+  } else if (goal.toLowerCase().includes('photography') || goal.toLowerCase().includes('photo')) {
+    if (coreTopic.toLowerCase().includes('portrait') || coreTopic.toLowerCase().includes('people')) {
+      exercise1Title = `Portrait Photography Practice: ${coreTopic} Skills`;
+      exercise1Description = `Spend 2 hours photographing different people in various lighting conditions. Practice different poses, angles, and compositions. Focus on capturing personality and emotion. Experiment with different backgrounds and settings. Review your photos and identify what works best. Create a portfolio of your best portraits.`;
+      exercise2Title = `Portrait Storytelling: ${coreTopic} Narrative`;
+      exercise2Description = `Create a series of 5-7 portraits that tell a story about a person or group. Plan your shots to convey emotion and narrative. Use different techniques like environmental portraits, close-ups, and candid shots. Present your work as a visual story with captions explaining your creative choices.`;
+    } else if (coreTopic.toLowerCase().includes('landscape') || coreTopic.toLowerCase().includes('nature')) {
+      exercise1Title = `Landscape Photography Expedition: ${coreTopic} Adventure`;
+      exercise1Description = `Spend 3 hours exploring different outdoor locations to practice landscape photography. Focus on composition, lighting, and timing. Experiment with different times of day and weather conditions. Practice using filters and different camera settings. Create a collection of your best landscape shots.`;
+      exercise2Title = `Landscape Series: ${coreTopic} Collection`;
+      exercise2Description = `Create a cohesive series of 8-10 landscape photographs that work together as a collection. Choose a theme like "seasons," "water," or "mountains." Focus on consistent style and quality. Present your work as a professional portfolio with artist statements.`;
+    } else {
+      exercise1Title = `Photography Technique Practice: ${coreTopic} Mastery`;
+      exercise1Description = `Spend 2-3 hours practicing the specific photography techniques covered in today's lesson. Focus on technical execution and creative application. Experiment with different subjects and conditions. Review your work and identify areas for improvement. Create a reference guide of your best shots.`;
+      exercise2Title = `Photography Project: ${coreTopic} Showcase`;
+      exercise2Description = `Create a complete photography project that demonstrates your ${coreTopic.toLowerCase()} skills. Choose a subject or theme that interests you. Plan, shoot, and edit your work. Present your project professionally and explain your creative process.`;
+    }
+  } else if (goal.toLowerCase().includes('music') || goal.toLowerCase().includes('guitar') || goal.toLowerCase().includes('piano')) {
+    if (coreTopic.toLowerCase().includes('chord') || coreTopic.toLowerCase().includes('progression')) {
+      exercise1Title = `Chord Practice Session: ${coreTopic} Mastery`;
+      exercise1Description = `Spend 45 minutes practicing chord changes and progressions. Start with basic chords and progress to more complex ones. Focus on smooth transitions and clean sound. Practice different strumming patterns and rhythms. Record yourself and analyze your technique.`;
+      exercise2Title = `Chord Progression Song: ${coreTopic} Application`;
+      exercise2Description = `Learn or create a song using the chord progressions you've practiced. Focus on musicality and expression. Practice playing along with recordings or a metronome. Work on dynamics and phrasing. Perform your piece and get feedback.`;
+    } else if (coreTopic.toLowerCase().includes('scale') || coreTopic.toLowerCase().includes('finger')) {
+      exercise1Title = `Scale Practice: ${coreTopic} Technique`;
+      exercise1Description = `Spend 30 minutes practicing scales and finger exercises. Focus on proper technique, even timing, and clean notes. Start slowly and gradually increase speed. Practice different scales and patterns. Use a metronome to maintain steady rhythm.`;
+      exercise2Title = `Scale Improvisation: ${coreTopic} Creativity`;
+      exercise2Description = `Practice improvising using the scales you've learned. Start with simple melodies and progress to more complex improvisations. Focus on musical expression and creativity. Record your improvisations and analyze your progress.`;
+    } else {
+      exercise1Title = `Music Practice Session: ${coreTopic} Skills`;
+      exercise1Description = `Spend 45 minutes practicing the specific musical techniques covered in today's lesson. Focus on proper technique and musical expression. Practice different exercises and pieces. Record yourself and analyze your performance.`;
+      exercise2Title = `Music Performance: ${coreTopic} Showcase`;
+      exercise2Description = `Prepare and perform a piece that demonstrates your ${coreTopic.toLowerCase()} skills. Focus on musicality and expression. Practice performing in front of others. Record your performance and get feedback.`;
+    }
+  } else if (goal.toLowerCase().includes('fitness') || goal.toLowerCase().includes('workout') || goal.toLowerCase().includes('gym')) {
+    if (coreTopic.toLowerCase().includes('strength') || coreTopic.toLowerCase().includes('weight')) {
+      exercise1Title = `Strength Training Session: ${coreTopic} Workout`;
+      exercise1Description = `Design and complete a 45-minute strength training workout focusing on the techniques covered today. Start with proper warm-up, then perform exercises with correct form. Focus on progressive overload and proper breathing. Track your sets, reps, and weights. Cool down and stretch.`;
+      exercise2Title = `Strength Challenge: ${coreTopic} Test`;
+      exercise2Description = `Create a strength challenge that tests your ${coreTopic.toLowerCase()} abilities. Set specific goals like max reps, max weight, or time-based challenges. Practice the challenge multiple times and track your progress. Document your improvements and set new goals.`;
+    } else if (coreTopic.toLowerCase().includes('cardio') || coreTopic.toLowerCase().includes('endurance')) {
+      exercise1Title = `Cardio Training: ${coreTopic} Session`;
+      exercise1Description = `Complete a 30-45 minute cardio workout focusing on the techniques covered today. Choose activities that challenge your endurance and heart rate. Monitor your intensity and maintain proper form. Track your heart rate and perceived exertion. Cool down properly.`;
+      exercise2Title = `Endurance Challenge: ${coreTopic} Test`;
+      exercise2Description = `Set up an endurance challenge that tests your ${coreTopic.toLowerCase()} abilities. This could be a timed run, bike ride, or other cardio activity. Practice the challenge and work on improving your time or distance. Track your progress and set new goals.`;
+    } else {
+      exercise1Title = `Fitness Practice: ${coreTopic} Workout`;
+      exercise1Description = `Spend 45 minutes practicing the specific fitness techniques covered in today's lesson. Focus on proper form and technique. Create a workout that incorporates what you've learned. Track your progress and note areas for improvement.`;
+      exercise2Title = `Fitness Challenge: ${coreTopic} Application`;
+      exercise2Description = `Create a fitness challenge that demonstrates your ${coreTopic.toLowerCase()} skills. Set specific goals and track your progress. Practice the challenge multiple times and work on improvement. Document your results and set new goals.`;
+    }
   } else {
-    // Generic but contextual exercises for any other goal
-    exercise1Title = `Practical Application: ${coreTopic} Practice`;
-    exercise1Description = `Spend 2-3 hours actively practicing the specific concepts you've learned about ${coreTopic.toLowerCase()}. Create something tangible that demonstrates your understanding. Focus on applying the knowledge in a practical way and documenting your process. Experiment with different approaches and see what works best for you.`;
-    exercise2Title = `Creative Project: ${coreTopic} Showcase`;
-    exercise2Description = `Create a comprehensive project that showcases your ${coreTopic.toLowerCase()} skills. Choose something that excites you and allows you to express your creativity while applying what you've learned. Focus on creating something of value that you can be proud of and share with others. Document your creative process and reflect on what you learned.`;
+    // If no specific category matches, create contextual exercises based on the goal and topic
+    const goalWords = goal.toLowerCase().split(' ').filter(word => word.length > 3);
+    const topicWords = coreTopic.toLowerCase().split(' ').filter(word => word.length > 3);
+    
+    exercise1Title = `${coreTopic} Practice: ${goalWords[0] || 'Learning'} Skills`;
+    exercise1Description = `Spend 2-3 hours actively practicing the specific ${coreTopic.toLowerCase()} techniques for ${goal.toLowerCase()}. Focus on hands-on application and real-world scenarios. Create something tangible that demonstrates your understanding. Document your process and challenges. Experiment with different approaches and find what works best for you.`;
+    exercise2Title = `${coreTopic} Project: ${goalWords[0] || 'Learning'} Application`;
+    exercise2Description = `Create a comprehensive project that showcases your ${coreTopic.toLowerCase()} skills in ${goal.toLowerCase()}. Choose something that excites you and allows you to express your creativity while applying what you've learned. Focus on creating something of value that you can be proud of and share with others. Document your creative process and reflect on what you learned.`;
   }
   
   const exercise1 = {
