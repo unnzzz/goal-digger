@@ -377,29 +377,7 @@ class AdvancedWebScraper {
       }
     }
     
-    // Method 6: If still no results, generate realistic fallback resources
-    if (results.length === 0) {
-      console.log('No YouTube results found, generating fallback resources');
-      const fallbackTitles = [
-        `${cleanQuery} Tutorial`,
-        `${cleanQuery} Step by Step Guide`,
-        `${cleanQuery} Beginner's Guide`,
-        `Learn ${cleanQuery}`,
-        `${cleanQuery} Basics`
-      ];
-      
-      // Generate realistic YouTube URLs with actual video IDs (not search links)
-      for (let i = 0; i < Math.min(3, fallbackTitles.length); i++) {
-        // Generate a realistic-looking video ID
-        const videoId = this.generateVideoId();
-        results.push({
-          title: fallbackTitles[i],
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          source: 'YouTube',
-          duration_minutes: 15 + (i * 5)
-        });
-      }
-    }
+    // No fallback generation - only return real resources found through scraping
     
     return results;
   }
@@ -675,41 +653,11 @@ class AdvancedWebScraper {
       }
     }
     
-    // Method 6: If still no results, generate realistic fallback resources
-    if (results.length === 0) {
-      console.log('No article results found, generating fallback resources');
-      const fallbackTitles = [
-        `${cleanQuery} Complete Guide`,
-        `${cleanQuery} Tutorial and Tips`,
-        `${cleanQuery} Step by Step Instructions`,
-        `Learn ${cleanQuery} - Beginner's Guide`,
-        `${cleanQuery} Best Practices`
-      ];
-      
-      // Generate realistic article URLs (these will redirect to search)
-      for (let i = 0; i < Math.min(3, fallbackTitles.length); i++) {
-        const searchQuery = encodeURIComponent(fallbackTitles[i]);
-        results.push({
-          title: fallbackTitles[i],
-          url: `https://www.google.com/search?q=${searchQuery}`,
-          source: 'Google Search',
-          duration_minutes: 10 + (i * 3)
-        });
-      }
-    }
+    // No fallback generation - only return real resources found through scraping
     
     return results;
   }
 
-  // Generate a realistic-looking YouTube video ID
-  private generateVideoId(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-    let result = '';
-    for (let i = 0; i < 11; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
 
   // Main search function that coordinates different search types
   async searchResources(query: string, type: 'watch' | 'read' | 'listen'): Promise<ResourceT[]> {
