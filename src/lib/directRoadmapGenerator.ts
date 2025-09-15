@@ -384,7 +384,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
 }
 
 // Main function to generate roadmap
-export async function generateDirectRoadmap(params: { goal: string; days: number }): Promise<RoadmapT> {
+export async function generateDirectRoadmap(params: { goal: string; days: number }, progressCallback?: (progress: number, message: string) => void): Promise<RoadmapT> {
   clearProblematicContent();
   
   const { goal, days } = params;
@@ -430,6 +430,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
 
   let roadmap: RoadmapT;
   try {
+    progressCallback?.(20, "Generating roadmap structure...");
     const result = await model.generateContent(structurePrompt);
     const response = await result.response;
     const text = response.text();
@@ -460,6 +461,10 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     const dayTitle = day.title;
     
     console.log(`Processing day ${dayNumber}: ${dayTitle}`);
+    
+    // Update progress for each day
+    const dayProgress = 30 + (i / roadmap.days.length) * 50; // 30% to 80%
+    progressCallback?.(Math.round(dayProgress), `Processing day ${dayNumber}: ${dayTitle}`);
     
     // Generate practice exercises
     const practiceExercises = await generateCreativePracticeExercises(dayTitle, dayNumber, goal);
@@ -527,6 +532,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     day.practice = practiceResources;
     day.quiz = quizQuestions;
   }
+  
+  progressCallback?.(90, "Finalizing roadmap...");
   
   return roadmap;
 }

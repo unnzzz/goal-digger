@@ -24,7 +24,7 @@ export async function generateRoadmapWithGemini(params: RoadmapParams, progressC
     const roadmap = await generateRoadmapWithDirectScraping({
       goal: params.goal,
       days: params.total_days || 30
-    });
+    }, progressCallback);
     
     // Check for abort signal again
     if (abortSignal?.aborted) {
