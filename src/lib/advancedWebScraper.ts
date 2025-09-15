@@ -249,7 +249,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                duration_minutes: 15,
+              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
@@ -300,7 +301,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                duration_minutes: 15,
+              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
@@ -342,7 +344,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                duration_minutes: 15,
+              description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 10),
                 description: this.extractDescription($, element, searchTerm)
               });
             }
@@ -373,7 +376,8 @@ class AdvancedWebScraper {
               title: title,
               url: href.startsWith('http') ? href : `https://vimeo.com${href}`,
               source: 'Vimeo',
-              duration_minutes: 15
+              duration_minutes: 15,
+              description: this.extractDescription($, element, searchTerm)
             });
           }
         });
@@ -402,7 +406,8 @@ class AdvancedWebScraper {
               title: title,
               url: href.startsWith('http') ? href : `https://dailymotion.com${href}`,
               source: 'Dailymotion',
-              duration_minutes: 15
+              duration_minutes: 15,
+              description: this.extractDescription($, element, searchTerm)
             });
           }
         });
@@ -542,7 +547,8 @@ class AdvancedWebScraper {
                     title: title.substring(0, 100),
                     url: href,
                     source: url.hostname,
-                    duration_minutes: 10 + Math.floor(Math.random() * 8)
+                    duration_minutes: 10,
+                    description: this.extractDescription($, element, searchTerm) + Math.floor(Math.random() * 8)
                   });
                 }
               } catch (e) {
@@ -710,7 +716,8 @@ class AdvancedWebScraper {
               title: `Reddit Discussion: ${title.substring(0, 80)}`,
               url: href.startsWith('http') ? href : `https://reddit.com${href}`,
               source: 'Reddit',
-              duration_minutes: 5 + Math.floor(Math.random() * 5)
+              duration_minutes: 5,
+              description: this.extractDescription($, element, searchTerm)
             });
           }
         });
@@ -781,6 +788,7 @@ class AdvancedWebScraper {
       url: result.url,
       source: result.source,
       duration_minutes: result.duration_minutes || 15,
+      description: result.description || null,
       split: null
     }));
   }
@@ -806,7 +814,8 @@ class AdvancedWebScraper {
             title: title,
             url: href.startsWith('http') ? href : `https://vimeo.com${href}`,
             source: 'Vimeo',
-            duration_minutes: 15
+            duration_minutes: 15,
+            description: this.extractDescription($, element, query)
           });
         }
       });
@@ -840,7 +849,8 @@ class AdvancedWebScraper {
             title: title,
             url: href.startsWith('http') ? href : `https://medium.com${href}`,
             source: 'Medium',
-            duration_minutes: 10
+            duration_minutes: 10,
+            description: this.extractDescription($, element, query)
           });
         }
       });
@@ -874,7 +884,8 @@ class AdvancedWebScraper {
             title: title,
             url: href.startsWith('http') ? href : `https://open.spotify.com${href}`,
             source: 'Spotify',
-            duration_minutes: 20
+            duration_minutes: 20,
+            description: this.extractDescription($, element, query)
           });
         }
       });

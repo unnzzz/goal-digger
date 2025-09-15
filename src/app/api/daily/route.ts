@@ -47,6 +47,7 @@ type DailyItem = {
   reflectText?: string;
   completed?: boolean;
   quizData?: any[];
+  description?: string;
 };
 
 function isValidTZ(tz: string) {
@@ -159,6 +160,7 @@ export async function GET(req: NextRequest) {
           duration_minutes: r.duration_minutes ?? null,
           split: r.split ?? null,
           completed: isCompleted("learn", i),
+          description: r.description ?? null,
         });
       });
 
@@ -175,6 +177,7 @@ export async function GET(req: NextRequest) {
           duration_minutes: r.duration_minutes ?? null,
           split: r.split ?? null,
           completed: isCompleted("practice", i),
+          description: r.description ?? null,
         });
       });
 

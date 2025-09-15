@@ -28,6 +28,7 @@ type DailyItem = {
   reflectText?: string;
   completed?: boolean;
   quizData?: any[];
+  description?: string;
 };
 
 type DailyPayload = { date: string; items: DailyItem[]; tz?: string };
@@ -548,7 +549,7 @@ function SectionCard({
                 </span>
               )}
             </div>
-            <div style={{ fontSize: "16px", color: "#1F2937", fontWeight: "500" }}>
+            <div style={{ fontSize: "16px", color: "#1F2937", fontWeight: "500", marginBottom: "8px" }}>
               {it.url ? (
                 <a href={it.url} target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
                   {it.title}
@@ -557,6 +558,16 @@ function SectionCard({
                 it.title
               )}
             </div>
+            {it.description && (
+              <div style={{ 
+                fontSize: "14px", 
+                color: "#6B7280", 
+                lineHeight: "1.5",
+                marginBottom: "8px"
+              }}>
+                {it.description}
+              </div>
+            )}
           </div>
         ) : (
           <div style={{
