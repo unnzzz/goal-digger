@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RoadmapT, ResourceT } from './schema';
 import { generatePracticeQuests } from './practiceQuestGenerator';
-import { advancedScraper } from './advancedWebScraper';
 
 // Clear any problematic content from localStorage
 function clearProblematicContent() {
@@ -189,11 +188,22 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
     const article = await generateGeminiContent(dayTitle, dayNumber, goal, 'article');
     const podcast = await generateGeminiContent(dayTitle, dayNumber, goal, 'podcast');
     
-    // Scrape real web resources
+    // Scrape real web resources via server-side API
     console.log(`Scraping resources for: ${topics[i]}`);
-    const watchResources = await advancedScraper.searchResources(topics[i], 'watch', goal);
-    const readResources = await advancedScraper.searchResources(topics[i], 'read', goal);
-    const listenResources = await advancedScraper.searchResources(topics[i], 'listen', goal);
+    
+    const [watchResponse, readResponse, listenResponse] = await Promise.all([
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=watch&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=read&goal=${encodeURIComponent(goal)}`),
+      fetch(`/api/scrape-resources?q=${encodeURIComponent(topics[i])}&type=listen&goal=${encodeURIComponent(goal)}`)
+    ]);
+    
+    const watchData = await watchResponse.json();
+    const readData = await readResponse.json();
+    const listenData = await listenResponse.json();
+    
+    const watchResources = watchData.resources || [];
+    const readResources = readData.resources || [];
+    const listenResources = listenData.resources || [];
     
     console.log(`Found ${watchResources.length} watch, ${readResources.length} read, ${listenResources.length} listen resources`);
     
