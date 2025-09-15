@@ -2541,7 +2541,7 @@ a:hover {
   left: 20px;
   bottom: 100px;
   z-index: 60;
-  max-width: 100px;
+  max-width: 120px;
   transition: all 0.3s ease;
   pointer-events: none;
 }
@@ -2549,10 +2549,10 @@ a:hover {
 .avatar-chatbox-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 6px 8px;
-  border-radius: 10px 10px 10px 2px;
+  padding: 7px 10px;
+  border-radius: 12px 12px 12px 2px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  font-size: 7px;
+  font-size: 8px;
   font-family: 'Baloo Bhai', sans-serif;
   font-weight: 500;
   line-height: 1.4;
@@ -2564,13 +2564,13 @@ a:hover {
 
 .avatar-chatbox-tail {
   position: absolute;
-  bottom: -4px;
-  left: 10px;
+  bottom: -5px;
+  left: 12px;
   width: 0;
   height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid #667eea;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #667eea;
   transition: all 0.3s ease;
 }
 
@@ -3235,7 +3235,7 @@ a:hover {
     left: 10px;
     bottom: 105px;
     z-index: 60;
-    max-width: 80px;
+    max-width: 96px;
   }
 }
 

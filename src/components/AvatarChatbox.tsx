@@ -33,7 +33,7 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
         left: "20px",
         bottom: "100px", // Above the avatar
         zIndex: 60,
-        maxWidth: "100px",
+        maxWidth: "120px", // Increased by 20% from 100px
         opacity: showMessage ? 1 : 0,
         transform: showMessage ? "translateY(0)" : "translateY(10px)",
         transition: "all 0.3s ease",
@@ -45,10 +45,10 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
         style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           color: "white",
-          padding: "6px 8px",
-          borderRadius: "10px 10px 10px 2px",
+          padding: "7px 10px", // Increased by 20% from 6px 8px
+          borderRadius: "12px 12px 12px 2px", // Increased by 20% from 10px
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          fontSize: "7px",
+          fontSize: "8px", // Increased by 20% from 7px
           fontFamily: "'Baloo Bhai', sans-serif",
           fontWeight: "500",
           lineHeight: "1.4",
@@ -62,13 +62,13 @@ export default function AvatarChatbox({ message, isVisible, onClose }: AvatarCha
           className="avatar-chatbox-tail"
           style={{
             position: "absolute",
-            bottom: "-4px",
-            left: "10px",
+            bottom: "-5px", // Increased by 20% from -4px
+            left: "12px", // Increased by 20% from 10px
             width: "0",
             height: "0",
-            borderLeft: "4px solid transparent",
-            borderRight: "4px solid transparent",
-            borderTop: "4px solid #667eea"
+            borderLeft: "5px solid transparent", // Increased by 20% from 4px
+            borderRight: "5px solid transparent", // Increased by 20% from 4px
+            borderTop: "5px solid #667eea" // Increased by 20% from 4px
           }}
         />
         {message}
