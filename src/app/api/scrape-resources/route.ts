@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     console.log(`Advanced scraping: ${type} resources for "${query}" with goal context: "${goal || 'none'}"`);
 
     // Use the advanced scraper with goal context
-    const resources = await advancedScraper.searchResources(query, type, goal);
+    const resources = await advancedScraper.searchResources(query, type, goal ?? undefined);
     
     // Get scraping statistics
     const stats = advancedScraper.getStats();
