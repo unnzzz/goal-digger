@@ -97,6 +97,18 @@ async function remainingItemsForUserDay(userId: string, dateLabel: string, tz: s
       items.push({ goalTitle: g.title, dayNumber: dn, section: "practice", index: i, title: day.practice[i]?.title, url: day.practice[i]?.url });
     if (!done("reflect", 0))
       items.push({ goalTitle: g.title, dayNumber: dn, section: "reflect", index: 0, title: "Reflection" });
+    
+    // Add quiz if it exists and is not completed
+    if (day.quiz && day.quiz.length > 0) {
+      const quizCompletions = await prisma.quizCompletion.findMany({
+        where: { userId, goalId: g.id, dayNumber: dn },
+        select: { passed: true },
+      });
+      const isQuizCompleted = quizCompletions.length > 0; // Quiz is completed if any attempt was made
+      if (!isQuizCompleted) {
+        items.push({ goalTitle: g.title, dayNumber: dn, section: "quiz", index: 0, title: `Quiz: Day ${dn}` });
+      }
+    }
   }
 
   items.sort((a, b) =>
@@ -107,6 +119,8 @@ async function remainingItemsForUserDay(userId: string, dateLabel: string, tz: s
   );
   return items;
 }
-function rank(s: "learn" | "practice" | "reflect") { return s === "learn" ? 0 : s === "practice" ? 1 : 2; }
+function rank(s: "learn" | "practice" | "reflect" | "quiz") { 
+  return s === "learn" ? 0 : s === "practice" ? 1 : s === "reflect" ? 2 : 3; 
+}
 
 

@@ -6,7 +6,7 @@ const BASE_URL = process.env.APP_BASE_URL || process.env.NEXTAUTH_URL || "http:/
 export type RemainingItem = {
   goalTitle: string;
   dayNumber: number;
-  section: "learn" | "practice" | "reflect";
+  section: "learn" | "practice" | "reflect" | "quiz";
   index: number;
   title?: string;
   url?: string;
