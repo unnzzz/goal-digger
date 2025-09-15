@@ -675,7 +675,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       // Try multiple search terms for watch resources (increased to 15 for 60-70% watch resources)
       for (let i = 0; i < Math.min(15, searchTerms.length); i++) {
         searchPromises.push(
-          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch`, {
+          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=watch&goal=${encodeURIComponent(params.goal)}`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
           }).then(async (response) => {
             if (response.ok) {
@@ -690,7 +690,7 @@ async function processDaysInParallel(days: any[], params: RoadmapParams, usedRes
       // Try multiple search terms for read resources (reduced to 5 for 60-70% watch resources)
       for (let i = 0; i < Math.min(5, searchTerms.length); i++) {
         searchPromises.push(
-          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read`, {
+          fetch(`/api/scrape-resources?q=${encodeURIComponent(searchTerms[i])}&type=read&goal=${encodeURIComponent(params.goal)}`, {
             signal: AbortSignal.timeout(30000) // 30 second timeout per search
           }).then(async (response) => {
             if (response.ok) {

@@ -10,6 +10,7 @@ export const Resource = z.object({
   url: z.string(),                 // no .url() -> avoids "format": "uri"
   source: z.string().nullable(),
   duration_minutes: z.number().int().nullable(),
+  description: z.string().nullable(), // Add description field
   split: z.object({
     total_parts: z.number().int(),
     part_number: z.number().int(),

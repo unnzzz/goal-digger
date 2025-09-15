@@ -40,6 +40,7 @@ interface ScrapingResult {
   source: string;
   duration_minutes?: number;
   snippet?: string;
+  description?: string;
 }
 
 class AdvancedWebScraper {
@@ -147,31 +148,63 @@ class AdvancedWebScraper {
   }
 
   // Search YouTube for videos using multiple methods
-  async searchYouTube(query: string): Promise<ScrapingResult[]> {
+  async searchYouTube(query: string, goal?: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
     // Clean up the query and create comprehensive search variations
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
-    const searchVariations = [
-      `${cleanQuery} tutorial`,
-      `${cleanQuery} how to guide`,
-      `${cleanQuery} step by step tutorial`,
-      `${cleanQuery} beginner tutorial`,
-      `${cleanQuery} learn ${cleanQuery}`,
-      `${cleanQuery} course`,
-      `${cleanQuery} lesson`,
-      `${cleanQuery} complete guide`,
-      `${cleanQuery} basics tutorial`,
-      `${cleanQuery} fundamentals`,
-      `${cleanQuery} explained`,
-      `${cleanQuery} introduction`,
-      `${cleanQuery} crash course`,
-      `${cleanQuery} full tutorial`,
-      `${cleanQuery} masterclass`,
-      `${cleanQuery} workshop`,
-      `${cleanQuery} training`,
-      `${cleanQuery} walkthrough`
-    ];
+    
+    // Create more specific search variations based on the goal context
+    let searchVariations = [];
+    
+    if (goal) {
+      const goalWords = goal.toLowerCase().split(' ').filter(word => word.length > 3);
+      const mainGoal = goalWords[0] || goal.toLowerCase();
+      
+      searchVariations = [
+        `${mainGoal} ${cleanQuery} tutorial`,
+        `${mainGoal} ${cleanQuery} how to`,
+        `${cleanQuery} for ${mainGoal}`,
+        `${mainGoal} ${cleanQuery} beginner`,
+        `${mainGoal} ${cleanQuery} basics`,
+        `${mainGoal} ${cleanQuery} step by step`,
+        `${mainGoal} ${cleanQuery} course`,
+        `${mainGoal} ${cleanQuery} lesson`,
+        `${mainGoal} ${cleanQuery} guide`,
+        `${mainGoal} ${cleanQuery} explained`,
+        `${mainGoal} ${cleanQuery} introduction`,
+        `${mainGoal} ${cleanQuery} masterclass`,
+        `${mainGoal} ${cleanQuery} workshop`,
+        `${mainGoal} ${cleanQuery} training`,
+        `${mainGoal} ${cleanQuery} walkthrough`,
+        `${cleanQuery} tutorial ${mainGoal}`,
+        `${cleanQuery} how to ${mainGoal}`,
+        `${cleanQuery} ${mainGoal} guide`,
+        `${cleanQuery} ${mainGoal} course`,
+        `${cleanQuery} ${mainGoal} lesson`
+      ];
+    } else {
+      searchVariations = [
+        `${cleanQuery} tutorial`,
+        `${cleanQuery} how to guide`,
+        `${cleanQuery} step by step tutorial`,
+        `${cleanQuery} beginner tutorial`,
+        `${cleanQuery} learn ${cleanQuery}`,
+        `${cleanQuery} course`,
+        `${cleanQuery} lesson`,
+        `${cleanQuery} complete guide`,
+        `${cleanQuery} basics tutorial`,
+        `${cleanQuery} fundamentals`,
+        `${cleanQuery} explained`,
+        `${cleanQuery} introduction`,
+        `${cleanQuery} crash course`,
+        `${cleanQuery} full tutorial`,
+        `${cleanQuery} masterclass`,
+        `${cleanQuery} workshop`,
+        `${cleanQuery} training`,
+        `${cleanQuery} walkthrough`
+      ];
+    }
     
     // Try multiple search variations (increased from 3 to 8 for better coverage)
     for (const searchTerm of searchVariations.slice(0, 8)) {
@@ -216,7 +249,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10)
+                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                description: this.extractDescription($, element, searchTerm)
               });
             }
           }
@@ -266,7 +300,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10)
+                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                description: this.extractDescription($, element, searchTerm)
               });
             }
           }
@@ -307,7 +342,8 @@ class AdvancedWebScraper {
                 title: title.substring(0, 100),
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 source: 'YouTube',
-                duration_minutes: 15 + Math.floor(Math.random() * 10)
+                duration_minutes: 15 + Math.floor(Math.random() * 10),
+                description: this.extractDescription($, element, searchTerm)
               });
             }
           }
@@ -383,31 +419,63 @@ class AdvancedWebScraper {
   }
 
   // Search for articles using multiple methods
-  async searchArticles(query: string): Promise<ScrapingResult[]> {
+  async searchArticles(query: string, goal?: string): Promise<ScrapingResult[]> {
     const results: ScrapingResult[] = [];
     
     // Clean up the query and create comprehensive search variations
     const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
-    const searchVariations = [
-      `${cleanQuery} tutorial`,
-      `${cleanQuery} complete guide`,
-      `${cleanQuery} how to guide`,
-      `${cleanQuery} step by step guide`,
-      `${cleanQuery} beginner tutorial`,
-      `${cleanQuery} learn ${cleanQuery}`,
-      `${cleanQuery} course`,
-      `${cleanQuery} lesson`,
-      `${cleanQuery} basics tutorial`,
-      `${cleanQuery} fundamentals`,
-      `${cleanQuery} explained`,
-      `${cleanQuery} introduction`,
-      `${cleanQuery} comprehensive guide`,
-      `${cleanQuery} detailed tutorial`,
-      `${cleanQuery} masterclass`,
-      `${cleanQuery} workshop`,
-      `${cleanQuery} training`,
-      `${cleanQuery} walkthrough`
-    ];
+    
+    // Create more specific search variations based on the goal context
+    let searchVariations = [];
+    
+    if (goal) {
+      const goalWords = goal.toLowerCase().split(' ').filter(word => word.length > 3);
+      const mainGoal = goalWords[0] || goal.toLowerCase();
+      
+      searchVariations = [
+        `${mainGoal} ${cleanQuery} tutorial`,
+        `${mainGoal} ${cleanQuery} guide`,
+        `${mainGoal} ${cleanQuery} how to`,
+        `${cleanQuery} for ${mainGoal}`,
+        `${mainGoal} ${cleanQuery} beginner`,
+        `${mainGoal} ${cleanQuery} basics`,
+        `${mainGoal} ${cleanQuery} step by step`,
+        `${mainGoal} ${cleanQuery} course`,
+        `${mainGoal} ${cleanQuery} lesson`,
+        `${mainGoal} ${cleanQuery} explained`,
+        `${mainGoal} ${cleanQuery} introduction`,
+        `${mainGoal} ${cleanQuery} comprehensive guide`,
+        `${mainGoal} ${cleanQuery} detailed tutorial`,
+        `${mainGoal} ${cleanQuery} masterclass`,
+        `${mainGoal} ${cleanQuery} workshop`,
+        `${mainGoal} ${cleanQuery} training`,
+        `${cleanQuery} tutorial ${mainGoal}`,
+        `${cleanQuery} guide ${mainGoal}`,
+        `${cleanQuery} how to ${mainGoal}`,
+        `${cleanQuery} ${mainGoal} course`
+      ];
+    } else {
+      searchVariations = [
+        `${cleanQuery} tutorial`,
+        `${cleanQuery} complete guide`,
+        `${cleanQuery} how to guide`,
+        `${cleanQuery} step by step guide`,
+        `${cleanQuery} beginner tutorial`,
+        `${cleanQuery} learn ${cleanQuery}`,
+        `${cleanQuery} course`,
+        `${cleanQuery} lesson`,
+        `${cleanQuery} basics tutorial`,
+        `${cleanQuery} fundamentals`,
+        `${cleanQuery} explained`,
+        `${cleanQuery} introduction`,
+        `${cleanQuery} comprehensive guide`,
+        `${cleanQuery} detailed tutorial`,
+        `${cleanQuery} masterclass`,
+        `${cleanQuery} workshop`,
+        `${cleanQuery} training`,
+        `${cleanQuery} walkthrough`
+      ];
+    }
     
     // Educational domains to prioritize (expanded list)
     const educationalDomains = [
@@ -660,14 +728,14 @@ class AdvancedWebScraper {
 
 
   // Main search function that coordinates different search types
-  async searchResources(query: string, type: 'watch' | 'read' | 'listen'): Promise<ResourceT[]> {
-    console.log(`Advanced scraping: ${type} resources for "${query}"`);
+  async searchResources(query: string, type: 'watch' | 'read' | 'listen', goal?: string): Promise<ResourceT[]> {
+    console.log(`Advanced scraping: ${type} resources for "${query}" with goal context: "${goal || 'none'}"`);
     
     let results: ScrapingResult[] = [];
     
     try {
       if (type === 'watch') {
-        results = await this.searchYouTube(query);
+        results = await this.searchYouTube(query, goal);
         console.log(`YouTube search found ${results.length} results`);
         
         // If YouTube fails, try alternative video sources
@@ -676,7 +744,7 @@ class AdvancedWebScraper {
           results = await this.searchAlternativeVideos(query);
         }
       } else if (type === 'read') {
-        results = await this.searchArticles(query);
+        results = await this.searchArticles(query, goal);
         console.log(`Article search found ${results.length} results`);
         
         // If article search fails, try alternative sources
@@ -826,6 +894,35 @@ class AdvancedWebScraper {
       userAgentIndex: this.userAgentIndex,
       proxyIndex: this.proxyIndex
     };
+  }
+
+  // Helper method to extract description from content
+  private extractDescription($: any, element: any, query: string): string {
+    // Try to find description in various common selectors
+    const descriptionSelectors = [
+      '.description', '.desc', '.summary', '.excerpt', '.content',
+      '.ytd-video-meta-block .description', '.ytd-video-meta-block .content',
+      'p', '.text', '.details', '.info', '.about'
+    ];
+    
+    for (const selector of descriptionSelectors) {
+      const descElement = $(element).find(selector).first();
+      if (descElement.length > 0) {
+        let desc = descElement.text().trim();
+        if (desc && desc.length > 20 && desc.length < 300) {
+          return desc;
+        }
+      }
+    }
+    
+    // Try to get description from parent elements
+    const parentDesc = $(element).parent().find('.description, .desc, .summary, .excerpt, p').first().text().trim();
+    if (parentDesc && parentDesc.length > 20 && parentDesc.length < 300) {
+      return parentDesc;
+    }
+    
+    // Generate a contextual description based on the query
+    return `Learn about ${query.toLowerCase()} with this comprehensive resource. Perfect for beginners and those looking to improve their skills.`;
   }
 }
 
