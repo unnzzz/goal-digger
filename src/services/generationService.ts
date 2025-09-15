@@ -14,6 +14,7 @@ class GenerationService {
   private listeners: Set<() => void> = new Set();
   private isDestroyed = false;
   private jobId: string | null = null;
+  private wasInterrupted = false;
 
   // Subscribe to state changes
   subscribe(listener: () => void) {
@@ -95,6 +96,7 @@ class GenerationService {
     this.dailyMinutes = dailyMinutes;
     this.totalDays = totalDays;
     this.goalName = '';
+    this.wasInterrupted = false;
     this.notify();
 
     const requestData = {
@@ -352,6 +354,12 @@ class GenerationService {
       progress: this.progress,
       statusMessage: this.statusMessage
     });
+
+    // If generation is already in progress, don't restart it
+    if (this.controller && !this.controller.signal.aborted) {
+      console.log('Generation is already in progress, not restarting');
+      return;
+    }
 
     // Create new abort controller for resumed generation
     this.controller = new AbortController();

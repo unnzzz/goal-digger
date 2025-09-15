@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useUserData } from "../hooks/useUserData";
 import { useAvatar } from "../contexts/AvatarContext";
 import AvatarChatbox from "./AvatarChatbox";
@@ -24,9 +25,9 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
       <div className="app-layout">
         <aside className="sidebar">
           <div className="sidebar-header">
-            <a href="/" className="sidebar-logo">
+            <Link href="/" className="sidebar-logo">
               Goal-Digger
-            </a>
+            </Link>
           </div>
         </aside>
         <main className="main-content">
@@ -43,9 +44,9 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
       <div className="app-layout">
         <aside className="sidebar">
           <div className="sidebar-header">
-            <a href="/" className="sidebar-logo">
+            <Link href="/" className="sidebar-logo">
               Goal-Digger
-            </a>
+            </Link>
           </div>
         </aside>
         <main className="main-content">
@@ -70,37 +71,37 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
           </a>
         </div>
         <nav className="sidebar-nav">
-          <a href="/" className={`nav-item ${activePage === 'generator' ? 'active' : ''}`}>
+          <Link href="/" className={`nav-item ${activePage === 'generator' ? 'active' : ''}`}>
             <Image src="/icons/rocket.png" alt="RoadMap Generator" width={41} height={41} className="nav-icon" />
             <div>
               <div className="nav-text">RoadMap Generator</div>
             </div>
-          </a>
-          <a href="/dashboard" className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}>
+          </Link>
+          <Link href="/dashboard" className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}>
             <Image src="/icons/dashboard.png" alt="Dashboard" width={41} height={41} className="nav-icon" />
             <div>
               <div className="nav-text">Dashboard</div>
             </div>
-          </a>
-          <a href="/diary" className={`nav-item ${activePage === 'diary' ? 'active' : ''}`}>
+          </Link>
+          <Link href="/diary" className={`nav-item ${activePage === 'diary' ? 'active' : ''}`}>
             <Image src="/icons/diary.png" alt="Diary" width={41} height={41} className="nav-icon" />
             <div>
               <div className="nav-text">Diary</div>
             </div>
-          </a>
-          <a href="/room" className={`nav-item ${activePage === 'room' ? 'active' : ''}`}>
+          </Link>
+          <Link href="/room" className={`nav-item ${activePage === 'room' ? 'active' : ''}`}>
             <Image src="/icons/room.png" alt="Room" width={41} height={41} className="nav-icon" />
             <div>
               <div className="nav-text">Room</div>
             </div>
-          </a>
-          <a href="/shop" className={`nav-item ${activePage === 'shop' ? 'active' : ''}`}>
+          </Link>
+          <Link href="/shop" className={`nav-item ${activePage === 'shop' ? 'active' : ''}`}>
             <Image src="/icons/shop.png" alt="Shop" width={41} height={41} className="nav-icon" />
             <div>
               <div className="nav-text">Shop</div>
             </div>
-          </a>
-          <a href="/account" className={`nav-item ${activePage === 'account' ? 'active' : ''}`}>
+          </Link>
+          <Link href="/account" className={`nav-item ${activePage === 'account' ? 'active' : ''}`}>
             <div style={{
               width: 41,
               height: 41,
@@ -124,7 +125,7 @@ export default function AppLayout({ children, activePage = "" }: AppLayoutProps)
               <div className="nav-text">Profile</div>
               <div className="nav-status">Status: {userLoading ? '...' : userData?.primaryStatus || 'Newcomer'}</div>
             </div>
-          </a>
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="nav-item sign-out-btn"
