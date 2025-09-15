@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RoadmapT, ResourceT } from './schema';
 import { generatePracticeQuests } from './practiceQuestGenerator';
+import { advancedScraper } from './advancedWebScraper';
 
 // Clear any problematic content from localStorage
 function clearProblematicContent() {
@@ -179,6 +180,8 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
     const dayNumber = i + 1;
     const dayTitle = `Day ${dayNumber}: ${topics[i]}`;
     
+    console.log(`Processing day ${dayNumber}: ${topics[i]}`);
+    
     // Generate practice exercises
     const practiceExercises = await generateCreativePracticeExercises(dayTitle, dayNumber, goal);
     
@@ -186,10 +189,23 @@ export async function generateDirectRoadmap(params: { goal: string; days: number
     const article = await generateGeminiContent(dayTitle, dayNumber, goal, 'article');
     const podcast = await generateGeminiContent(dayTitle, dayNumber, goal, 'podcast');
     
-    // Create learn resources
+    // Scrape real web resources
+    console.log(`Scraping resources for: ${topics[i]}`);
+    const watchResources = await advancedScraper.searchResources(topics[i], 'watch', goal);
+    const readResources = await advancedScraper.searchResources(topics[i], 'read', goal);
+    const listenResources = await advancedScraper.searchResources(topics[i], 'listen', goal);
+    
+    console.log(`Found ${watchResources.length} watch, ${readResources.length} read, ${listenResources.length} listen resources`);
+    
+    // Create learn resources - combine AI content with scraped resources
     const learnResources: ResourceT[] = [];
     if (article) learnResources.push(article);
     if (podcast) learnResources.push(podcast);
+    
+    // Add scraped resources (limit to avoid too many)
+    learnResources.push(...watchResources.slice(0, 2));
+    learnResources.push(...readResources.slice(0, 1));
+    learnResources.push(...listenResources.slice(0, 1));
     
     // Add practice exercises
     const practiceResources: ResourceT[] = practiceExercises;
