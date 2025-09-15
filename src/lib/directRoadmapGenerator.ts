@@ -141,6 +141,13 @@ Return ONLY a JSON object with this exact structure:
     
     console.log(`Generated ${contentType} URL: ${url}`);
     
+    // Store content in localStorage for the AI content page
+    if (typeof window !== 'undefined') {
+      const contentKey = `ai-content-${slug}`;
+      localStorage.setItem(contentKey, JSON.stringify(content));
+      console.log(`Stored AI content in localStorage with key: ${contentKey}`);
+    }
+    
     // Return clean structure without problematic keys
     const cleanResource = {
       kind: contentType === 'podcast' ? 'listen' as const : 'read' as const,
