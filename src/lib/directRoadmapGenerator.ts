@@ -88,7 +88,8 @@ Requirements:
 - For podcast: Write as a conversational script that can be read aloud
 - For article: Write as a detailed, well-structured article
 
-Return ONLY a JSON object with this exact structure:
+CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. Just the raw JSON object.
+
 {
   "title": "Specific, engaging title",
   "content": "Full ${contentType} content here...",
@@ -111,41 +112,51 @@ Return ONLY a JSON object with this exact structure:
     
     console.log(`Raw JSON text: ${jsonText.substring(0, 500)}...`);
     
-    // Try to fix common JSON issues
-    jsonText = jsonText
-      .replace(/\n/g, ' ')  // Remove newlines
-      .replace(/\s+/g, ' ')  // Normalize whitespace
-      .replace(/([^\\])\\([^"\\\/bfnrt])/g, '$1\\\\$2')  // Fix unescaped backslashes
-      .replace(/([^\\])"([^"]*)"([^,}\]]*)([,\}\]])/g, '$1"$2"$4')  // Fix missing commas
-      .trim();
-    
-    console.log(`Cleaned JSON text: ${jsonText.substring(0, 500)}...`);
-    
     let content;
+    
+    // First try to parse as-is
     try {
       content = JSON.parse(jsonText);
-      console.log(`Successfully parsed ${contentType} content:`, content);
-    } catch (parseError) {
-      console.error(`JSON parsing failed for ${contentType}, trying to extract content manually:`, parseError);
+      console.log(`Successfully parsed ${contentType} content on first try:`, content);
+    } catch (firstError) {
+      console.log(`First parse attempt failed, trying to clean JSON...`);
       
-      // Try to extract content more aggressively
-      const titleMatch = jsonText.match(/"title":\s*"([^"]+)"/);
-      const contentMatch = jsonText.match(/"content":\s*"([^"]+)"/);
+      // Try to fix common JSON issues
+      let cleanedJson = jsonText
+        .replace(/\n/g, ' ')  // Remove newlines
+        .replace(/\s+/g, ' ')  // Normalize whitespace
+        .replace(/([^\\])\\([^"\\\/bfnrt])/g, '$1\\\\$2')  // Fix unescaped backslashes
+        .replace(/([^\\])"([^"]*)"([^,}\]]*)([,\}\]])/g, '$1"$2"$4')  // Fix missing commas
+        .trim();
       
-      if (titleMatch && contentMatch) {
-        content = {
-          title: titleMatch[1],
-          content: contentMatch[1],
-          source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
-        };
-        console.log(`Successfully extracted ${contentType} content manually:`, content);
-      } else {
-        console.error(`Could not extract content, using fallback for ${contentType}`);
-        content = {
-          title: `${dayTitle} - ${contentType === 'article' ? 'Article' : 'Podcast'}`,
-          content: `Learn about ${dayTitle} for ${goal}. This is AI-generated content about ${dayTitle}.`,
-          source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
-        };
+      console.log(`Cleaned JSON text: ${cleanedJson.substring(0, 500)}...`);
+      
+      try {
+        content = JSON.parse(cleanedJson);
+        console.log(`Successfully parsed ${contentType} content after cleaning:`, content);
+      } catch (secondError) {
+        console.error(`JSON parsing failed even after cleaning, trying regex extraction:`, secondError);
+        
+        // Try to extract content using regex
+        const titleMatch = jsonText.match(/"title":\s*"([^"]+)"/);
+        const contentMatch = jsonText.match(/"content":\s*"([^"]+)"/);
+        
+        if (titleMatch && contentMatch) {
+          content = {
+            title: titleMatch[1],
+            content: contentMatch[1],
+            source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
+          };
+          console.log(`Successfully extracted ${contentType} content with regex:`, content);
+        } else {
+          console.error(`All extraction methods failed, using fallback for ${contentType}`);
+          console.log(`Available text for extraction:`, jsonText);
+          content = {
+            title: `${dayTitle} - ${contentType === 'article' ? 'Article' : 'Podcast'}`,
+            content: `Learn about ${dayTitle} for ${goal}. This is AI-generated content about ${dayTitle}.`,
+            source: `AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}`
+          };
+        }
       }
     }
     
