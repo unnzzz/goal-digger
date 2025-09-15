@@ -321,6 +321,21 @@ class GenerationService {
     return this.isGenerating;
   }
 
+  // Restore state from saved data
+  restoreState(state: any) {
+    if (state.isGenerating) {
+      console.log('Restoring generation state from localStorage:', state);
+      this.isGenerating = state.isGenerating;
+      this.progress = state.progress;
+      this.statusMessage = state.statusMessage;
+      this.goal = state.goal;
+      this.dailyMinutes = state.dailyMinutes;
+      this.totalDays = state.totalDays;
+      this.goalName = state.goalName;
+      // Don't restore data/error as they might be stale
+    }
+  }
+
   // Destroy the service (cleanup)
   destroy() {
     this.isDestroyed = true;
@@ -346,17 +361,7 @@ function getGenerationService(): GenerationService {
         const savedState = localStorage.getItem('generationServiceState');
         if (savedState) {
           const state = JSON.parse(savedState);
-          if (state.isGenerating) {
-            console.log('Restoring generation state from localStorage:', state);
-            generationServiceInstance.isGenerating = state.isGenerating;
-            generationServiceInstance.progress = state.progress;
-            generationServiceInstance.statusMessage = state.statusMessage;
-            generationServiceInstance.goal = state.goal;
-            generationServiceInstance.dailyMinutes = state.dailyMinutes;
-            generationServiceInstance.totalDays = state.totalDays;
-            generationServiceInstance.goalName = state.goalName;
-            // Don't restore data/error as they might be stale
-          }
+          generationServiceInstance.restoreState(state);
         }
       } catch (error) {
         console.log('Failed to restore generation state:', error);
