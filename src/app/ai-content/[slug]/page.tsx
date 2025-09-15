@@ -181,7 +181,9 @@ export default function AIContentPage() {
               </p>
               <button
                 onClick={() => {
+                  console.log('Opening TTS URL for podcast...');
                   const ttsUrl = `/api/tts?text=${encodeURIComponent(content?.content || '')}&voice=en-US-Standard-A`;
+                  console.log('TTS URL:', ttsUrl);
                   window.open(ttsUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
                 }}
                 style={{
@@ -200,12 +202,22 @@ export default function AIContentPage() {
               </button>
               <button
                 onClick={() => {
+                  console.log('Quick play button clicked');
                   if ('speechSynthesis' in window) {
+                    console.log('Speech synthesis available, creating utterance...');
                     const utterance = new SpeechSynthesisUtterance(content?.content || '');
                     utterance.rate = 0.9;
                     utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    utterance.onstart = () => console.log('Speech started');
+                    utterance.onend = () => console.log('Speech ended');
+                    utterance.onerror = (e) => console.error('Speech error:', e);
+                    
                     speechSynthesis.speak(utterance);
+                    console.log('Speech synthesis speak() called');
                   } else {
+                    console.log('Speech synthesis not supported');
                     alert('Text-to-speech not supported in this browser');
                   }
                 }}

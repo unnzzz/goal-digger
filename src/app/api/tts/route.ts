@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Text parameter is required' }, { status: 400 });
     }
 
-    console.log(`Generating TTS for text: ${text.substring(0, 100)}...`);
+    console.log(`TTS API called with text length: ${text.length}`);
+    console.log(`First 100 chars: ${text.substring(0, 100)}...`);
 
     // Use the Web Speech API on the client side instead of server-side TTS
     // This avoids the need for external TTS services and API keys
