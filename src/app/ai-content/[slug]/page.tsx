@@ -137,117 +137,15 @@ export default function AIContentPage() {
         lineHeight: '1.6',
         fontSize: '16px'
       }}>
-        {content?.type === 'podcast' ? (
-          <div>
-            <div style={{
-              background: '#F3E8FF',
-              padding: '20px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ margin: '0 0 10px 0', color: '#7C3AED' }}>🎧 Podcast Episode</h3>
-              <p style={{ margin: 0, color: '#6B7280' }}>
-                Duration: {content?.duration_minutes || 20} minutes
-              </p>
-            </div>
-            
-            <div style={{
-              background: '#F8FAFC',
-              padding: '20px',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              <h4 style={{ margin: '0 0 15px 0', color: '#1F2937' }}>Podcast Script</h4>
-              <div style={{
-                whiteSpace: 'pre-wrap',
-                color: '#374151',
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                lineHeight: '1.5'
-              }}>
-                {content?.content || 'Podcast script not available.'}
-              </div>
-            </div>
-            
-            <div style={{
-              background: '#EFF6FF',
-              padding: '20px',
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <p style={{ margin: '0 0 15px 0', color: '#1E40AF' }}>
-                <strong>Listen to the podcast:</strong> Click below to hear the full audio version.
-              </p>
-              <button
-                onClick={() => {
-                  console.log('Opening TTS URL for podcast...');
-                  const ttsUrl = `/api/tts?text=${encodeURIComponent(content?.content || '')}&voice=en-US-Standard-A`;
-                  console.log('TTS URL:', ttsUrl);
-                  window.open(ttsUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-                }}
-                style={{
-                  background: '#3B82F6',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  marginRight: '10px'
-                }}
-              >
-                🎧 Listen to Podcast
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Quick play button clicked');
-                  if ('speechSynthesis' in window) {
-                    console.log('Speech synthesis available, creating utterance...');
-                    const utterance = new SpeechSynthesisUtterance(content?.content || '');
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1;
-                    utterance.volume = 1;
-                    
-                    utterance.onstart = () => console.log('Speech started');
-                    utterance.onend = () => console.log('Speech ended');
-                    utterance.onerror = (e) => console.error('Speech error:', e);
-                    
-                    speechSynthesis.speak(utterance);
-                    console.log('Speech synthesis speak() called');
-                  } else {
-                    console.log('Speech synthesis not supported');
-                    alert('Text-to-speech not supported in this browser');
-                  }
-                }}
-                style={{
-                  background: '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                🔊 Quick Play
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div 
-            style={{
-              color: '#374151',
-              lineHeight: '1.8',
-              fontSize: '16px'
-            }}
-            dangerouslySetInnerHTML={{
-              __html: formatMarkdownContent(content?.content || 'Content not available.')
-            }}
-          />
-        )}
+        <div 
+          style={{
+            color: '#374151',
+            lineHeight: '1.7',
+            fontSize: '16px'
+          }}
+        >
+          {formatMarkdownContent(content?.content || 'Content not available.')}
+        </div>
       </div>
 
       <div style={{

@@ -73,27 +73,26 @@ async function generateCreativePracticeExercises(dayTitle: string, dayNumber: nu
 }
 
 // Generate AI content for a specific day
-async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article' | 'podcast'): Promise<ResourceT | null> {
+async function generateGeminiContent(dayTitle: string, dayNumber: number, goal: string, contentType: 'article'): Promise<ResourceT | null> {
   try {
     console.log(`Generating ${contentType} for: ${dayTitle}`);
     
-    const prompt = `Create a comprehensive ${contentType} about "${dayTitle}" for someone learning "${goal}".
+    const prompt = `Create a comprehensive article about "${dayTitle}" for someone learning "${goal}".
 
 Requirements:
 - Make it educational and practical
 - Include specific examples and actionable advice
 - Write in an engaging, conversational tone
-- Length: ${contentType === 'article' ? '800-1200' : '400-600'} words
+- Length: 800-1200 words
 - Focus on the specific topic: ${dayTitle}
-- For podcast: Write as a conversational script that can be read aloud
-- For article: Write as a detailed, well-structured article
+- Write as a detailed, well-structured article
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. Just the raw JSON object.
 
 {
   "title": "Specific, engaging title",
-  "content": "Full ${contentType} content here...",
-  "source": "AI Generated ${contentType === 'article' ? 'Article' : 'Podcast'}"
+  "content": "Full article content here...",
+  "source": "AI Generated Article"
 }`;
 
     const result = await model.generateContent(prompt);
@@ -169,23 +168,17 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
     // Store content in localStorage for the AI content page
     if (typeof window !== 'undefined') {
       const contentKey = `ai-content-${slug}`;
-      
-      // For podcasts, add audio URL
-      if (contentType === 'podcast') {
-        content.audioUrl = `/api/tts?text=${encodeURIComponent(content.content)}&voice=en-US-Standard-A`;
-      }
-      
       localStorage.setItem(contentKey, JSON.stringify(content));
       console.log(`Stored AI content in localStorage with key: ${contentKey}`);
     }
     
     // Return clean structure without problematic keys
     const cleanResource = {
-      kind: contentType === 'podcast' ? 'listen' as const : 'read' as const,
+      kind: 'read' as const,
       title: content.title,
       url: url,
       source: content.source,
-      duration_minutes: contentType === 'podcast' ? 20 : 15,
+      duration_minutes: 15,
       description: content.content.substring(0, 200) + '...',
       split: null
     };
@@ -199,11 +192,11 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
     if (error instanceof Error && error.message && error.message.includes('429')) {
       console.log(`Quota exceeded for ${contentType}, using fallback`);
       return {
-        kind: contentType === 'podcast' ? 'listen' : 'read',
-        title: `${dayTitle} - ${contentType === 'podcast' ? 'Podcast' : 'Article'}`,
+        kind: 'read',
+        title: `${dayTitle} - Article`,
         url: `#ai-content-unavailable`,
         source: 'AI Generated (Fallback)',
-        duration_minutes: contentType === 'podcast' ? 20 : 15,
+        duration_minutes: 15,
         description: `Learn about ${dayTitle} for ${goal}. This content is temporarily unavailable due to high demand.`,
         split: null
       };
@@ -298,9 +291,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Generate AI content
     console.log(`Generating AI content for day ${dayNumber}: ${dayTitle}`);
     const article = await generateGeminiContent(dayTitle, dayNumber, goal, 'article');
-    const podcast = await generateGeminiContent(dayTitle, dayNumber, goal, 'podcast');
     
-    console.log(`AI content results - Article: ${article ? 'SUCCESS' : 'FAILED'}, Podcast: ${podcast ? 'SUCCESS' : 'FAILED'}`);
+    console.log(`AI content results - Article: ${article ? 'SUCCESS' : 'FAILED'}`);
     
     // Scrape real web resources via server-side API
     console.log(`Scraping resources for: ${dayTitle}`);
@@ -324,7 +316,6 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     // Create learn resources - combine AI content with scraped resources
     const learnResources: ResourceT[] = [];
     if (article) learnResources.push(article);
-    if (podcast) learnResources.push(podcast);
     
     // Add scraped resources (limit to avoid too many)
     learnResources.push(...watchResources.slice(0, 2));
