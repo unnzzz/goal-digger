@@ -194,7 +194,6 @@ export async function sendQuestRemindersForAllUsers(): Promise<{ sent: number; e
     // Get all active users with goals
     const users = await prisma.user.findMany({
       where: {
-        emailVerified: { not: null },
         goals: { some: {} },
       },
       include: {
