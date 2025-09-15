@@ -1064,6 +1064,21 @@ export default function Dashboard() {
         {/* Content Area */}
         <div className="content-main" style={{ padding: "32px" }}>
 
+        {/* Email Notification Notice - Always Visible */}
+        <div style={{
+          marginBottom: '24px',
+          padding: '16px',
+          background: '#FFF3CD',
+          border: '1px solid #FFEAA7',
+          borderRadius: '12px',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#856404',
+          fontFamily: "'Baloo Bhai', sans-serif"
+        }}>
+          📧 <strong>Email Notifications:</strong> Reminder and goal emails from Goal Digger might end up in your spam folder. Please check your spam folder too!
+        </div>
+
       <div className="bento-grid">
         {/* GOALS */}
         <Bento
@@ -1082,21 +1097,7 @@ export default function Dashboard() {
             </div>
           )}
           {!goalsLoading && !goalsErr && goals.length === 0 && (
-            <div className="meta">
-              No goals yet. Generate a roadmap to get started.
-              <br />
-              <div style={{ 
-                marginTop: '12px', 
-                padding: '12px', 
-                background: '#FFF3CD', 
-                border: '1px solid #FFEAA7', 
-                borderRadius: '8px', 
-                fontSize: '14px',
-                color: '#856404'
-              }}>
-                📧 <strong>Email Notifications:</strong> Reminder and goal emails from Goal Digger might end up in your spam folder. Please check your spam folder too!
-              </div>
-            </div>
+            <div className="meta">No goals yet. Generate a roadmap to get started.</div>
           )}
 
           <div
