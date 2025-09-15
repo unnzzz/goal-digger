@@ -51,6 +51,7 @@ class GenerationService {
   // Start generation
   async startGeneration(goal: string, dailyMinutes: number, totalDays: number) {
     console.log('GenerationService: Starting generation for goal:', goal);
+    console.log('GenerationService: Service will continue running across page navigation');
     
     // Cancel any existing generation
     if (this.controller) {
