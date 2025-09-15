@@ -13,7 +13,10 @@ export async function generateRoadmapWithGemini(params: RoadmapParams, progressC
     console.log('Generating roadmap with direct scraping for:', params.goal);
     
     // Use the direct scraping approach
-    const roadmap = await generateRoadmapWithDirectScraping(params, progressCallback, abortSignal);
+    const roadmap = await generateRoadmapWithDirectScraping({
+      goal: params.goal,
+      days: params.total_days || 30
+    });
     
     console.log('Direct roadmap generation completed successfully');
     return roadmap;
