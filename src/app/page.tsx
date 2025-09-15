@@ -284,6 +284,35 @@ export default function Home() {
           {/* Roadmap Display */}
       {data && (
             <div className="roadmap-display">
+              {/* URGENT SAVE WARNING */}
+              <div style={{
+                background: 'linear-gradient(135deg, #FF6B6B, #FF8E8E)',
+                color: 'white',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                border: '2px solid #FF4757',
+                boxShadow: '0 4px 12px rgba(255, 107, 107, 0.3)',
+                animation: 'urgent-pulse 2s infinite',
+                textAlign: 'center',
+                fontWeight: '600',
+                fontSize: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '24px' }}>⚠️</span>
+                  <span>URGENT: Save your roadmap now or it will be lost!</span>
+                  <span style={{ fontSize: '24px' }}>⚠️</span>
+                </div>
+                <div style={{ 
+                  marginTop: '8px', 
+                  fontSize: '14px', 
+                  opacity: 0.9,
+                  fontWeight: '500'
+                }}>
+                  Your generated roadmap is temporary and will disappear if you refresh the page or navigate away.
+                </div>
+              </div>
+              
               <div className="roadmap-header">
                 <div className="roadmap-title-section">
                   <h2>Generated Roadmap</h2>
