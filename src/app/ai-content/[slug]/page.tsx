@@ -106,25 +106,53 @@ export default function AIContentPage() {
         });
       }
     } else {
-      // If no stored content, try to generate it on-demand
-      console.log('No stored content found, attempting to generate on-demand...');
+      // If no stored content, try to generate it on-demand via API
+      console.log('No stored content found, attempting to generate on-demand via API...');
       
-      // Parse the slug to extract goal, day, and type
-      const parts = decodedSlug.split('-');
-      const type = parts[parts.length - 1]; // 'article' or 'podcast'
-      const dayNumber = parts[parts.length - 2]; // day number
-      const goal = parts.slice(0, -2).join(' ').replace(/-/g, ' '); // goal name
-      
-      console.log(`Parsed: goal="${goal}", day=${dayNumber}, type=${type}`);
-      
-      // Generate a basic fallback content
-      const fallbackContent = {
-        title: `${goal} - Day ${dayNumber} ${type === 'article' ? 'Article' : 'Podcast'}`,
-        content: `This is AI-generated content about ${goal} for day ${dayNumber}. The content was not found in storage, but you can still learn about this topic.`,
-        source: 'AI Generated (Fallback)'
-      };
-      
-      setContent(fallbackContent);
+      try {
+        // Call the API route to generate content on-demand
+        const response = await fetch(`/api/ai-content/${encodeURIComponent(decodedSlug)}`);
+        if (response.ok) {
+          // The API route returns HTML, so we need to extract the content
+          const html = await response.text();
+          
+          // Parse the HTML to extract the content (basic parsing)
+          const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
+          const contentMatch = html.match(/<div[^>]*class="content"[^>]*>([\s\S]*?)<\/div>/);
+          
+          if (titleMatch && contentMatch) {
+            const generatedContent = {
+              title: titleMatch[1],
+              content: contentMatch[1],
+              source: 'AI Generated (On-Demand)'
+            };
+            console.log('Successfully generated content via API:', generatedContent);
+            setContent(generatedContent);
+          } else {
+            throw new Error('Could not parse generated content');
+          }
+        } else {
+          throw new Error(`API request failed with status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to generate content via API:', error);
+        
+        // Fallback to basic content if API fails
+        const parts = decodedSlug.split('-');
+        const type = parts[parts.length - 1]; // 'article' or 'podcast'
+        const dayNumber = parts[parts.length - 2]; // day number
+        const goal = parts.slice(0, -2).join(' ').replace(/-/g, ' '); // goal name
+        
+        console.log(`Using fallback content for: goal="${goal}", day=${dayNumber}, type=${type}`);
+        
+        const fallbackContent = {
+          title: `${goal} - Day ${dayNumber} ${type === 'article' ? 'Article' : 'Podcast'}`,
+          content: `This is AI-generated content about ${goal} for day ${dayNumber}. The content was not found in storage, but you can still learn about this topic.`,
+          source: 'AI Generated (Fallback)'
+        };
+        
+        setContent(fallbackContent);
+      }
     }
     setLoading(false);
   }, [params.slug]);
