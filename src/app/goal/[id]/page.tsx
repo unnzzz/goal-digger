@@ -21,6 +21,7 @@ type Resource = {
   url: string;
   source: string | null;
   duration_minutes: number | null;
+  description?: string | null;
   split: { total_parts: number; part_number: number; range?: string | null } | null;
 };
 
@@ -743,10 +744,24 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                               fontSize: '13px', 
                               fontWeight: '600', 
                               color: '#1F2937',
-                              lineHeight: '1.4'
+                              lineHeight: '1.4',
+                              marginBottom: '8px'
                             }}>
                             <Show v={r.title} label={`Goal Resource title`} />
                             </div>
+                            {r.description && (
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: '#6B7280',
+                                lineHeight: '1.5',
+                                background: '#F9FAFB',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: '1px solid #E5E7EB'
+                              }}>
+                                {r.description}
+                              </div>
+                            )}
                           </div>
                           
                           {/* Complete button and reward */}
@@ -966,10 +981,24 @@ export default function GoalPage({ params }: { params: { id: string } }) {
                               fontSize: '13px', 
                               fontWeight: '600', 
                               color: '#1F2937',
-                              lineHeight: '1.4'
+                              lineHeight: '1.4',
+                              marginBottom: '8px'
                             }}>
                             <Show v={r.title} label={`Goal Resource title`} />
                             </div>
+                            {r.description && (
+                              <div style={{ 
+                                fontSize: '12px', 
+                                color: '#6B7280',
+                                lineHeight: '1.5',
+                                background: '#F9FAFB',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: '1px solid #E5E7EB'
+                              }}>
+                                {r.description}
+                              </div>
+                            )}
                           </div>
                           
                           {/* Complete button and reward */}

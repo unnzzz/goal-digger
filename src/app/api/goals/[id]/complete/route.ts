@@ -27,27 +27,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const label = todayLabel(tz);
     const todayN = dayNumberFrom(new Date(goal.startDate), label);
     
-    // Allow access to next day if current day's quiz has been completed
+    // Allow access to next day only if current day's quiz has been completed
     let maxAllowedDay = todayN;
     if (dayNumber > todayN) {
-      // Check if the previous day's quiz was passed (80%+ score)
-      const previousDay = dayNumber - 1;
-      if (previousDay >= 1) {
-        // Check if previous day's quiz was passed in the database
+      // Check if ALL previous days' quizzes were passed (80%+ score)
+      // This ensures consistent behavior - you can only access the next day if you passed the previous day's quiz
+      for (let checkDay = todayN; checkDay < dayNumber; checkDay++) {
         try {
-          const previousQuizCompletion = await prisma.quizCompletion.findFirst({
+          const quizCompletion = await prisma.quizCompletion.findFirst({
             where: { 
               userId: user.id, 
               goalId, 
-              dayNumber: previousDay,
+              dayNumber: checkDay,
               passed: true // Only allow if quiz was passed (80%+)
             }
           });
           
-          if (previousQuizCompletion) {
-            maxAllowedDay = dayNumber; // Allow access to any future day if previous day quiz was passed
-          } else {
-            return NextResponse.json({ error: "You must pass the previous day's quiz (80%+) to unlock the next day" }, { status: 400 });
+          if (!quizCompletion) {
+            return NextResponse.json({ 
+              error: `You must pass day ${checkDay}'s quiz (80%+) to unlock day ${dayNumber}` 
+            }, { status: 400 });
           }
         } catch (error) {
           // QuizCompletion table might not exist yet
@@ -58,10 +57,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           } else {
             return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
           }
+          break; // Exit the loop if we're in fallback mode
         }
-      } else {
-        return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
       }
+      // If we get here, all previous days' quizzes were passed
+      maxAllowedDay = dayNumber;
     }
     
     if (dayNumber > maxAllowedDay) return NextResponse.json({ error: "You cannot complete future day quests" }, { status: 400 });
