@@ -116,7 +116,9 @@ export default function Home() {
         const result = await response.json();
         setSaveModalData({
           success: true,
-          message: startGoal ? "Goal saved and started successfully!" : "Goal saved successfully!",
+          message: startGoal ? 
+            "Goal saved and started successfully! You will receive a daily reminder email from Goal Digger. Please check your spam folder too!" : 
+            "Goal saved successfully! You will receive a daily reminder email from Goal Digger. Please check your spam folder too!",
           isStartGoal: startGoal
         });
         setShowSaveModal(true);
@@ -595,7 +597,12 @@ export default function Home() {
             }}>
               <button
                 type="button"
-                onClick={() => setShowSaveModal(false)}
+                onClick={() => {
+                  setShowSaveModal(false);
+                  if (saveModalData.success) {
+                    router.push('/dashboard');
+                  }
+                }}
                 style={{
                   background: saveModalData.success ? '#10B981' : '#6A3EE8',
                   color: 'white',
@@ -608,7 +615,7 @@ export default function Home() {
                   fontFamily: 'inherit'
                 }}
               >
-                {saveModalData.success ? 'Great!' : 'OK'}
+                {saveModalData.success ? 'Go to Dashboard' : 'OK'}
               </button>
             </div>
           </div>
