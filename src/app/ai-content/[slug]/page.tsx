@@ -53,108 +53,112 @@ export default function AIContentPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Extract content from URL or localStorage
-    const slug = params.slug as string;
-    const decodedSlug = decodeURIComponent(slug);
-    const contentKey = `ai-content-${decodedSlug}`;
-    console.log('Original slug:', slug);
-    console.log('Decoded slug:', decodedSlug);
-    console.log('Looking for AI content with key:', contentKey);
-    console.log('Available localStorage keys:', Object.keys(localStorage).filter(k => k.startsWith('ai-content')));
-    
-    let storedContent = localStorage.getItem(contentKey);
-    console.log('Stored content found:', !!storedContent);
-    console.log('Stored content length:', storedContent?.length);
-    
-    // If not found with the expected key, try alternative patterns
-    if (!storedContent) {
-      console.log('Trying alternative slug patterns...');
+    const loadContent = async () => {
+      // Extract content from URL or localStorage
+      const slug = params.slug as string;
+      const decodedSlug = decodeURIComponent(slug);
+      const contentKey = `ai-content-${decodedSlug}`;
+      console.log('Original slug:', slug);
+      console.log('Decoded slug:', decodedSlug);
+      console.log('Looking for AI content with key:', contentKey);
+      console.log('Available localStorage keys:', Object.keys(localStorage).filter(k => k.startsWith('ai-content')));
       
-      // Try different slug patterns that might exist
-      const alternativeKeys = Object.keys(localStorage).filter(k => k.startsWith('ai-content-'));
-      console.log('Available alternative keys:', alternativeKeys);
+      let storedContent = localStorage.getItem(contentKey);
+      console.log('Stored content found:', !!storedContent);
+      console.log('Stored content length:', storedContent?.length);
       
-      // Look for keys that might match the goal and day
-      const goalMatch = decodedSlug.match(/^([^-]+)-day-(\d+)-/);
-      if (goalMatch) {
-        const [, goal, dayNumber] = goalMatch;
-        console.log(`Looking for goal: "${goal}", day: ${dayNumber}`);
+      // If not found with the expected key, try alternative patterns
+      if (!storedContent) {
+        console.log('Trying alternative slug patterns...');
         
-        // Try to find any key that contains the goal and day
-        const matchingKey = alternativeKeys.find(key => 
-          key.includes(goal) && key.includes(`day-${dayNumber}`)
-        );
+        // Try different slug patterns that might exist
+        const alternativeKeys = Object.keys(localStorage).filter(k => k.startsWith('ai-content-'));
+        console.log('Available alternative keys:', alternativeKeys);
         
-        if (matchingKey) {
-          console.log(`Found matching key: ${matchingKey}`);
-          storedContent = localStorage.getItem(matchingKey);
-        }
-      }
-    }
-    
-    if (storedContent) {
-      try {
-        const parsedContent = JSON.parse(storedContent);
-        console.log('Parsed content:', parsedContent);
-        setContent(parsedContent);
-      } catch (error) {
-        console.error('Error parsing stored content:', error);
-        setContent({
-          title: 'AI Generated Content',
-          content: 'Error loading AI generated content.',
-          source: 'AI Generated'
-        });
-      }
-    } else {
-      // If no stored content, try to generate it on-demand via API
-      console.log('No stored content found, attempting to generate on-demand via API...');
-      
-      try {
-        // Call the API route to generate content on-demand
-        const response = await fetch(`/api/ai-content/${encodeURIComponent(decodedSlug)}`);
-        if (response.ok) {
-          // The API route returns HTML, so we need to extract the content
-          const html = await response.text();
+        // Look for keys that might match the goal and day
+        const goalMatch = decodedSlug.match(/^([^-]+)-day-(\d+)-/);
+        if (goalMatch) {
+          const [, goal, dayNumber] = goalMatch;
+          console.log(`Looking for goal: "${goal}", day: ${dayNumber}`);
           
-          // Parse the HTML to extract the content (basic parsing)
-          const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
-          const contentMatch = html.match(/<div[^>]*class="content"[^>]*>([\s\S]*?)<\/div>/);
+          // Try to find any key that contains the goal and day
+          const matchingKey = alternativeKeys.find(key => 
+            key.includes(goal) && key.includes(`day-${dayNumber}`)
+          );
           
-          if (titleMatch && contentMatch) {
-            const generatedContent = {
-              title: titleMatch[1],
-              content: contentMatch[1],
-              source: 'AI Generated (On-Demand)'
-            };
-            console.log('Successfully generated content via API:', generatedContent);
-            setContent(generatedContent);
-          } else {
-            throw new Error('Could not parse generated content');
+          if (matchingKey) {
+            console.log(`Found matching key: ${matchingKey}`);
+            storedContent = localStorage.getItem(matchingKey);
           }
-        } else {
-          throw new Error(`API request failed with status: ${response.status}`);
         }
-      } catch (error) {
-        console.error('Failed to generate content via API:', error);
-        
-        // Fallback to basic content if API fails
-        const parts = decodedSlug.split('-');
-        const type = parts[parts.length - 1]; // 'article' or 'podcast'
-        const dayNumber = parts[parts.length - 2]; // day number
-        const goal = parts.slice(0, -2).join(' ').replace(/-/g, ' '); // goal name
-        
-        console.log(`Using fallback content for: goal="${goal}", day=${dayNumber}, type=${type}`);
-        
-        const fallbackContent = {
-          title: `${goal} - Day ${dayNumber} ${type === 'article' ? 'Article' : 'Podcast'}`,
-          content: `This is AI-generated content about ${goal} for day ${dayNumber}. The content was not found in storage, but you can still learn about this topic.`,
-          source: 'AI Generated (Fallback)'
-        };
-        
-        setContent(fallbackContent);
       }
-    }
-    setLoading(false);
+      
+      if (storedContent) {
+        try {
+          const parsedContent = JSON.parse(storedContent);
+          console.log('Parsed content:', parsedContent);
+          setContent(parsedContent);
+        } catch (error) {
+          console.error('Error parsing stored content:', error);
+          setContent({
+            title: 'AI Generated Content',
+            content: 'Error loading AI generated content.',
+            source: 'AI Generated'
+          });
+        }
+      } else {
+        // If no stored content, try to generate it on-demand via API
+        console.log('No stored content found, attempting to generate on-demand via API...');
+        
+        try {
+          // Call the API route to generate content on-demand
+          const response = await fetch(`/api/ai-content/${encodeURIComponent(decodedSlug)}`);
+          if (response.ok) {
+            // The API route returns HTML, so we need to extract the content
+            const html = await response.text();
+            
+            // Parse the HTML to extract the content (basic parsing)
+            const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
+            const contentMatch = html.match(/<div[^>]*class="content"[^>]*>([\s\S]*?)<\/div>/);
+            
+            if (titleMatch && contentMatch) {
+              const generatedContent = {
+                title: titleMatch[1],
+                content: contentMatch[1],
+                source: 'AI Generated (On-Demand)'
+              };
+              console.log('Successfully generated content via API:', generatedContent);
+              setContent(generatedContent);
+            } else {
+              throw new Error('Could not parse generated content');
+            }
+          } else {
+            throw new Error(`API request failed with status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Failed to generate content via API:', error);
+          
+          // Fallback to basic content if API fails
+          const parts = decodedSlug.split('-');
+          const type = parts[parts.length - 1]; // 'article' or 'podcast'
+          const dayNumber = parts[parts.length - 2]; // day number
+          const goal = parts.slice(0, -2).join(' ').replace(/-/g, ' '); // goal name
+          
+          console.log(`Using fallback content for: goal="${goal}", day=${dayNumber}, type=${type}`);
+          
+          const fallbackContent = {
+            title: `${goal} - Day ${dayNumber} ${type === 'article' ? 'Article' : 'Podcast'}`,
+            content: `This is AI-generated content about ${goal} for day ${dayNumber}. The content was not found in storage, but you can still learn about this topic.`,
+            source: 'AI Generated (Fallback)'
+          };
+          
+          setContent(fallbackContent);
+        }
+      }
+      setLoading(false);
+    };
+
+    loadContent();
   }, [params.slug]);
 
   if (loading) {
