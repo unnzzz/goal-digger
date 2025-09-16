@@ -140,7 +140,20 @@ export async function GET(req: NextRequest) {
       }
 
       // Process all days up to and including the current day
+      // But only show future days if previous day's quiz was passed
       for (let dn = 1; dn <= currentDay; dn++) {
+        // Check if this day should be accessible
+        if (dn > 1) {
+          // For days after day 1, check if previous day's quiz was passed
+          const previousDayQuizCompletions = allQuizCompletions.filter(qc => qc.dayNumber === dn - 1);
+          const previousDayQuizPassed = previousDayQuizCompletions.some(qc => qc.passed === true);
+          
+          if (!previousDayQuizPassed) {
+            // Skip this day if previous day's quiz wasn't passed
+            continue;
+          }
+        }
+        
         const day = rm.days.find((d) => d.day === dn) || rm.days[dn - 1];
         if (!day) continue;
 
