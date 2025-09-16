@@ -113,6 +113,18 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check daily goal limit before starting generation
+    if (dailyGoalsCount >= 3) {
+      setSaveModalData({
+        success: false,
+        message: "Daily goal limit reached. You can create up to 3 goals per day. Try again tomorrow.",
+        isStartGoal: false
+      });
+      setShowSaveModal(true);
+      return;
+    }
+    
     await startGeneration(goal, dailyMinutes, totalDays);
   };
 
@@ -295,9 +307,10 @@ export default function Home() {
                 <button
                   type="submit"
                   className="btn generate-btn"
-                  disabled={loading}
+                  disabled={loading || dailyGoalsCount >= 3}
                 >
-                  {loading ? `${statusMessage} (${progress}%)` : "Generate Roadmap"}
+                  {loading ? `${statusMessage} (${progress}%)` : 
+                   dailyGoalsCount >= 3 ? "Daily Limit Reached" : "Generate Roadmap"}
                 </button>
               </div>
 

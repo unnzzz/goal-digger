@@ -1789,6 +1789,15 @@ a:hover {
   display: block;
 }
 
+/* Disabled Generate Button */
+.btn.generate-btn:disabled {
+  background: #9CA3AF !important;
+  color: #6B7280 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* Verification Info */
 .verification-info {
   margin-top: 32px;
