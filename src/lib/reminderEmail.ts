@@ -1,5 +1,4 @@
-e114a3b
-Fix quest unlocking to be sequential, not cumulative// src/lib/reminderEmail.ts - Sequential quest unlocking verified
+// src/lib/reminderEmail.ts - Sequential quest unlocking verified
 import { getTransport } from "@/lib/mailer";
 
 const BASE_URL = process.env.APP_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
