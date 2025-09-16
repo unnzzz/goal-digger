@@ -21,6 +21,31 @@ export async function POST(req: Request) {
   const u = await prisma.user.findUnique({ where: { email: s.user.email } });
   if (!u) return new Response("Unauthorized", { status: 401 });
 
+  // Check daily goal limit (3 goals per day)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
+
+  const goalsCreatedToday = await prisma.goal.count({
+    where: {
+      userId: u.id,
+      createdAt: {
+        gte: today,
+        lt: tomorrow
+      }
+    }
+  });
+
+  if (goalsCreatedToday >= 3) {
+    return new Response(JSON.stringify({ 
+      error: "Daily goal limit reached. You can create up to 3 goals per day. Try again tomorrow." 
+    }), { 
+      status: 429, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  }
+
   const { title, dailyMinutes, totalDays, content, startGoal } = await req.json();
 
   if (!title || !dailyMinutes || !totalDays || !content) {

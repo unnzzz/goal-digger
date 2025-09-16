@@ -28,6 +28,7 @@ export default function Home() {
   const { showMessage } = useAvatar();
   const [savedGoals, setSavedGoals] = useState<any[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(false);
+  const [dailyGoalsCount, setDailyGoalsCount] = useState(0);
   
   // Use the global generation context
   const { 
@@ -48,6 +49,29 @@ export default function Home() {
     statusMessage 
   } = generationState;
 
+  // Fetch daily goals count
+  const fetchDailyGoalsCount = async () => {
+    try {
+      const response = await fetch('/api/goals');
+      if (response.ok) {
+        const goals = await response.json();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todayGoals = goals.filter((goal: any) => {
+          const createdAt = new Date(goal.createdAt);
+          return createdAt >= today && createdAt < tomorrow;
+        });
+        
+        setDailyGoalsCount(todayGoals.length);
+      }
+    } catch (error) {
+      console.error('Failed to fetch daily goals count:', error);
+    }
+  };
+
   // Show avatar message when roadmap generator page loads
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,6 +79,11 @@ export default function Home() {
     }, 2000); // Delay to let page load
     return () => clearTimeout(timer);
   }, [showMessage]);
+
+  // Fetch daily goals count on component mount
+  useEffect(() => {
+    fetchDailyGoalsCount();
+  }, []);
   
   // Save Goal Modal
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -122,6 +151,9 @@ export default function Home() {
           isStartGoal: startGoal
         });
         setShowSaveModal(true);
+        
+        // Refresh daily goals count
+        fetchDailyGoalsCount();
         
         // Show instant avatar message for goal creation
         if (startGoal) {
@@ -198,6 +230,18 @@ export default function Home() {
                 <Image src="/icons/trophy.png" alt="Trophy" width={53} height={53} className="title-icon" />
                 Create your RoadMap
               </h1>
+              
+              {/* Daily Goal Limit Indicator */}
+              <div className="daily-limit-indicator">
+                <span className="limit-text">
+                  Daily Goals: {dailyGoalsCount}/3
+                </span>
+                {dailyGoalsCount >= 3 && (
+                  <span className="limit-warning">
+                    ⚠️ Daily limit reached. Try again tomorrow.
+                  </span>
+                )}
+              </div>
               
               <div className="form-group">
                 <label className="form-label">Enter your Goal</label>

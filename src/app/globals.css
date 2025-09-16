@@ -1763,6 +1763,32 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Daily Goal Limit Indicator */
+.daily-limit-indicator {
+  background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  text-align: center;
+  font-family: 'Baloo Bhai', sans-serif;
+}
+
+.limit-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.limit-warning {
+  font-size: 13px;
+  color: #DC2626;
+  font-weight: 600;
+  display: block;
+}
+
 /* Verification Info */
 .verification-info {
   margin-top: 32px;
