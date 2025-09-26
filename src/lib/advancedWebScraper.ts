@@ -497,39 +497,37 @@ export class AdvancedWebScraper {
     return queryTerms.slice(0, 3).join(' '); // Use top 3 terms from query
   }
 
-  // Search web for best rated articles related to goal+day
+  // Search for articles using the working DuckDuckGo approach
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     const globalUsedUrls = new Set<string>();
     
     try {
-      console.log(`Searching web for best articles about: "${query}"`);
+      console.log(`Searching for articles about: "${query}"`);
       
       // Create search query combining goal and day context
       const searchQuery = goal ? `${goal} ${query}` : query;
       console.log(`Search query: "${searchQuery}"`);
       
-      // Use DuckDuckGo search to find the best rated articles
-      const duckDuckGoUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}`;
-      console.log(`DuckDuckGo search URL: ${duckDuckGoUrl}`);
+      // Use the working DuckDuckGo approach
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}`;
+      console.log(`DuckDuckGo search URL: ${searchUrl}`);
       
-      const response = await this.makeRequest(duckDuckGoUrl);
+      const response = await this.makeRequest(searchUrl);
       
       if (response.status === 200) {
         const $ = cheerio.load(response.data);
-        console.log(`DuckDuckGo search page loaded, content length: ${response.data.length}`);
-        console.log(`Page title: ${$('title').text()}`);
+        console.log(`DuckDuckGo page loaded, content length: ${response.data.length}`);
         
-        // Extract search results - DuckDuckGo uses different selectors
-        const searchResultSelectors = [
-          '.result .result__title a', // DuckDuckGo results
-          '.result h2 a', // Alternative DuckDuckGo selector
-          '.result a', // Generic result links
-          'h2 a', // Generic h2 links
-          'a[href*="http"]' // Any external links
+        // Use the working selectors from the previous commit
+        const selectors = [
+          '.result__title a',
+          '.result__url a', 
+          '.result a',
+          '.result__snippet a'
         ];
         
-        for (const selector of searchResultSelectors) {
+        for (const selector of selectors) {
           console.log(`Trying selector: ${selector}`);
           $(selector).each((index, element) => {
             if (results.length >= 3) return false;
@@ -569,7 +567,7 @@ export class AdvancedWebScraper {
                 url: url,
                 source: source,
                 duration_minutes: 15,
-                description: `Best article about ${query}`,
+                description: `Article about ${query}`,
                 split: null
               });
               
@@ -587,9 +585,8 @@ export class AdvancedWebScraper {
       }
       
     } catch (error) {
-      console.error('Web search failed:', error instanceof Error ? error.message : String(error));
+      console.error('Article search failed:', error instanceof Error ? error.message : String(error));
     }
-    
     
     console.log(`Total articles found: ${results.length}`);
     return results;
