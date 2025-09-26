@@ -345,7 +345,9 @@ export class AdvancedWebScraper {
 
   // Validate if URL is a real article (not navigation or generic page)
   private isRealArticleUrl(url: string, sourceName: string): boolean {
-    // Skip navigation and generic pages
+    console.log(`Validating URL: ${url} for source: ${sourceName}`);
+    
+    // Skip obvious navigation and generic pages
     const skipPatterns = [
       '/search', '/category', '/tag', '/archive', '/browse', '/list',
       '/all', '/more', '/popular', '/trending', '/latest', '/recent',
@@ -357,25 +359,39 @@ export class AdvancedWebScraper {
 
     for (const pattern of skipPatterns) {
       if (url.toLowerCase().includes(pattern)) {
+        console.log(`Rejected URL due to pattern: ${pattern}`);
         return false;
       }
     }
 
-    // Platform-specific validation
+    // Platform-specific validation - more lenient
     switch (sourceName) {
       case 'Medium':
-        return url.includes('/@') && !url.includes('/search');
+        const isValidMedium = url.includes('/@') && !url.includes('/search');
+        console.log(`Medium validation: ${isValidMedium}`);
+        return isValidMedium;
       case 'Dev.to':
-        return url.includes('/articles/') || url.includes('/@');
+        const isValidDev = url.includes('/articles/') || url.includes('/@') || url.includes('/dev.to/');
+        console.log(`Dev.to validation: ${isValidDev}`);
+        return isValidDev;
       case 'Reddit':
-        return url.includes('/r/') && url.includes('/comments/');
+        const isValidReddit = url.includes('/r/');
+        console.log(`Reddit validation: ${isValidReddit}`);
+        return isValidReddit;
       case 'Stack Overflow':
-        return url.includes('/questions/');
+        const isValidSO = url.includes('/questions/') || url.includes('/stackoverflow.com/');
+        console.log(`Stack Overflow validation: ${isValidSO}`);
+        return isValidSO;
       case 'Smashing Magazine':
-        return url.includes('/articles/') || url.includes('/guides/');
+        const isValidSmashing = url.includes('/articles/') || url.includes('/guides/') || url.includes('/smashingmagazine.com/');
+        console.log(`Smashing Magazine validation: ${isValidSmashing}`);
+        return isValidSmashing;
       case 'FreeCodeCamp':
-        return url.includes('/news/') || url.includes('/learn/');
+        const isValidFCC = url.includes('/news/') || url.includes('/learn/') || url.includes('/freecodecamp.org/');
+        console.log(`FreeCodeCamp validation: ${isValidFCC}`);
+        return isValidFCC;
       default:
+        console.log(`Default validation: true`);
         return true; // Allow other sources
     }
   }
@@ -406,6 +422,7 @@ export class AdvancedWebScraper {
         try {
           console.log(`Searching ${source.name} for articles about: ${query}`);
           const response = await this.makeRequest(source.url);
+          console.log(`${source.name} response status: ${response.status}`);
           const $ = cheerio.load(response.data);
           
           if (source.type === 'direct') {
@@ -425,12 +442,14 @@ export class AdvancedWebScraper {
           } else {
             // Search results page
             const beforeCount = results.length;
+            console.log(`Before extraction: ${beforeCount} articles`);
             this.extractArticlesFromPage($, source.name, query, results, globalUsedUrls);
             const afterCount = results.length;
+            console.log(`After extraction: ${afterCount} articles`);
             console.log(`${source.name}: Found ${afterCount - beforeCount} new articles`);
           }
           
-          if (results.length >= 3) break;
+          if (results.length >= 2) break; // Reduced from 3 to 2
         } catch (error) {
           console.log(`${source.name} search failed:`, error instanceof Error ? error.message : String(error));
         }
