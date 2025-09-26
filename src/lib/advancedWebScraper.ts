@@ -497,7 +497,7 @@ export class AdvancedWebScraper {
     return queryTerms.slice(0, 3).join(' '); // Use top 3 terms from query
   }
 
-  // Search for articles using the working DuckDuckGo approach
+  // Search for articles using multiple methods with educational domain filtering
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     const globalUsedUrls = new Set<string>();
@@ -505,95 +505,225 @@ export class AdvancedWebScraper {
     try {
       console.log(`Searching for articles about: "${query}"`);
       
-      // Create search query combining goal and day context
-      const searchQuery = goal ? `${goal} ${query}` : query;
-      console.log(`Search query: "${searchQuery}"`);
+      // Clean up the query but preserve goal context
+      const cleanQuery = query.replace(/day \d+/gi, '').replace(/tutorial|guide|basics|fundamentals/gi, '').trim();
       
-      // Use the working DuckDuckGo approach
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}`;
-      console.log(`DuckDuckGo search URL: ${searchUrl}`);
+      // If the query already contains the goal, use it as-is
+      const hasGoalContext = goal && query.toLowerCase().includes(goal.toLowerCase());
+      const finalQuery = hasGoalContext ? query : cleanQuery;
       
-      const response = await this.makeRequest(searchUrl);
-      console.log(`DuckDuckGo response status: ${response.status}`);
-      console.log(`DuckDuckGo response headers:`, response.headers);
+      // Create more specific search variations based on the goal context
+      let searchVariations = [];
       
-      if (response.status === 200) {
-        const $ = cheerio.load(response.data);
-        console.log(`DuckDuckGo page loaded, content length: ${response.data.length}`);
-        console.log(`Page title: ${$('title').text()}`);
-        console.log(`Page content preview: ${response.data.substring(0, 500)}`);
+      if (goal) {
+        const goalWords = goal.toLowerCase().split(' ').filter(word => word.length > 3);
+        const mainGoal = goalWords[0] || goal.toLowerCase();
         
-        // Try multiple selectors to see what's available
-        const selectors = [
-          '.result__title a',
-          '.result__url a', 
-          '.result a',
-          '.result__snippet a',
-          'h2 a',
-          'h3 a',
-          'a[href*="http"]',
-          '.result',
-          '.web-result'
+        searchVariations = [
+          `${mainGoal} ${finalQuery} tutorial`,
+          `${mainGoal} ${finalQuery} guide`,
+          `${mainGoal} ${finalQuery} how to`,
+          `${finalQuery} for ${mainGoal}`,
+          `${mainGoal} ${finalQuery} beginner`
         ];
-        
-        for (const selector of selectors) {
-          console.log(`Trying selector: ${selector}`);
-          const elements = $(selector);
-          console.log(`Found ${elements.length} elements with selector: ${selector}`);
+      } else {
+        searchVariations = [
+          `${cleanQuery} tutorial`,
+          `${cleanQuery} complete guide`,
+          `${cleanQuery} how to guide`,
+          `${cleanQuery} beginner tutorial`,
+          `${cleanQuery} learn ${cleanQuery}`
+        ];
+      }
+      
+      // Educational domains to prioritize
+      const educationalDomains = [
+        'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
+        'w3schools.com', 'mdn.mozilla.org', 'stackoverflow.com',
+        'github.com', 'docs.python.org', 'nodejs.org', 'reactjs.org',
+        'studiobinder.com', 'premiumbeat.com', 'masterclass.com',
+        'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com',
+        'skillshare.com', 'udemy.com', 'coursera.org', 'edx.org',
+        'khanacademy.org', 'codecademy.com', 'pluralsight.com',
+        'wikipedia.org', 'wikihow.com', 'instructables.com',
+        'allrecipes.com', 'foodnetwork.com', 'seriouseats.com',
+        'healthline.com', 'webmd.com', 'mayoclinic.org',
+        'investopedia.com', 'linkedin.com'
+      ];
+      
+      // Method 1: Try multiple search variations with DuckDuckGo
+      for (const searchTerm of searchVariations.slice(0, 3)) {
+        try {
+          const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchTerm)}`;
+          console.log(`Trying DuckDuckGo: ${searchTerm}`);
           
-          elements.each((index, element) => {
-            if (results.length >= 3) return false;
-            
-            const title = $(element).text().trim();
-            let url = $(element).attr('href');
-            
-            console.log(`Element ${index}: title="${title.substring(0, 50)}", url="${url}"`);
-            
-            // Filter for real articles and blogs
-            if (url && title && title.length > 10 && title.length < 200 && 
-                !title.includes('Sign in') && !title.includes('Subscribe') && 
-                !title.includes('Login') && !title.includes('Register') &&
-                !title.includes('Menu') && !title.includes('Search') &&
-                !url.includes('youtube.com') && !url.includes('youtu.be') &&
-                !url.includes('facebook.com') && !url.includes('twitter.com') &&
-                !url.includes('instagram.com') && !url.includes('linkedin.com') &&
-                !url.includes('reddit.com') && !url.includes('quora.com') &&
-                !url.includes('stackoverflow.com') && !url.includes('github.com') &&
-                !url.includes('google.com') && !url.includes('bing.com') &&
-                !url.includes('duckduckgo.com') && !url.includes('startpage.com') &&
-                !url.includes('yahoo.com') && !url.includes('ask.com') &&
-                !globalUsedUrls.has(url)) {
+          const response = await this.makeRequest(searchUrl);
+          const $ = cheerio.load(response.data);
+        
+          // Multiple selectors for DuckDuckGo results
+          const selectors = [
+            '.result__title a',
+            '.result__url a',
+            '.result a',
+            '.result__snippet a'
+          ];
+          
+          for (const selector of selectors) {
+            $(selector).each((index, element) => {
+              if (results.length >= 3) return false;
               
-              // Extract domain name for source
-              let source = 'Web';
-              try {
-                const urlObj = new URL(url);
-                source = urlObj.hostname.replace('www.', '');
-              } catch (e) {
-                // Keep 'Web' if URL parsing fails
+              const href = $(element).attr('href');
+              let title = $(element).text().trim();
+              
+              // Clean up title - remove CSS classes and ensure it's actual text
+              if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http') || title.includes('search') || title.includes('results')) {
+                const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+                if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && !altTitle.includes('http') && !altTitle.includes('search') && !altTitle.includes('results') && altTitle.length > 10) {
+                  title = altTitle;
+                } else {
+                  return; // Skip this result if title is invalid
+                }
               }
               
-              results.push({
-                kind: 'read',
-                title: title,
-                url: url,
-                source: source,
-                duration_minutes: 15,
-                description: `Article about ${query}`,
-                split: null
-              });
-              
-              globalUsedUrls.add(url);
-              console.log(`Added article: ${title.substring(0, 50)} from ${source}`);
+              if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results') && !globalUsedUrls.has(href)) {
+                try {
+                  const url = new URL(href);
+                  const isEducational = educationalDomains.some(domain => 
+                    url.hostname.includes(domain)
+                  );
+                  
+                  if (isEducational) {
+                    results.push({
+                      kind: 'read',
+                      title: title.substring(0, 100),
+                      url: href,
+                      source: url.hostname.replace('www.', ''),
+                      duration_minutes: 10 + Math.floor(Math.random() * 8),
+                      description: `Article about ${query}`,
+                      split: null
+                    });
+                    
+                    globalUsedUrls.add(href);
+                    console.log(`Added article: ${title.substring(0, 50)} from ${url.hostname}`);
+                  }
+                } catch (e) {
+                  // Skip invalid URLs
+                }
+              }
+            });
+            
+            if (results.length > 0) break;
+          }
+          
+          if (results.length > 0) break;
+        } catch (error) {
+          console.error(`DuckDuckGo search error for "${searchTerm}":`, error);
+          continue; // Try next search term
+        }
+      }
+      
+      // Method 2: If no results, try Startpage
+      if (results.length === 0) {
+        try {
+          const searchUrl = `https://www.startpage.com/sp/search?query=${encodeURIComponent(query)}`;
+          console.log(`Trying Startpage: ${query}`);
+          
+          const response = await this.makeRequest(searchUrl);
+          const $ = cheerio.load(response.data);
+          
+          $('a[href^="http"]').each((index, element) => {
+            if (results.length >= 3) return false;
+            
+            const href = $(element).attr('href');
+            let title = $(element).text().trim();
+            
+            // Clean up title - remove CSS classes and ensure it's actual text
+            if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10) {
+              const altTitle = $(element).attr('title') || $(element).attr('aria-label') || $(element).find('h3, h2, h1').text().trim();
+              if (altTitle && !altTitle.includes('{') && !altTitle.includes('css-') && altTitle.length > 10) {
+                title = altTitle;
+              } else {
+                return; // Skip this result if title is invalid
+              }
+            }
+            
+            if (href && title && title.length > 10 && !title.includes('{') && !title.includes('css-') && !globalUsedUrls.has(href)) {
+              try {
+                const url = new URL(href);
+                const isEducational = educationalDomains.some(domain => 
+                  url.hostname.includes(domain)
+                );
+                
+                if (isEducational) {
+                  results.push({
+                    kind: 'read',
+                    title: title.substring(0, 100),
+                    url: href,
+                    source: url.hostname.replace('www.', ''),
+                    duration_minutes: 10 + Math.floor(Math.random() * 8),
+                    description: `Article about ${query}`,
+                    split: null
+                  });
+                  
+                  globalUsedUrls.add(href);
+                  console.log(`Added article: ${title.substring(0, 50)} from ${url.hostname}`);
+                }
+              } catch (e) {
+                // Skip invalid URLs
+              }
             }
           });
           
-          if (results.length >= 3) break;
+        } catch (error) {
+          console.error('Startpage search error:', error);
         }
-        
-        console.log(`DuckDuckGo search found ${results.length} articles`);
-      } else {
-        console.log(`DuckDuckGo search failed with status ${response.status}`);
+      }
+      
+      // Method 3: If still no results, try Bing
+      if (results.length === 0) {
+        try {
+          const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+          console.log(`Trying Bing: ${query}`);
+          
+          const response = await this.makeRequest(searchUrl);
+          const $ = cheerio.load(response.data);
+          
+          $('a[href^="http"]').each((index, element) => {
+            if (results.length >= 3) return false;
+            
+            const href = $(element).attr('href');
+            const title = $(element).text().trim();
+            
+            if (href && title && !href.includes('bing.com') && title.length > 10 && !globalUsedUrls.has(href)) {
+              try {
+                const url = new URL(href);
+                const isEducational = educationalDomains.some(domain => 
+                  url.hostname.includes(domain)
+                );
+                
+                if (isEducational) {
+                  results.push({
+                    kind: 'read',
+                    title: title.substring(0, 100),
+                    url: href,
+                    source: url.hostname.replace('www.', ''),
+                    duration_minutes: 10 + Math.floor(Math.random() * 8),
+                    description: `Article about ${query}`,
+                    split: null
+                  });
+                  
+                  globalUsedUrls.add(href);
+                  console.log(`Added article: ${title.substring(0, 50)} from ${url.hostname}`);
+                }
+              } catch (e) {
+                // Skip invalid URLs
+              }
+            }
+          });
+          
+        } catch (error) {
+          console.error('Bing search error:', error);
+        }
       }
       
     } catch (error) {
