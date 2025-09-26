@@ -23,7 +23,7 @@ export class SimpleWebScraper {
   private getVideoResources(query: string, goal: string): ResourceT[] {
     const resources: ResourceT[] = [];
     
-    // Spanish learning videos
+    // Language learning videos
     if (query.includes('spanish') || goal.includes('spanish')) {
       resources.push(
         {
@@ -47,8 +47,167 @@ export class SimpleWebScraper {
       );
     }
     
-    // General learning videos
-    if (query.includes('learn') || query.includes('tutorial') || query.includes('guide')) {
+    // Programming videos
+    if (query.includes('programming') || query.includes('coding') || query.includes('development') || 
+        goal.includes('programming') || goal.includes('coding') || goal.includes('development')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'Learn Programming in 10 Minutes',
+          url: 'https://www.youtube.com/watch?v=zOjov-2OZ0E',
+          source: 'YouTube - Programming with Mosh',
+          duration_minutes: 10,
+          description: 'Quick introduction to programming concepts and getting started.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'How to Learn Programming - Complete Roadmap',
+          url: 'https://www.youtube.com/watch?v=7C9RgOcvkvo',
+          source: 'YouTube - CodeWithHarry',
+          duration_minutes: 30,
+          description: 'Complete roadmap for learning programming from scratch.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'Programming Tutorial for Beginners',
+          url: 'https://www.youtube.com/watch?v=8jLOx1hD3_o',
+          source: 'YouTube - Derek Banas',
+          duration_minutes: 45,
+          description: 'Comprehensive programming tutorial for absolute beginners.',
+          split: null
+        }
+      );
+    }
+    
+    // Design videos
+    if (query.includes('design') || query.includes('ui') || query.includes('ux') || 
+        goal.includes('design') || goal.includes('ui') || goal.includes('ux')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'UI/UX Design Tutorial - Complete Course',
+          url: 'https://www.youtube.com/watch?v=68w2VwalD5w',
+          source: 'YouTube - Flux',
+          duration_minutes: 60,
+          description: 'Complete UI/UX design course covering all fundamentals.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'Graphic Design Basics - Learn Design Principles',
+          url: 'https://www.youtube.com/watch?v=YqQx75OPRa0',
+          source: 'YouTube - The Futur',
+          duration_minutes: 25,
+          description: 'Learn the fundamental principles of graphic design.',
+          split: null
+        }
+      );
+    }
+    
+    // Business videos
+    if (query.includes('business') || query.includes('entrepreneur') || query.includes('startup') || 
+        goal.includes('business') || goal.includes('entrepreneur') || goal.includes('startup')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'How to Start a Business - Complete Guide',
+          url: 'https://www.youtube.com/watch?v=YyQl0VH3X1Y',
+          source: 'YouTube - GaryVee',
+          duration_minutes: 20,
+          description: 'Complete guide to starting your own business.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'Business Strategy and Planning',
+          url: 'https://www.youtube.com/watch?v=7PjZEBGc7-0',
+          source: 'YouTube - Harvard Business Review',
+          duration_minutes: 15,
+          description: 'Learn business strategy and planning fundamentals.',
+          split: null
+        }
+      );
+    }
+    
+    // Photography videos
+    if (query.includes('photography') || query.includes('camera') || query.includes('photo') || 
+        goal.includes('photography') || goal.includes('camera') || goal.includes('photo')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'Photography Basics in 10 Minutes',
+          url: 'https://www.youtube.com/watch?v=hVuTuib65WM',
+          source: 'YouTube - Peter McKinnon',
+          duration_minutes: 10,
+          description: 'Quick guide to photography fundamentals.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'Complete Photography Course for Beginners',
+          url: 'https://www.youtube.com/watch?v=7R0IzF3t2tY',
+          source: 'YouTube - Mango Street',
+          duration_minutes: 45,
+          description: 'Comprehensive photography course covering all basics.',
+          split: null
+        }
+      );
+    }
+    
+    // Cooking videos
+    if (query.includes('cooking') || query.includes('recipe') || query.includes('food') || 
+        goal.includes('cooking') || goal.includes('recipe') || goal.includes('food')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'Basic Cooking Techniques Everyone Should Know',
+          url: 'https://www.youtube.com/watch?v=13rQqgqUCL8',
+          source: 'YouTube - Gordon Ramsay',
+          duration_minutes: 20,
+          description: 'Essential cooking techniques for beginners.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'Learn to Cook - Complete Beginner Guide',
+          url: 'https://www.youtube.com/watch?v=1p6Lh0jU3lQ',
+          source: 'YouTube - Binging with Babish',
+          duration_minutes: 30,
+          description: 'Complete guide to learning how to cook.',
+          split: null
+        }
+      );
+    }
+    
+    // Fitness videos
+    if (query.includes('fitness') || query.includes('workout') || query.includes('exercise') || 
+        goal.includes('fitness') || goal.includes('workout') || goal.includes('exercise')) {
+      resources.push(
+        {
+          kind: 'watch',
+          title: 'Beginner Workout Routine - Complete Guide',
+          url: 'https://www.youtube.com/watch?v=2pLT-olgUJs',
+          source: 'YouTube - Athlean-X',
+          duration_minutes: 25,
+          description: 'Complete beginner workout routine and guide.',
+          split: null
+        },
+        {
+          kind: 'watch',
+          title: 'How to Start Working Out - Fitness Basics',
+          url: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+          source: 'YouTube - Jeremy Ethier',
+          duration_minutes: 15,
+          description: 'Learn the basics of starting a fitness routine.',
+          split: null
+        }
+      );
+    }
+    
+    // General learning videos (fallback for any goal)
+    if (resources.length === 0) {
       resources.push(
         {
           kind: 'watch',
@@ -67,65 +226,32 @@ export class SimpleWebScraper {
           duration_minutes: 15,
           description: 'Evidence-based study techniques backed by cognitive science.',
           split: null
-        }
-      );
-    }
-    
-    // Programming videos
-    if (query.includes('programming') || query.includes('coding') || query.includes('development')) {
-      resources.push(
+        },
         {
           kind: 'watch',
-          title: 'Learn Programming in 10 Minutes',
-          url: 'https://www.youtube.com/watch?v=zOjov-2OZ0E',
-          source: 'YouTube - Programming with Mosh',
-          duration_minutes: 10,
-          description: 'Quick introduction to programming concepts and getting started.',
-          split: null
-        }
-      );
-    }
-    
-    // Cooking videos
-    if (query.includes('cooking') || query.includes('recipe') || query.includes('food')) {
-      resources.push(
-        {
-          kind: 'watch',
-          title: 'Basic Cooking Techniques Everyone Should Know',
-          url: 'https://www.youtube.com/watch?v=13rQqgqUCL8',
-          source: 'YouTube - Gordon Ramsay',
+          title: 'Master Any Skill - Learning Techniques',
+          url: 'https://www.youtube.com/watch?v=9vJRopau0g0',
+          source: 'YouTube - TED-Ed',
           duration_minutes: 20,
-          description: 'Essential cooking techniques for beginners.',
+          description: 'Proven techniques for mastering any skill effectively.',
           split: null
-        }
-      );
-    }
-    
-    // Photography videos
-    if (query.includes('photography') || query.includes('camera') || query.includes('photo')) {
-      resources.push(
+        },
         {
           kind: 'watch',
-          title: 'Photography Basics in 10 Minutes',
-          url: 'https://www.youtube.com/watch?v=hVuTuib65WM',
-          source: 'YouTube - Peter McKinnon',
-          duration_minutes: 10,
-          description: 'Quick guide to photography fundamentals.',
+          title: 'How to Learn New Skills Quickly',
+          url: 'https://www.youtube.com/watch?v=EtJy69cEOtc',
+          source: 'YouTube - Improvement Pill',
+          duration_minutes: 12,
+          description: 'Strategies for learning new skills efficiently.',
           split: null
-        }
-      );
-    }
-    
-    // General fallback videos
-    if (resources.length === 0) {
-      resources.push(
+        },
         {
           kind: 'watch',
-          title: 'How to Learn Effectively - Study Tips',
-          url: 'https://www.youtube.com/watch?v=aircAruvnKk',
-          source: 'YouTube - Educational Channel',
-          duration_minutes: 15,
-          description: 'General learning strategies and study techniques.',
+          title: 'The Feynman Technique - Learn Anything',
+          url: 'https://www.youtube.com/watch?v=tkm0TNFzIeg',
+          source: 'YouTube - Sprouts',
+          duration_minutes: 8,
+          description: 'Learn the Feynman technique for better understanding.',
           split: null
         }
       );
@@ -137,7 +263,7 @@ export class SimpleWebScraper {
   private getArticleResources(query: string, goal: string): ResourceT[] {
     const resources: ResourceT[] = [];
     
-    // Spanish learning articles
+    // Language learning articles
     if (query.includes('spanish') || goal.includes('spanish')) {
       resources.push(
         {
@@ -161,8 +287,33 @@ export class SimpleWebScraper {
       );
     }
     
-    // General learning articles
-    if (query.includes('learn') || query.includes('study') || query.includes('education')) {
+    // Programming articles
+    if (query.includes('programming') || query.includes('coding') || query.includes('development') || 
+        goal.includes('programming') || goal.includes('coding') || goal.includes('development')) {
+      resources.push(
+        {
+          kind: 'read',
+          title: 'Learn to Code: A Beginner\'s Guide',
+          url: 'https://www.codecademy.com/learn/learn-how-to-code',
+          source: 'Codecademy',
+          duration_minutes: 60,
+          description: 'Step-by-step guide to learning programming from scratch.',
+          split: null
+        },
+        {
+          kind: 'read',
+          title: 'Programming Fundamentals Guide',
+          url: 'https://www.freecodecamp.org/news/programming-fundamentals/',
+          source: 'freeCodeCamp',
+          duration_minutes: 40,
+          description: 'Comprehensive guide to programming fundamentals.',
+          split: null
+        }
+      );
+    }
+    
+    // General learning articles (fallback)
+    if (resources.length === 0) {
       resources.push(
         {
           kind: 'read',
@@ -181,28 +332,7 @@ export class SimpleWebScraper {
           duration_minutes: 25,
           description: 'Comprehensive guide to effective learning methods.',
           split: null
-        }
-      );
-    }
-    
-    // Programming articles
-    if (query.includes('programming') || query.includes('coding') || query.includes('development')) {
-      resources.push(
-        {
-          kind: 'read',
-          title: 'Learn to Code: A Beginner\'s Guide',
-          url: 'https://www.codecademy.com/learn/learn-how-to-code',
-          source: 'Codecademy',
-          duration_minutes: 60,
-          description: 'Step-by-step guide to learning programming from scratch.',
-          split: null
-        }
-      );
-    }
-    
-    // General fallback articles
-    if (resources.length === 0) {
-      resources.push(
+        },
         {
           kind: 'read',
           title: 'How to Learn Effectively: Study Tips and Techniques',
@@ -221,7 +351,7 @@ export class SimpleWebScraper {
   private getPodcastResources(query: string, goal: string): ResourceT[] {
     const resources: ResourceT[] = [];
     
-    // Spanish learning podcasts
+    // Language learning podcasts
     if (query.includes('spanish') || goal.includes('spanish')) {
       resources.push(
         {
@@ -236,8 +366,8 @@ export class SimpleWebScraper {
       );
     }
     
-    // General learning podcasts
-    if (query.includes('learn') || query.includes('education') || query.includes('study')) {
+    // General learning podcasts (fallback)
+    if (resources.length === 0) {
       resources.push(
         {
           kind: 'listen',
@@ -247,13 +377,7 @@ export class SimpleWebScraper {
           duration_minutes: 30,
           description: 'Evidence-based learning strategies and study techniques.',
           split: null
-        }
-      );
-    }
-    
-    // General fallback podcasts
-    if (resources.length === 0) {
-      resources.push(
+        },
         {
           kind: 'listen',
           title: 'TED Talks Education',

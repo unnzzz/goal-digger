@@ -503,10 +503,16 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no explanations.
     const learnResources: ResourceT[] = [];
     if (article) learnResources.push(article);
     
-    // Add scraped resources (limit to avoid too many)
-    learnResources.push(...watchResources.slice(0, 2));
-    learnResources.push(...readResources.slice(0, 1));
-    learnResources.push(...listenResources.slice(0, 1));
+    // Prioritize watch resources (70% of total resources)
+    const totalResources = 5; // Target total resources per day
+    const watchCount = Math.ceil(totalResources * 0.7); // 70% watch resources
+    const readCount = Math.ceil(totalResources * 0.25); // 25% read resources  
+    const listenCount = Math.ceil(totalResources * 0.05); // 5% listen resources
+    
+    // Add scraped resources with proper distribution
+    learnResources.push(...watchResources.slice(0, watchCount));
+    learnResources.push(...readResources.slice(0, readCount));
+    learnResources.push(...listenResources.slice(0, listenCount));
     
     // Remove duplicates based on URL
     const seenUrls = new Set<string>();
