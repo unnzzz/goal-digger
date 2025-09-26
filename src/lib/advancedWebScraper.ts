@@ -536,19 +536,13 @@ export class AdvancedWebScraper {
         ];
       }
       
-      // Educational domains to prioritize
+      // Educational domains to prioritize - simplified list
       const educationalDomains = [
-        'medium.com', 'dev.to', 'freecodecamp.org', 'tutorialspoint.com',
-        'w3schools.com', 'mdn.mozilla.org', 'stackoverflow.com',
-        'github.com', 'docs.python.org', 'nodejs.org', 'reactjs.org',
-        'studiobinder.com', 'premiumbeat.com', 'masterclass.com',
-        'bhphotovideo.com', 'digitalcameraworld.com', 'photographymad.com',
-        'skillshare.com', 'udemy.com', 'coursera.org', 'edx.org',
-        'khanacademy.org', 'codecademy.com', 'pluralsight.com',
-        'wikipedia.org', 'wikihow.com', 'instructables.com',
-        'allrecipes.com', 'foodnetwork.com', 'seriouseats.com',
-        'healthline.com', 'webmd.com', 'mayoclinic.org',
-        'investopedia.com', 'linkedin.com'
+        'medium.com', 'dev.to', 'freecodecamp.org', 'w3schools.com',
+        'wikipedia.org', 'wikihow.com', 'github.com', 'stackoverflow.com',
+        'mdn.mozilla.org', 'tutorialspoint.com', 'geeksforgeeks.org',
+        'reddit.com', 'quora.com', 'linkedin.com', 'udemy.com',
+        'coursera.org', 'khanacademy.org', 'codecademy.com'
       ];
       
       // Method 1: Try multiple search variations with DuckDuckGo
@@ -558,7 +552,11 @@ export class AdvancedWebScraper {
           console.log(`Trying DuckDuckGo: ${searchTerm}`);
           
           const response = await this.makeRequest(searchUrl);
+          console.log(`DuckDuckGo response status: ${response.status}`);
+          console.log(`DuckDuckGo content length: ${response.data.length}`);
+          
           const $ = cheerio.load(response.data);
+          console.log(`Page title: ${$('title').text()}`);
         
           // Multiple selectors for DuckDuckGo results
           const selectors = [
@@ -568,12 +566,19 @@ export class AdvancedWebScraper {
             '.result__snippet a'
           ];
           
+          console.log(`Trying ${selectors.length} selectors for DuckDuckGo`);
+          
           for (const selector of selectors) {
-            $(selector).each((index, element) => {
+            const elements = $(selector);
+            console.log(`Selector "${selector}" found ${elements.length} elements`);
+            
+            elements.each((index, element) => {
               if (results.length >= 3) return false;
               
               const href = $(element).attr('href');
               let title = $(element).text().trim();
+              
+              console.log(`Element ${index}: href="${href}", title="${title.substring(0, 50)}"`);
               
               // Clean up title - remove CSS classes and ensure it's actual text
               if (title.includes('{') || title.includes('css-') || title.includes('display:') || title.length < 10 || title.includes('http') || title.includes('search') || title.includes('results')) {
@@ -588,9 +593,13 @@ export class AdvancedWebScraper {
               if (href && title && !href.includes('duckduckgo.com') && title.length > 10 && !title.includes('{') && !title.includes('css-') && !title.includes('search') && !title.includes('results') && !globalUsedUrls.has(href)) {
                 try {
                   const url = new URL(href);
+                  console.log(`Checking URL: ${url.hostname}`);
+                  
                   const isEducational = educationalDomains.some(domain => 
                     url.hostname.includes(domain)
                   );
+                  
+                  console.log(`Is educational: ${isEducational}`);
                   
                   if (isEducational) {
                     results.push({
@@ -604,11 +613,15 @@ export class AdvancedWebScraper {
                     });
                     
                     globalUsedUrls.add(href);
-                    console.log(`Added article: ${title.substring(0, 50)} from ${url.hostname}`);
+                    console.log(`✅ Added article: ${title.substring(0, 50)} from ${url.hostname}`);
+                  } else {
+                    console.log(`❌ Skipped non-educational: ${url.hostname}`);
                   }
                 } catch (e) {
-                  // Skip invalid URLs
+                  console.log(`❌ Invalid URL: ${href}`);
                 }
+              } else {
+                console.log(`❌ Filtered out: href="${href}", title="${title.substring(0, 30)}"`);
               }
             });
             
