@@ -514,28 +514,40 @@ export class AdvancedWebScraper {
       console.log(`DuckDuckGo search URL: ${searchUrl}`);
       
       const response = await this.makeRequest(searchUrl);
+      console.log(`DuckDuckGo response status: ${response.status}`);
+      console.log(`DuckDuckGo response headers:`, response.headers);
       
       if (response.status === 200) {
         const $ = cheerio.load(response.data);
         console.log(`DuckDuckGo page loaded, content length: ${response.data.length}`);
+        console.log(`Page title: ${$('title').text()}`);
+        console.log(`Page content preview: ${response.data.substring(0, 500)}`);
         
-        // Use the working selectors from the previous commit
+        // Try multiple selectors to see what's available
         const selectors = [
           '.result__title a',
           '.result__url a', 
           '.result a',
-          '.result__snippet a'
+          '.result__snippet a',
+          'h2 a',
+          'h3 a',
+          'a[href*="http"]',
+          '.result',
+          '.web-result'
         ];
         
         for (const selector of selectors) {
           console.log(`Trying selector: ${selector}`);
-          $(selector).each((index, element) => {
+          const elements = $(selector);
+          console.log(`Found ${elements.length} elements with selector: ${selector}`);
+          
+          elements.each((index, element) => {
             if (results.length >= 3) return false;
             
             const title = $(element).text().trim();
             let url = $(element).attr('href');
             
-            console.log(`Found result: ${title.substring(0, 50)} - ${url}`);
+            console.log(`Element ${index}: title="${title.substring(0, 50)}", url="${url}"`);
             
             // Filter for real articles and blogs
             if (url && title && title.length > 10 && title.length < 200 && 
