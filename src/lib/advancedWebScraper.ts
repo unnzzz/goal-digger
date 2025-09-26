@@ -207,8 +207,16 @@ export class AdvancedWebScraper {
   private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[], globalUsedUrls: Set<string>): void {
     console.log(`Extracting articles from ${sourceName} page`);
     
-    // Use source-specific selectors for better results - focus on readable content
+    // Use source-specific selectors for better results - focus on ANY readable content
     const sourceSelectors: { [key: string]: string[] } = {
+      'Google Search': [
+        'a[href*="http"]:not([href*="google.com"]):not([href*="youtube.com"]):not([href*="facebook.com"]):not([href*="twitter.com"])',
+        '.g a[href*="http"]',
+        '.yuRUbf a',
+        '.LC20lb',
+        'h3 a',
+        '.DKV0Md a'
+      ],
       'Medium': [
         'article a[href*="/@"]',
         'a[href*="/@"]',
@@ -247,13 +255,6 @@ export class AdvancedWebScraper {
         'h2 a',
         'h3 a'
       ],
-      'FreeCodeCamp': [
-        'article a[href*="/news/"]',
-        'a[href*="/news/"]',
-        '.post-card a',
-        'h2 a',
-        'h3 a'
-      ],
       'Wikipedia': [
         'a[href*="/wiki/"]',
         '.mw-content-ltr a',
@@ -286,10 +287,8 @@ export class AdvancedWebScraper {
         
         console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
         
-        // Check if title is relevant to the query/goal
-        const isRelevant = this.isTitleRelevant(title, query);
-        
-        if (href && title && title.length > 10 && title.length < 150 && 
+        // Very lenient filtering - accept ANY readable content
+        if (href && title && title.length > 5 && title.length < 200 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
             !title.includes('Menu') && !title.includes('Search') &&
@@ -299,16 +298,9 @@ export class AdvancedWebScraper {
             !title.includes('Categories') && !title.includes('Tags') &&
             !title.includes('Archive') && !title.includes('More') &&
             !title.includes('View all') && !title.includes('See all') &&
-            !title.includes('Identifying User Needs') && !title.includes('Conducting Customer Interviews') && // Filter out generic titles
-            !title.includes('Gamers Forem') && !title.includes('DEV Community') && // Filter out generic platform names
-            !title.includes('Top ') && !title.includes('Best ') && !title.includes('Ways to') && // Filter out listicles
-            !title.includes('10 ') && !title.includes('5 ') && !title.includes('7 ') && // Filter out numbered lists
-            !title.includes('How to') && !title.includes('Guide to') && // Filter out generic guides
-            !title.includes('Become a Product Manager at Linkedin') && // Filter out specific unrelated titles
-            !title.includes('Mastering User Research for Professional Networking Platforms') && // Filter out specific unrelated titles
-            !title.includes('Command Line') && // Filter out unrelated topics
             !href.includes('#') && !href.includes('javascript:') && // Filter out anchors and JS
-            isRelevant && // Check relevance to query
+            !href.includes('youtube.com') && !href.includes('youtu.be') && // Filter out YouTube videos
+            !href.includes('facebook.com') && !href.includes('twitter.com') && // Filter out social media
             !usedUrls.has(href)) {
           
           // Build full URL
@@ -352,6 +344,7 @@ export class AdvancedWebScraper {
   // Get base URL for different sources
   private getBaseUrl(sourceName: string): string {
     const baseUrls: { [key: string]: string } = {
+      'Google Search': 'https://www.google.com',
       'Medium': 'https://medium.com',
       'Substack': 'https://substack.com',
       'Dev.to': 'https://dev.to',
@@ -429,8 +422,15 @@ export class AdvancedWebScraper {
       }
     }
 
-    // Platform-specific validation - more lenient for readable content
+    // Platform-specific validation - very lenient for ANY readable content
     switch (sourceName) {
+      case 'Google Search':
+        // Accept any external website from Google search results
+        const isValidGoogle = !url.includes('google.com') && !url.includes('youtube.com') && 
+                             !url.includes('facebook.com') && !url.includes('twitter.com') &&
+                             url.includes('http');
+        console.log(`Google Search validation: ${isValidGoogle}`);
+        return isValidGoogle;
       case 'Medium':
         const isValidMedium = url.includes('/@') || url.includes('medium.com');
         console.log(`Medium validation: ${isValidMedium}`);
@@ -455,14 +455,6 @@ export class AdvancedWebScraper {
         const isValidWiki = url.includes('/wiki/') || url.includes('wikipedia.org');
         console.log(`Wikipedia validation: ${isValidWiki}`);
         return isValidWiki;
-      case 'Towards Data Science':
-        const isValidTDS = url.includes('/towardsdatascience.com/') || url.includes('towardsdatascience.com');
-        console.log(`Towards Data Science validation: ${isValidTDS}`);
-        return isValidTDS;
-      case 'UX Planet':
-        const isValidUX = url.includes('/uxplanet.org/') || url.includes('uxplanet.org');
-        console.log(`UX Planet validation: ${isValidUX}`);
-        return isValidUX;
       default:
         console.log(`Default validation: true`);
         return true; // Allow other sources
@@ -506,14 +498,14 @@ export class AdvancedWebScraper {
       const specificQuery = this.createSpecificQuery(query, goal);
       console.log(`Using specific query: "${specificQuery}"`);
       
-      // Focus on platforms with real articles - avoid listicles
+      // Search ANY website for articles - use Google search to find real articles
       const articleSources = [
+        { name: 'Google Search', url: `https://www.google.com/search?q=${encodeURIComponent(specificQuery + ' article blog post')}`, type: 'search' },
+        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
         { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
         { name: 'Substack', url: `https://substack.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
-        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
+        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
       ];
 
       for (const source of articleSources.slice(0, 6)) {
