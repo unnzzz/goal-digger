@@ -204,39 +204,60 @@ export class AdvancedWebScraper {
   }
 
   // Extract articles from any website page
-  private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[]): void {
+  private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[], globalUsedUrls: Set<string>): void {
     console.log(`Extracting articles from ${sourceName} page`);
     
-    // Universal selectors for article links - more comprehensive
-    const articleSelectors = [
-      'article a',           // Standard article tags
-      '.post a',             // Post containers
-      '.article a',          // Article containers
-      '.blog-post a',        // Blog post containers
-      '.entry a',            // Entry containers
-      '.content a',          // Content containers
-      'h1 a, h2 a, h3 a',    // Headings with links
-      '.title a',            // Title containers
-      '.headline a',         // Headline containers
-      '.story a',            // Story containers
-      '.item a',             // Item containers
-      '.card a',             // Card containers
-      'a[href*="/article"]', // Article URLs
-      'a[href*="/post"]',   // Post URLs
-      'a[href*="/blog"]',   // Blog URLs
-      'a[href*="/news"]',   // News URLs
-      'a[href*="/story"]',  // Story URLs
-      'a[href*="/guide"]',  // Guide URLs
-      'a[href*="/tutorial"]', // Tutorial URLs
-      'a[href*="/read"]',   // Read URLs
-      'a[href*="/learn"]'   // Learn URLs
+    // Use source-specific selectors for better results
+    const sourceSelectors: { [key: string]: string[] } = {
+      'Medium': [
+        'article a[href*="/@"]',
+        '.postArticle-content a',
+        '[data-testid="post-preview"] a',
+        'h3 a'
+      ],
+      'Dev.to': [
+        'article a[href*="/articles/"]',
+        '.crayons-story a',
+        '.crayons-story__title a',
+        'h2 a'
+      ],
+      'Hashnode': [
+        'article a[href*="/@"]',
+        '.blog-post a',
+        '.post-title a'
+      ],
+      'FreeCodeCamp': [
+        'article a[href*="/news/"]',
+        '.post-card a',
+        'h2 a'
+      ],
+      'Reddit': [
+        'a[href*="/r/"]',
+        '.post a',
+        'h3 a'
+      ],
+      'Stack Overflow': [
+        'a[href*="/questions/"]',
+        '.question-summary a',
+        'h3 a'
+      ]
+    };
+
+    const selectors = sourceSelectors[sourceName] || [
+      'article a',
+      'h1 a, h2 a, h3 a',
+      'a[href*="/article"]',
+      'a[href*="/post"]',
+      'a[href*="/blog"]'
     ];
 
+    const usedUrls = new Set<string>();
     let foundCount = 0;
-    for (const selector of articleSelectors) {
+
+    for (const selector of selectors) {
       console.log(`Trying selector: ${selector}`);
       $(selector).each((index, element) => {
-        if (results.length >= 3) return false;
+        if (results.length >= 2) return false;
         
         const href = $(element).attr('href');
         const title = $(element).find('h1, h2, h3').text().trim() || 
@@ -245,13 +266,15 @@ export class AdvancedWebScraper {
         
         console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
         
-        if (href && title && title.length > 5 && title.length < 200 && 
+        if (href && title && title.length > 10 && title.length < 150 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
             !title.includes('Menu') && !title.includes('Search') &&
             !title.includes('{') && !title.includes('css-') &&
             !title.includes('Home') && !title.includes('About') &&
-            !title.includes('Contact') && !title.includes('Privacy')) {
+            !title.includes('Contact') && !title.includes('Privacy') &&
+            !title.includes('Market Research and Competitive Analysis') && // Filter out generic titles
+            !usedUrls.has(href)) {
           
           // Build full URL
           let fullUrl = href;
@@ -259,6 +282,9 @@ export class AdvancedWebScraper {
             const baseUrl = this.getBaseUrl(sourceName);
             fullUrl = href.startsWith('/') ? `${baseUrl}${href}` : `${baseUrl}/${href}`;
           }
+          
+          // Skip if URL is already used globally
+          if (globalUsedUrls.has(fullUrl)) return;
           
           results.push({
             kind: 'read',
@@ -269,12 +295,13 @@ export class AdvancedWebScraper {
             description: `Read about ${query} on ${sourceName}`,
             split: null
           });
+          globalUsedUrls.add(fullUrl);
           foundCount++;
           console.log(`Added article: ${title.substring(0, 50)} from ${sourceName}`);
         }
       });
       
-      if (results.length >= 3) break; // Stop if we have enough results
+      if (results.length >= 2) break; // Stop if we have enough results
     }
     
     console.log(`Found ${foundCount} articles from ${sourceName}`);
@@ -299,6 +326,7 @@ export class AdvancedWebScraper {
   // Search real websites for articles
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
+    const globalUsedUrls = new Set<string>(); // Prevent duplicates across all searches
     
     try {
       console.log(`Searching ANY website for articles about: "${query}"`);
@@ -340,7 +368,7 @@ export class AdvancedWebScraper {
           } else {
             // Search results page
             const beforeCount = results.length;
-            this.extractArticlesFromPage($, source.name, query, results);
+            this.extractArticlesFromPage($, source.name, query, results, globalUsedUrls);
             const afterCount = results.length;
             console.log(`${source.name}: Found ${afterCount - beforeCount} new articles`);
           }
