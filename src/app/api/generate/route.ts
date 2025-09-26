@@ -3,7 +3,7 @@ import { generateRoadmap } from "@/lib/generateRoadmap";
 import type { RoadmapT } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
