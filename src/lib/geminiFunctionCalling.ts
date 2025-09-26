@@ -5,7 +5,7 @@ import { RoadmapT, ResourceT } from './schema';
 // Initialize Gemini with function calling support
 const genAI = new GoogleGenerativeAI('AIzaSyBQseIm2Zs6bBGeKeDkKvkjw4B4Q0X9Q6o');
 const model = genAI.getGenerativeModel({ 
-  model: 'gemini-1.5-flash',
+  model: 'gemini-1.5-pro',
   generationConfig: {
     temperature: 0.7,
     topK: 40,
