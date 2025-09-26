@@ -114,7 +114,8 @@ export class AdvancedWebScraper {
                 if (jsonMatch) {
                   const data = JSON.parse(jsonMatch[1]);
                   const videos = this.extractVideosFromData(data);
-                  for (const video of videos.slice(0, 5)) {
+                  // Limit to only 2 high-rated videos per day
+                  for (const video of videos.slice(0, 2)) {
                     results.push({
                       kind: 'watch',
                       title: video.title,
@@ -136,7 +137,7 @@ export class AdvancedWebScraper {
           // Fallback to DOM scraping if JSON parsing fails
           if (results.length === 0) {
             $('a[href*="/watch?v="]').each((index, element) => {
-              if (results.length >= 5) return false;
+              if (results.length >= 2) return false;
               
               const href = $(element).attr('href');
               const title = $(element).find('h3').text().trim() || 
@@ -204,7 +205,9 @@ export class AdvancedWebScraper {
 
   // Extract articles from any website page
   private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[]): void {
-    // Universal selectors for article links
+    console.log(`Extracting articles from ${sourceName} page`);
+    
+    // Universal selectors for article links - more comprehensive
     const articleSelectors = [
       'article a',           // Standard article tags
       '.post a',             // Post containers
@@ -215,29 +218,40 @@ export class AdvancedWebScraper {
       'h1 a, h2 a, h3 a',    // Headings with links
       '.title a',            // Title containers
       '.headline a',         // Headline containers
+      '.story a',            // Story containers
+      '.item a',             // Item containers
+      '.card a',             // Card containers
       'a[href*="/article"]', // Article URLs
       'a[href*="/post"]',   // Post URLs
       'a[href*="/blog"]',   // Blog URLs
       'a[href*="/news"]',   // News URLs
       'a[href*="/story"]',  // Story URLs
       'a[href*="/guide"]',  // Guide URLs
-      'a[href*="/tutorial"]' // Tutorial URLs
+      'a[href*="/tutorial"]', // Tutorial URLs
+      'a[href*="/read"]',   // Read URLs
+      'a[href*="/learn"]'   // Learn URLs
     ];
 
+    let foundCount = 0;
     for (const selector of articleSelectors) {
+      console.log(`Trying selector: ${selector}`);
       $(selector).each((index, element) => {
-        if (results.length >= 5) return false;
+        if (results.length >= 3) return false;
         
         const href = $(element).attr('href');
         const title = $(element).find('h1, h2, h3').text().trim() || 
                      $(element).text().trim() ||
                      $(element).attr('title') || '';
         
-        if (href && title && title.length > 10 && title.length < 150 && 
+        console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
+        
+        if (href && title && title.length > 5 && title.length < 200 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
             !title.includes('Menu') && !title.includes('Search') &&
-            !title.includes('{') && !title.includes('css-')) {
+            !title.includes('{') && !title.includes('css-') &&
+            !title.includes('Home') && !title.includes('About') &&
+            !title.includes('Contact') && !title.includes('Privacy')) {
           
           // Build full URL
           let fullUrl = href;
@@ -255,11 +269,15 @@ export class AdvancedWebScraper {
             description: `Read about ${query} on ${sourceName}`,
             split: null
           });
+          foundCount++;
+          console.log(`Added article: ${title.substring(0, 50)} from ${sourceName}`);
         }
       });
       
       if (results.length >= 3) break; // Stop if we have enough results
     }
+    
+    console.log(`Found ${foundCount} articles from ${sourceName}`);
   }
 
   // Get base URL for different sources
@@ -301,6 +319,7 @@ export class AdvancedWebScraper {
 
       for (const source of articleSources.slice(0, 6)) {
         try {
+          console.log(`Searching ${source.name} for articles about: ${query}`);
           const response = await this.makeRequest(source.url);
           const $ = cheerio.load(response.data);
           
@@ -316,13 +335,17 @@ export class AdvancedWebScraper {
                 description: `Comprehensive information about ${query}`,
                 split: null
               });
+              console.log(`Added direct article from ${source.name}`);
             }
           } else {
             // Search results page
+            const beforeCount = results.length;
             this.extractArticlesFromPage($, source.name, query, results);
+            const afterCount = results.length;
+            console.log(`${source.name}: Found ${afterCount - beforeCount} new articles`);
           }
           
-          if (results.length >= 5) break;
+          if (results.length >= 3) break;
         } catch (error) {
           console.log(`${source.name} search failed:`, error instanceof Error ? error.message : String(error));
         }
