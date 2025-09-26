@@ -104,40 +104,64 @@ export class AdvancedWebScraper {
           const response = await this.makeRequest(searchUrl);
           const $ = cheerio.load(response.data);
           
-          // Look for video links with multiple selectors
-          $('a[href*="/watch?v="], a[href*="youtube.com/watch"], #video-title, h3 a').each((index, element) => {
-            if (results.length >= 5) return false;
-            
-            const href = $(element).attr('href');
-            const title = $(element).find('h3').text().trim() || 
-                         $(element).attr('title') || 
-                         $(element).text().trim() ||
-                         $(element).find('#video-title').text().trim();
-            
-            if (href && title && (href.includes('/watch?v=') || href.includes('youtube.com/watch')) && 
-                title.length > 5 && !title.includes('{') && !title.includes('css-') && 
-                !title.includes('YouTube') && !title.includes('Sign in')) {
-              
-              let videoId = '';
-              if (href.includes('v=')) {
-                videoId = href.split('v=')[1]?.split('&')[0];
-              } else if (href.includes('youtube.com/watch')) {
-                videoId = href.split('watch/')[1]?.split('?')[0];
-              }
-              
-              if (videoId && videoId.length === 11) {
-                results.push({
-                  kind: 'watch',
-                  title: title.substring(0, 100),
-                  url: `https://www.youtube.com/watch?v=${videoId}`,
-                  source: 'YouTube',
-                  duration_minutes: 15,
-                  description: `Learn ${query} with this video tutorial`,
-                  split: null
-                });
+          // Extract video data from YouTube's JSON data
+          const scripts = $('script').toArray();
+          for (const script of scripts) {
+            const scriptContent = $(script).html();
+            if (scriptContent && scriptContent.includes('videoRenderer')) {
+              try {
+                const jsonMatch = scriptContent.match(/var ytInitialData = ({.+?});/);
+                if (jsonMatch) {
+                  const data = JSON.parse(jsonMatch[1]);
+                  const videos = this.extractVideosFromData(data);
+                  for (const video of videos.slice(0, 5)) {
+                    results.push({
+                      kind: 'watch',
+                      title: video.title,
+                      url: `https://www.youtube.com/watch?v=${video.id}`,
+                      source: 'YouTube',
+                      duration_minutes: 15,
+                      description: `Learn ${query} with this video tutorial`,
+                      split: null
+                    });
+                  }
+                  break;
+                }
+              } catch (e) {
+                console.log('Failed to parse YouTube JSON data');
               }
             }
-          });
+          }
+          
+          // Fallback to DOM scraping if JSON parsing fails
+          if (results.length === 0) {
+            $('a[href*="/watch?v="]').each((index, element) => {
+              if (results.length >= 5) return false;
+              
+              const href = $(element).attr('href');
+              const title = $(element).find('h3').text().trim() || 
+                           $(element).attr('title') || 
+                           $(element).text().trim();
+              
+              if (href && title && href.includes('/watch?v=') && 
+                  title.length > 5 && !title.includes('{') && !title.includes('css-') && 
+                  !title.includes('YouTube') && !title.includes('Sign in')) {
+                
+                const videoId = href.split('v=')[1]?.split('&')[0];
+                if (videoId && videoId.length === 11) {
+                  results.push({
+                    kind: 'watch',
+                    title: title.substring(0, 100),
+                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                    source: 'YouTube',
+                    duration_minutes: 15,
+                    description: `Learn ${query} with this video tutorial`,
+                    split: null
+                  });
+                }
+              }
+            });
+          }
           
           if (results.length > 0) break;
         } catch (error) {
@@ -149,34 +173,109 @@ export class AdvancedWebScraper {
       console.error('YouTube search failed:', error);
     }
     
-    // If no videos found, create some real YouTube URLs as fallback
-    if (results.length === 0) {
-      console.log('No videos found via scraping, using real YouTube URLs as fallback');
-      const fallbackVideos = [
-        {
-          kind: 'watch' as const,
-          title: `${query} Tutorial - Complete Guide`,
-          url: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`, // Real YouTube URL
-          source: 'YouTube',
-          duration_minutes: 15,
-          description: `Learn ${query} with this comprehensive tutorial`,
-          split: null
-        },
-        {
-          kind: 'watch' as const,
-          title: `${query} for Beginners`,
-          url: `https://www.youtube.com/watch?v=jNQXAC9IVRw`, // Real YouTube URL
-          source: 'YouTube',
-          duration_minutes: 12,
-          description: `Beginner-friendly guide to ${query}`,
-          split: null
-        }
-      ];
-      results.push(...fallbackVideos);
-    }
     
     console.log(`Found ${results.length} YouTube videos`);
     return results;
+  }
+
+  // Extract videos from YouTube's JSON data
+  private extractVideosFromData(data: any): Array<{id: string, title: string}> {
+    const videos: Array<{id: string, title: string}> = [];
+    
+    try {
+      const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents;
+      if (contents) {
+        for (const item of contents) {
+          if (item.videoRenderer) {
+            const videoId = item.videoRenderer.videoId;
+            const title = item.videoRenderer.title?.runs?.[0]?.text || item.videoRenderer.title?.simpleText;
+            if (videoId && title) {
+              videos.push({ id: videoId, title });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Error extracting videos from YouTube data');
+    }
+    
+    return videos;
+  }
+
+  // Extract articles from any website page
+  private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[]): void {
+    // Universal selectors for article links
+    const articleSelectors = [
+      'article a',           // Standard article tags
+      '.post a',             // Post containers
+      '.article a',          // Article containers
+      '.blog-post a',        // Blog post containers
+      '.entry a',            // Entry containers
+      '.content a',          // Content containers
+      'h1 a, h2 a, h3 a',    // Headings with links
+      '.title a',            // Title containers
+      '.headline a',         // Headline containers
+      'a[href*="/article"]', // Article URLs
+      'a[href*="/post"]',   // Post URLs
+      'a[href*="/blog"]',   // Blog URLs
+      'a[href*="/news"]',   // News URLs
+      'a[href*="/story"]',  // Story URLs
+      'a[href*="/guide"]',  // Guide URLs
+      'a[href*="/tutorial"]' // Tutorial URLs
+    ];
+
+    for (const selector of articleSelectors) {
+      $(selector).each((index, element) => {
+        if (results.length >= 5) return false;
+        
+        const href = $(element).attr('href');
+        const title = $(element).find('h1, h2, h3').text().trim() || 
+                     $(element).text().trim() ||
+                     $(element).attr('title') || '';
+        
+        if (href && title && title.length > 10 && title.length < 150 && 
+            !title.includes('Sign in') && !title.includes('Subscribe') && 
+            !title.includes('Login') && !title.includes('Register') &&
+            !title.includes('Menu') && !title.includes('Search') &&
+            !title.includes('{') && !title.includes('css-')) {
+          
+          // Build full URL
+          let fullUrl = href;
+          if (!href.startsWith('http')) {
+            const baseUrl = this.getBaseUrl(sourceName);
+            fullUrl = href.startsWith('/') ? `${baseUrl}${href}` : `${baseUrl}/${href}`;
+          }
+          
+          results.push({
+            kind: 'read',
+            title: title.substring(0, 100),
+            url: fullUrl,
+            source: sourceName,
+            duration_minutes: 15,
+            description: `Read about ${query} on ${sourceName}`,
+            split: null
+          });
+        }
+      });
+      
+      if (results.length >= 3) break; // Stop if we have enough results
+    }
+  }
+
+  // Get base URL for different sources
+  private getBaseUrl(sourceName: string): string {
+    const baseUrls: { [key: string]: string } = {
+      'Medium': 'https://medium.com',
+      'Dev.to': 'https://dev.to',
+      'Hashnode': 'https://hashnode.com',
+      'FreeCodeCamp': 'https://www.freecodecamp.org',
+      'Smashing Magazine': 'https://www.smashingmagazine.com',
+      'CSS-Tricks': 'https://css-tricks.com',
+      'A List Apart': 'https://alistapart.com',
+      'Reddit': 'https://www.reddit.com',
+      'Stack Overflow': 'https://stackoverflow.com'
+    };
+    return baseUrls[sourceName] || 'https://example.com';
   }
 
   // Search real websites for articles
@@ -184,143 +283,56 @@ export class AdvancedWebScraper {
     const results: ResourceT[] = [];
     
     try {
-      console.log(`Searching real websites for articles: "${query}"`);
+      console.log(`Searching ANY website for articles about: "${query}"`);
       
-      // Search Wikipedia first (most reliable)
-      try {
-        const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`;
-        const response = await this.makeRequest(wikiUrl);
-        
-        if (response.status === 200) {
-          results.push({
-            kind: 'read',
-            title: `${query} - Wikipedia`,
-            url: wikiUrl,
-            source: 'Wikipedia',
-            duration_minutes: 20,
-            description: `Comprehensive information about ${query}`,
-            split: null
-          });
-        }
-      } catch (error) {
-        console.log('Wikipedia search failed:', error instanceof Error ? error.message : String(error));
-      }
+      // Search multiple article platforms and blogs
+      const articleSources = [
+        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
+        { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Smashing Magazine', url: `https://www.smashingmagazine.com/search/?q=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'CSS-Tricks', url: `https://css-tricks.com/?s=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'A List Apart', url: `https://alistapart.com/?s=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Reddit', url: `https://www.reddit.com/search/?q=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Stack Overflow', url: `https://stackoverflow.com/search?q=${encodeURIComponent(query)}`, type: 'search' }
+      ];
 
-      // Search Medium for articles
-      try {
-        const mediumUrl = `https://medium.com/search?q=${encodeURIComponent(query)}`;
-        const response = await this.makeRequest(mediumUrl);
-        const $ = cheerio.load(response.data);
-        
-        $('a[href*="/@"]').each((index, element) => {
-          if (results.length >= 3) return false;
-          
-          const href = $(element).attr('href');
-          const title = $(element).text().trim();
-          
-          if (href && title && href.includes('/@') && title.length > 10 && !title.includes('{')) {
-            results.push({
-              kind: 'read',
-              title: title.substring(0, 100),
-              url: href.startsWith('http') ? href : `https://medium.com${href}`,
-              source: 'Medium',
-              duration_minutes: 15,
-              description: `Read about ${query} on Medium`,
-              split: null
-            });
-          }
-        });
-      } catch (error) {
-        console.log('Medium search failed:', error instanceof Error ? error.message : String(error));
-      }
-
-      // Search Dev.to for programming articles
-      if (query.toLowerCase().includes('programming') || query.toLowerCase().includes('coding') || query.toLowerCase().includes('development')) {
+      for (const source of articleSources.slice(0, 6)) {
         try {
-          const devUrl = `https://dev.to/search?q=${encodeURIComponent(query)}`;
-          const response = await this.makeRequest(devUrl);
+          const response = await this.makeRequest(source.url);
           const $ = cheerio.load(response.data);
           
-          $('a[href*="/articles/"]').each((index, element) => {
-            if (results.length >= 3) return false;
-            
-            const href = $(element).attr('href');
-            const title = $(element).text().trim();
-            
-            if (href && title && href.includes('/articles/') && title.length > 10) {
+          if (source.type === 'direct') {
+            // Direct article (like Wikipedia)
+            if (response.status === 200) {
               results.push({
                 kind: 'read',
-                title: title.substring(0, 100),
-                url: href.startsWith('http') ? href : `https://dev.to${href}`,
-                source: 'Dev.to',
-                duration_minutes: 12,
-                description: `Programming article about ${query}`,
+                title: `${query} - ${source.name}`,
+                url: source.url,
+                source: source.name,
+                duration_minutes: 20,
+                description: `Comprehensive information about ${query}`,
                 split: null
               });
             }
-          });
+          } else {
+            // Search results page
+            this.extractArticlesFromPage($, source.name, query, results);
+          }
+          
+          if (results.length >= 5) break;
         } catch (error) {
-          console.log('Dev.to search failed:', error instanceof Error ? error.message : String(error));
+          console.log(`${source.name} search failed:`, error instanceof Error ? error.message : String(error));
         }
       }
 
-      // Search Reddit for discussions
-      try {
-        const redditUrl = `https://www.reddit.com/search/?q=${encodeURIComponent(query)}`;
-        const response = await this.makeRequest(redditUrl);
-        const $ = cheerio.load(response.data);
-        
-        $('a[href*="/r/"]').each((index, element) => {
-          if (results.length >= 3) return false;
-          
-          const href = $(element).attr('href');
-          const title = $(element).text().trim();
-          
-          if (href && title && href.includes('/r/') && title.length > 10) {
-            results.push({
-              kind: 'read',
-              title: title.substring(0, 100),
-              url: href.startsWith('http') ? href : `https://www.reddit.com${href}`,
-              source: 'Reddit',
-              duration_minutes: 10,
-              description: `Community discussion about ${query}`,
-              split: null
-            });
-          }
-        });
-      } catch (error) {
-        console.log('Reddit search failed:', error instanceof Error ? error.message : String(error));
-      }
 
     } catch (error) {
       console.error('Article search failed:', error);
     }
     
-    // If no articles found, create some real article URLs as fallback
-    if (results.length === 0) {
-      console.log('No articles found via scraping, using real article URLs as fallback');
-      const fallbackArticles = [
-        {
-          kind: 'read' as const,
-          title: `${query} - Complete Guide`,
-          url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`,
-          source: 'Wikipedia',
-          duration_minutes: 20,
-          description: `Comprehensive information about ${query}`,
-          split: null
-        },
-        {
-          kind: 'read' as const,
-          title: `How to Learn ${query}`,
-          url: `https://www.freecodecamp.org/news/how-to-learn-${query.toLowerCase().replace(/\s+/g, '-')}/`,
-          source: 'FreeCodeCamp',
-          duration_minutes: 15,
-          description: `Practical guide to learning ${query}`,
-          split: null
-        }
-      ];
-      results.push(...fallbackArticles);
-    }
     
     console.log(`Found ${results.length} articles`);
     return results;
