@@ -207,39 +207,45 @@ export class AdvancedWebScraper {
   private extractArticlesFromPage($: cheerio.CheerioAPI, sourceName: string, query: string, results: ResourceT[], globalUsedUrls: Set<string>): void {
     console.log(`Extracting articles from ${sourceName} page`);
     
-    // Use source-specific selectors for better results
+    // Use source-specific selectors for better results - more specific to avoid navigation
     const sourceSelectors: { [key: string]: string[] } = {
       'Medium': [
-        'article a[href*="/@"]',
-        '.postArticle-content a',
-        '[data-testid="post-preview"] a',
-        'h3 a'
+        'article a[href*="/@"]:not([href*="#"]):not([href*="javascript"])',
+        '.postArticle-content a:not([href*="#"]):not([href*="javascript"])',
+        '[data-testid="post-preview"] a:not([href*="#"]):not([href*="javascript"])',
+        'h3 a:not([href*="#"]):not([href*="javascript"])'
       ],
       'Dev.to': [
-        'article a[href*="/articles/"]',
-        '.crayons-story a',
-        '.crayons-story__title a',
-        'h2 a'
+        'article a[href*="/articles/"]:not([href*="#"]):not([href*="javascript"])',
+        '.crayons-story a:not([href*="#"]):not([href*="javascript"])',
+        '.crayons-story__title a:not([href*="#"]):not([href*="javascript"])',
+        'h2 a:not([href*="#"]):not([href*="javascript"])'
       ],
       'Hashnode': [
-        'article a[href*="/@"]',
-        '.blog-post a',
-        '.post-title a'
+        'article a[href*="/@"]:not([href*="#"]):not([href*="javascript"])',
+        '.blog-post a:not([href*="#"]):not([href*="javascript"])',
+        '.post-title a:not([href*="#"]):not([href*="javascript"])'
       ],
       'FreeCodeCamp': [
-        'article a[href*="/news/"]',
-        '.post-card a',
-        'h2 a'
+        'article a[href*="/news/"]:not([href*="#"]):not([href*="javascript"])',
+        '.post-card a:not([href*="#"]):not([href*="javascript"])',
+        'h2 a:not([href*="#"]):not([href*="javascript"])'
       ],
       'Reddit': [
-        'a[href*="/r/"]',
-        '.post a',
-        'h3 a'
+        'a[href*="/r/"]:not([href*="#"]):not([href*="javascript"])',
+        '.post a:not([href*="#"]):not([href*="javascript"])',
+        'h3 a:not([href*="#"]):not([href*="javascript"])'
       ],
       'Stack Overflow': [
-        'a[href*="/questions/"]',
-        '.question-summary a',
-        'h3 a'
+        'a[href*="/questions/"]:not([href*="#"]):not([href*="javascript"])',
+        '.question-summary a:not([href*="#"]):not([href*="javascript"])',
+        'h3 a:not([href*="#"]):not([href*="javascript"])'
+      ],
+      'Smashing Magazine': [
+        'article a:not([href*="#"]):not([href*="javascript"])',
+        '.article-card a:not([href*="#"]):not([href*="javascript"])',
+        'h2 a:not([href*="#"]):not([href*="javascript"])',
+        '.post-title a:not([href*="#"]):not([href*="javascript"])'
       ]
     };
 
@@ -274,6 +280,13 @@ export class AdvancedWebScraper {
             !title.includes('Home') && !title.includes('About') &&
             !title.includes('Contact') && !title.includes('Privacy') &&
             !title.includes('Market Research and Competitive Analysis') && // Filter out generic titles
+            !title.includes('Jump to list') && !title.includes('Jump to') && // Filter out navigation
+            !title.includes('All articles') && !title.includes('Browse') &&
+            !title.includes('Categories') && !title.includes('Tags') &&
+            !title.includes('Archive') && !title.includes('More') &&
+            !title.includes('View all') && !title.includes('See all') &&
+            !title.includes('Read more') && !title.includes('Continue reading') &&
+            !href.includes('#') && !href.includes('javascript:') && // Filter out anchors and JS
             !usedUrls.has(href)) {
           
           // Build full URL
@@ -285,6 +298,13 @@ export class AdvancedWebScraper {
           
           // Skip if URL is already used globally
           if (globalUsedUrls.has(fullUrl)) return;
+          
+          // Additional validation: ensure it's a real article URL
+          const isRealArticle = this.isRealArticleUrl(fullUrl, sourceName);
+          if (!isRealArticle) {
+            console.log(`Skipping non-article URL: ${fullUrl}`);
+            return;
+          }
           
           results.push({
             kind: 'read',
@@ -321,6 +341,43 @@ export class AdvancedWebScraper {
       'Stack Overflow': 'https://stackoverflow.com'
     };
     return baseUrls[sourceName] || 'https://example.com';
+  }
+
+  // Validate if URL is a real article (not navigation or generic page)
+  private isRealArticleUrl(url: string, sourceName: string): boolean {
+    // Skip navigation and generic pages
+    const skipPatterns = [
+      '/search', '/category', '/tag', '/archive', '/browse', '/list',
+      '/all', '/more', '/popular', '/trending', '/latest', '/recent',
+      '/about', '/contact', '/privacy', '/terms', '/help', '/support',
+      '/login', '/register', '/signup', '/signin', '/auth',
+      '/dashboard', '/profile', '/settings', '/account',
+      '/home', '/index', '/main', '/default'
+    ];
+
+    for (const pattern of skipPatterns) {
+      if (url.toLowerCase().includes(pattern)) {
+        return false;
+      }
+    }
+
+    // Platform-specific validation
+    switch (sourceName) {
+      case 'Medium':
+        return url.includes('/@') && !url.includes('/search');
+      case 'Dev.to':
+        return url.includes('/articles/') || url.includes('/@');
+      case 'Reddit':
+        return url.includes('/r/') && url.includes('/comments/');
+      case 'Stack Overflow':
+        return url.includes('/questions/');
+      case 'Smashing Magazine':
+        return url.includes('/articles/') || url.includes('/guides/');
+      case 'FreeCodeCamp':
+        return url.includes('/news/') || url.includes('/learn/');
+      default:
+        return true; // Allow other sources
+    }
   }
 
   // Search real websites for articles
