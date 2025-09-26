@@ -3,6 +3,9 @@ import { z } from "zod";
 import { generateRoadmapWithGemini } from "@/lib/geminiRoadmapGenerator";
 import type { RoadmapT } from "@/lib/schema";
 import { checkGoalSafety } from "@/lib/goalGuard";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +60,47 @@ export async function POST(req: Request) {
             "Cache-Control": "no-store",
           },
         });
+      }
+    }
+
+    // ---- DAILY GOAL LIMIT CHECK ----
+    const session = await getServerSession(authOptions);
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+      if (user) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const goalsCreatedToday = await prisma.goal.count({
+          where: {
+            userId: user.id,
+            createdAt: {
+              gte: today,
+              lt: tomorrow
+            }
+          }
+        });
+
+        if (goalsCreatedToday >= 3) {
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(enc({ 
+                type: "error", 
+                message: "Daily goal limit reached. You can create up to 3 goals per day. Try again tomorrow." 
+              }));
+              controller.close();
+            },
+          });
+          return new Response(stream, {
+            status: 429,
+            headers: {
+              "Content-Type": "application/x-ndjson",
+              "Cache-Control": "no-store",
+            },
+          });
+        }
       }
     }
 

@@ -41,7 +41,6 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
   const [generationState, setGenerationState] = useState<GenerationState>(() => {
     // Initialize with current state, but don't trigger re-renders
     const state = generationService.getState();
-    console.log('RoadmapGenerationContext: Initializing with state:', state);
     return state;
   });
   const [goalName, setGoalName] = useState(() => {
@@ -51,12 +50,9 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
 
   // Subscribe to service updates
   useEffect(() => {
-    console.log('RoadmapGenerationContext: Setting up subscription');
-    
     // Use a small delay to ensure the service has had time to restore from localStorage
     const syncWithService = () => {
       const currentState = generationService.getState();
-      console.log('RoadmapGenerationContext: Current service state:', currentState);
       setGenerationState(currentState);
       setGoalName(currentState.goalName);
     };
@@ -68,22 +64,18 @@ export const RoadmapGenerationProvider: React.FC<RoadmapGenerationProviderProps>
     const timeoutId = setTimeout(syncWithService, 100);
     
     const unsubscribe = generationService.subscribe(() => {
-      console.log('RoadmapGenerationContext: Received update from service');
       const state = generationService.getState();
-      console.log('RoadmapGenerationContext: New state:', state);
       setGenerationState(state);
       setGoalName(state.goalName);
     });
 
     return () => {
-      console.log('RoadmapGenerationContext: Cleaning up subscription');
       clearTimeout(timeoutId);
       unsubscribe();
     };
   }, []);
 
   const startGeneration = useCallback(async (goal: string, dailyMinutes: number, totalDays: number) => {
-    console.log('RoadmapGenerationContext: startGeneration called with:', { goal, dailyMinutes, totalDays });
     await generationService.startGeneration(goal, dailyMinutes, totalDays);
   }, []);
 

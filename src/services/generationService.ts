@@ -75,12 +75,37 @@ class GenerationService {
 
   // Start generation
   async startGeneration(goal: string, dailyMinutes: number, totalDays: number) {
-    console.log('GenerationService: Starting generation for goal:', goal);
-    console.log('GenerationService: Service will continue running across page navigation');
+    
+    // Check daily goal limit before starting generation
+    try {
+      const response = await fetch('/api/goals');
+      if (response.ok) {
+        const goals = await response.json();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todayGoals = goals.filter((goal: any) => {
+          const createdAt = new Date(goal.createdAt);
+          return createdAt >= today && createdAt < tomorrow;
+        });
+        
+        if (todayGoals.length >= 3) {
+          this.error = "Daily goal limit reached. You can create up to 3 goals per day. Try again tomorrow.";
+          this.isGenerating = false;
+          this.statusMessage = "Daily limit reached";
+          this.notify();
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check daily goal limit:', error);
+      // Continue with generation if check fails
+    }
     
     // Cancel any existing generation
     if (this.controller) {
-      console.log('GenerationService: Cancelling existing generation');
       this.controller.abort();
     }
 
@@ -112,11 +137,8 @@ class GenerationService {
   // Gemini API with web scraping for free, real resources
   private async performGeminiGeneration(requestData: any) {
     try {
-      console.log('GenerationService: Starting Gemini generation...');
-      
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted before starting');
         return;
       }
       
@@ -129,7 +151,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during import');
         return;
       }
       
@@ -141,7 +162,6 @@ class GenerationService {
       const result = await generateRoadmapWithGemini(requestData, (progress, message) => {
         // Check if generation was aborted during progress updates
         if (this.controller?.signal.aborted) {
-          console.log('GenerationService: Generation was aborted during progress update');
           return;
         }
         this.progress = progress;
@@ -151,7 +171,6 @@ class GenerationService {
       
       // Check if generation was aborted after completion
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted after completion');
         return;
       }
       
@@ -164,7 +183,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during topic creation');
         return;
       }
       
@@ -177,7 +195,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during AI content generation');
         return;
       }
       
@@ -190,7 +207,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during resource scraping');
         return;
       }
       
@@ -203,7 +219,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during practice generation');
         return;
       }
       
@@ -216,7 +231,6 @@ class GenerationService {
       
       // Check if generation was aborted
       if (this.controller?.signal.aborted) {
-        console.log('GenerationService: Generation was aborted during quiz generation');
         return;
       }
       
@@ -232,7 +246,6 @@ class GenerationService {
       this.progress = 100;
       this.isGenerating = false;
       this.goalName = result?.goal || '';
-      console.log('GenerationService: Gemini generation completed successfully');
       this.notify();
       
       // Clear saved state since generation is complete
@@ -241,7 +254,6 @@ class GenerationService {
     } catch (e: any) {
       // Check if the error is due to abortion
       if (e.name === 'AbortError' || e.message?.includes('aborted')) {
-        console.log('GenerationService: Generation was aborted by user');
         this.isGenerating = false;
         this.statusMessage = "Generation cancelled";
         this.error = null; // Don't show error for user cancellation
