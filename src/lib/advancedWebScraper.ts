@@ -497,107 +497,95 @@ export class AdvancedWebScraper {
     return queryTerms.slice(0, 3).join(' '); // Use top 3 terms from query
   }
 
-  // Dynamically search for articles from ANY website
+  // Search web for best rated articles related to goal+day
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     const globalUsedUrls = new Set<string>();
     
     try {
-      console.log(`Dynamically searching for ANY website articles about: "${query}"`);
+      console.log(`Searching web for best articles about: "${query}"`);
       
-      // Create specific search query
-      const specificQuery = this.createSpecificQuery(query, goal);
-      console.log(`Using specific query: "${specificQuery}"`);
+      // Create search query combining goal and day context
+      const searchQuery = goal ? `${goal} ${query}` : query;
+      console.log(`Search query: "${searchQuery}"`);
       
-      // Try multiple search approaches to find ANY website with articles
-      const searchQueries = [
-        `https://www.bing.com/search?q=${encodeURIComponent(specificQuery + ' article blog post')}`,
-        `https://duckduckgo.com/html/?q=${encodeURIComponent(specificQuery + ' tutorial guide')}`,
-        `https://www.startpage.com/sp/search?query=${encodeURIComponent(specificQuery + ' article')}`
-      ];
+      // Use Google search to find the best rated articles
+      const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}&num=10`;
+      console.log(`Google search URL: ${googleSearchUrl}`);
       
-      for (const searchUrl of searchQueries) {
-        if (results.length >= 3) break;
+      const response = await this.makeRequest(googleSearchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        console.log(`Google search page loaded, content length: ${response.data.length}`);
         
-        try {
-          console.log(`Searching: ${searchUrl}`);
-          const response = await this.makeRequest(searchUrl);
-          
-          if (response.status === 200) {
-            const $ = cheerio.load(response.data);
-            console.log(`Search page loaded, content length: ${response.data.length}`);
-            console.log(`Page title: ${$('title').text()}`);
+        // Extract search results - Google uses different selectors
+        const searchResultSelectors = [
+          'div.g h3 a', // Standard Google results
+          '.g h3 a', // Alternative selector
+          'h3 a', // Generic h3 links
+          '.yuRUbf a', // Google's new layout
+          '.LC20lb' // Google's title class
+        ];
+        
+        for (const selector of searchResultSelectors) {
+          console.log(`Trying selector: ${selector}`);
+          $(selector).each((index, element) => {
+            if (results.length >= 3) return false;
             
-            // Try different selectors for different search engines
-            const selectors = [
-              '.b_algo h2 a', // Bing
-              '.result .result__title a', // DuckDuckGo
-              '.w-gl__result-title a', // Startpage
-              'h2 a', // Generic
-              '.result a', // Generic
-              'a[href*="http"]' // Any external link
-            ];
+            const title = $(element).text().trim();
+            let url = $(element).attr('href');
             
-            for (const selector of selectors) {
-              console.log(`Trying selector: ${selector}`);
-              $(selector).each((index, element) => {
-                if (results.length >= 3) return false;
-                
-                const title = $(element).text().trim();
-                const url = $(element).attr('href');
-                
-                console.log(`Found link: ${title.substring(0, 50)} - ${url}`);
-                
-                // Very lenient filtering - accept almost any readable content
-                if (url && title && title.length > 5 && title.length < 200 && 
-                    !title.includes('Sign in') && !title.includes('Subscribe') && 
-                    !title.includes('Login') && !title.includes('Register') &&
-                    !title.includes('Menu') && !title.includes('Search') &&
-                    !url.includes('youtube.com') && !url.includes('youtu.be') &&
-                    !url.includes('facebook.com') && !url.includes('twitter.com') &&
-                    !url.includes('instagram.com') && !url.includes('linkedin.com') &&
-                    !url.includes('reddit.com') && !url.includes('quora.com') &&
-                    !url.includes('stackoverflow.com') && !url.includes('github.com') &&
-                    !globalUsedUrls.has(url)) {
-                  
-                  // Extract domain name for source
-                  let source = 'Unknown';
-                  try {
-                    const urlObj = new URL(url);
-                    source = urlObj.hostname.replace('www.', '');
-                  } catch (e) {
-                    // Keep 'Unknown' if URL parsing fails
-                  }
-                  
-                  results.push({
-                    kind: 'read',
-                    title: title,
-                    url: url,
-                    source: source,
-                    duration_minutes: 15,
-                    description: `Article about ${query}`,
-                    split: null
-                  });
-                  
-                  globalUsedUrls.add(url);
-                  console.log(`Added article: ${title.substring(0, 50)} from ${source}`);
-                }
+            console.log(`Found result: ${title.substring(0, 50)} - ${url}`);
+            
+            // Filter for real articles and blogs
+            if (url && title && title.length > 10 && title.length < 200 && 
+                !title.includes('Sign in') && !title.includes('Subscribe') && 
+                !title.includes('Login') && !title.includes('Register') &&
+                !title.includes('Menu') && !title.includes('Search') &&
+                !url.includes('youtube.com') && !url.includes('youtu.be') &&
+                !url.includes('facebook.com') && !url.includes('twitter.com') &&
+                !url.includes('instagram.com') && !url.includes('linkedin.com') &&
+                !url.includes('reddit.com') && !url.includes('quora.com') &&
+                !url.includes('stackoverflow.com') && !url.includes('github.com') &&
+                !url.includes('google.com') && !url.includes('bing.com') &&
+                !url.includes('duckduckgo.com') && !url.includes('startpage.com') &&
+                !globalUsedUrls.has(url)) {
+              
+              // Extract domain name for source
+              let source = 'Web';
+              try {
+                const urlObj = new URL(url);
+                source = urlObj.hostname.replace('www.', '');
+              } catch (e) {
+                // Keep 'Web' if URL parsing fails
+              }
+              
+              results.push({
+                kind: 'read',
+                title: title,
+                url: url,
+                source: source,
+                duration_minutes: 15,
+                description: `Best article about ${query}`,
+                split: null
               });
               
-              if (results.length >= 3) break;
+              globalUsedUrls.add(url);
+              console.log(`Added article: ${title.substring(0, 50)} from ${source}`);
             }
-            
-            console.log(`Search found ${results.length} articles so far`);
-          } else {
-            console.log(`Search failed with status ${response.status}`);
-          }
-        } catch (error) {
-          console.log(`Search failed:`, error instanceof Error ? error.message : String(error));
+          });
+          
+          if (results.length >= 3) break;
         }
+        
+        console.log(`Google search found ${results.length} articles`);
+      } else {
+        console.log(`Google search failed with status ${response.status}`);
       }
       
     } catch (error) {
-      console.error('Dynamic article search failed:', error instanceof Error ? error.message : String(error));
+      console.error('Web search failed:', error instanceof Error ? error.message : String(error));
     }
     
     console.log(`Total articles found: ${results.length}`);
