@@ -232,10 +232,12 @@ export class AdvancedWebScraper {
       'Dev.to': [
         'article a[href*="/articles/"]',
         'a[href*="/articles/"]',
-        '.crayons-story a',
+        '.crayons-story a[href*="/articles/"]',
+        '.crayons-story__title a[href*="/articles/"]',
+        'h2 a[href*="/articles/"]',
+        'h3 a[href*="/articles/"]',
         '.crayons-story__title a',
-        'h2 a',
-        'h3 a'
+        '.crayons-story__meta a'
       ],
       'Hashnode': [
         'article a[href*="/@"]',
@@ -284,7 +286,7 @@ export class AdvancedWebScraper {
         
         console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
         
-        if (href && title && title.length > 5 && title.length < 200 && 
+        if (href && title && title.length > 10 && title.length < 150 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
             !title.includes('Menu') && !title.includes('Search') &&
@@ -294,6 +296,11 @@ export class AdvancedWebScraper {
             !title.includes('Categories') && !title.includes('Tags') &&
             !title.includes('Archive') && !title.includes('More') &&
             !title.includes('View all') && !title.includes('See all') &&
+            !title.includes('Identifying User Needs') && !title.includes('Conducting Customer Interviews') && // Filter out generic titles
+            !title.includes('Gamers Forem') && !title.includes('DEV Community') && // Filter out generic platform names
+            !title.includes('Top ') && !title.includes('Best ') && !title.includes('Ways to') && // Filter out listicles
+            !title.includes('10 ') && !title.includes('5 ') && !title.includes('7 ') && // Filter out numbered lists
+            !title.includes('How to') && !title.includes('Guide to') && // Filter out generic guides
             !href.includes('#') && !href.includes('javascript:') && // Filter out anchors and JS
             !usedUrls.has(href)) {
           
@@ -344,6 +351,8 @@ export class AdvancedWebScraper {
       'Hashnode': 'https://hashnode.com',
       'FreeCodeCamp': 'https://www.freecodecamp.org',
       'Wikipedia': 'https://en.wikipedia.org',
+      'Towards Data Science': 'https://towardsdatascience.com',
+      'UX Planet': 'https://uxplanet.org',
       'Smashing Magazine': 'https://www.smashingmagazine.com',
       'CSS-Tricks': 'https://css-tricks.com',
       'A List Apart': 'https://alistapart.com',
@@ -400,6 +409,14 @@ export class AdvancedWebScraper {
         const isValidWiki = url.includes('/wiki/') || url.includes('wikipedia.org');
         console.log(`Wikipedia validation: ${isValidWiki}`);
         return isValidWiki;
+      case 'Towards Data Science':
+        const isValidTDS = url.includes('/towardsdatascience.com/') || url.includes('towardsdatascience.com');
+        console.log(`Towards Data Science validation: ${isValidTDS}`);
+        return isValidTDS;
+      case 'UX Planet':
+        const isValidUX = url.includes('/uxplanet.org/') || url.includes('uxplanet.org');
+        console.log(`UX Planet validation: ${isValidUX}`);
+        return isValidUX;
       default:
         console.log(`Default validation: true`);
         return true; // Allow other sources
@@ -414,14 +431,14 @@ export class AdvancedWebScraper {
     try {
       console.log(`Searching ANY website for articles about: "${query}"`);
       
-      // Focus on readable content platforms - Medium and Substack first
+      // Focus on platforms with real articles - avoid listicles
       const articleSources = [
         { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
         { name: 'Substack', url: `https://substack.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
-        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(query)}`, type: 'search' },
         { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
         { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(query)}`, type: 'search' },
-        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' }
+        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
+        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(query)}`, type: 'search' }
       ];
 
       for (const source of articleSources.slice(0, 6)) {
