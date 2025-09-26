@@ -497,74 +497,84 @@ export class AdvancedWebScraper {
     return queryTerms.slice(0, 3).join(' '); // Use top 3 terms from query
   }
 
-  // Search real websites for articles
+  // Dynamically search for articles from ANY website
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
-    const globalUsedUrls = new Set<string>(); // Prevent duplicates across all searches
+    const globalUsedUrls = new Set<string>();
     
     try {
-      console.log(`Searching ANY website for articles about: "${query}"`);
+      console.log(`Dynamically searching for ANY website articles about: "${query}"`);
       
-      // Create more specific search queries
+      // Create specific search query
       const specificQuery = this.createSpecificQuery(query, goal);
       console.log(`Using specific query: "${specificQuery}"`);
       
-      // Search ANY website for articles - try multiple approaches
-      const articleSources = [
-        { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
-        { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Reddit', url: `https://www.reddit.com/search/?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
-      ];
-
-      for (const source of articleSources.slice(0, 6)) {
-        try {
-          console.log(`Searching ${source.name} for articles about: ${query}`);
-          const response = await this.makeRequest(source.url);
-          console.log(`${source.name} response status: ${response.status}`);
-          const $ = cheerio.load(response.data);
+      // Use DuckDuckGo search to find ANY website with articles
+      const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(specificQuery + ' article blog post tutorial guide')}`;
+      console.log(`Searching DuckDuckGo: ${searchUrl}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        console.log(`DuckDuckGo page loaded, content length: ${response.data.length}`);
+        
+        // Extract search results from DuckDuckGo
+        $('.result').each((index, element) => {
+          if (results.length >= 3) return false; // Limit to 3 articles
           
-          if (source.type === 'direct') {
-            // Direct article (like Wikipedia)
-            if (response.status === 200) {
-              results.push({
-                kind: 'read',
-                title: `${query} - ${source.name}`,
-                url: source.url,
-                source: source.name,
-                duration_minutes: 20,
-                description: `Comprehensive information about ${query}`,
-                split: null
-              });
-              console.log(`Added direct article from ${source.name}`);
+          const titleElement = $(element).find('.result__title a');
+          const snippetElement = $(element).find('.result__snippet');
+          
+          const title = titleElement.text().trim();
+          const url = titleElement.attr('href');
+          const snippet = snippetElement.text().trim();
+          
+          console.log(`Found result: ${title.substring(0, 50)} - ${url}`);
+          
+          // Filter out unwanted sites
+          if (url && title && title.length > 10 && 
+              !url.includes('youtube.com') && !url.includes('youtu.be') &&
+              !url.includes('facebook.com') && !url.includes('twitter.com') &&
+              !url.includes('instagram.com') && !url.includes('linkedin.com') &&
+              !url.includes('reddit.com') && !url.includes('quora.com') &&
+              !url.includes('stackoverflow.com') && !url.includes('github.com') &&
+              !globalUsedUrls.has(url)) {
+            
+            // Extract domain name for source
+            let source = 'Unknown';
+            try {
+              const urlObj = new URL(url);
+              source = urlObj.hostname.replace('www.', '');
+            } catch (e) {
+              // Keep 'Unknown' if URL parsing fails
             }
-          } else {
-            // Search results page
-            const beforeCount = results.length;
-            console.log(`Before extraction: ${beforeCount} articles`);
-            console.log(`Page content length: ${response.data.length} characters`);
-            console.log(`Page title: ${$('title').text()}`);
-            this.extractArticlesFromPage($, source.name, query, results, globalUsedUrls);
-            const afterCount = results.length;
-            console.log(`After extraction: ${afterCount} articles`);
-            console.log(`${source.name}: Found ${afterCount - beforeCount} new articles`);
+            
+            results.push({
+              kind: 'read',
+              title: title,
+              url: url,
+              source: source,
+              duration_minutes: 15,
+              description: snippet || `Article about ${query}`,
+              split: null
+            });
+            
+            globalUsedUrls.add(url);
+            console.log(`Added article: ${title.substring(0, 50)} from ${source}`);
           }
-          
-          if (results.length >= 2) break; // Reduced from 3 to 2
-        } catch (error) {
-          console.log(`${source.name} search failed:`, error instanceof Error ? error.message : String(error));
-        }
+        });
+        
+        console.log(`DuckDuckGo search found ${results.length} articles`);
+      } else {
+        console.log(`DuckDuckGo search failed with status ${response.status}`);
       }
-
-
+      
     } catch (error) {
-      console.error('Article search failed:', error);
+      console.error('Dynamic article search failed:', error instanceof Error ? error.message : String(error));
     }
     
-    
-    console.log(`Found ${results.length} articles`);
+    console.log(`Total articles found: ${results.length}`);
     return results;
   }
 
