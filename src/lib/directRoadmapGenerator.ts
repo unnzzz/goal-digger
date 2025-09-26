@@ -314,9 +314,33 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
       } catch (secondError) {
         console.error(`JSON parsing failed even after cleaning, trying regex extraction:`, secondError);
         
-        // Try to extract content using regex
-        const titleMatch = jsonText.match(/"title":\s*"([^"]+)"/);
-        const contentMatch = jsonText.match(/"content":\s*"([^"]+)"/);
+        // Try to extract content using regex with multiple patterns
+        const titlePatterns = [
+          /"title":\s*"([^"]+)"/,
+          /"title":\s*'([^']+)'/,
+          /title:\s*"([^"]+)"/,
+          /title:\s*'([^']+)'/
+        ];
+        
+        const contentPatterns = [
+          /"content":\s*"([^"]+)"/,
+          /"content":\s*'([^']+)'/,
+          /content:\s*"([^"]+)"/,
+          /content:\s*'([^']+)'/
+        ];
+        
+        let titleMatch = null;
+        let contentMatch = null;
+        
+        for (const pattern of titlePatterns) {
+          titleMatch = jsonText.match(pattern);
+          if (titleMatch) break;
+        }
+        
+        for (const pattern of contentPatterns) {
+          contentMatch = jsonText.match(pattern);
+          if (contentMatch) break;
+        }
         
         if (titleMatch && contentMatch) {
           content = {
