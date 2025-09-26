@@ -188,12 +188,14 @@ class AdvancedWebScraper {
       ];
     }
     
-    // Try multiple search variations (increased from 3 to 8 for better coverage)
-    for (const searchTerm of searchVariations.slice(0, 8)) {
+    // Try multiple search variations with better error handling
+    for (const searchTerm of searchVariations.slice(0, 5)) {
       try {
+        console.log(`Searching YouTube for: "${searchTerm}"`);
         const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
         
         const response = await this.makeRequest(searchUrl);
+        console.log(`YouTube response status: ${response.status}, data length: ${response.data.length}`);
         const $ = cheerio.load(response.data);
       
         // Multiple selectors for different YouTube layouts
@@ -463,11 +465,13 @@ class AdvancedWebScraper {
     ];
     
     // Method 1: Try multiple search variations with DuckDuckGo
-    for (const searchTerm of searchVariations.slice(0, 5)) {
+    for (const searchTerm of searchVariations.slice(0, 3)) {
       try {
+        console.log(`Searching articles for: "${searchTerm}"`);
         const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchTerm)}`;
         
         const response = await this.makeRequest(searchUrl);
+        console.log(`DuckDuckGo response status: ${response.status}, data length: ${response.data.length}`);
         const $ = cheerio.load(response.data);
       
         // Multiple selectors for DuckDuckGo results

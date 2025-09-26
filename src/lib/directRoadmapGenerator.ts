@@ -302,6 +302,8 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. 
         .replace(/\s+/g, ' ')  // Normalize whitespace
         .replace(/([^\\])\\([^"\\\/bfnrt])/g, '$1\\\\$2')  // Fix unescaped backslashes
         .replace(/([^\\])"([^"]*)"([^,}\]]*)([,\}\]])/g, '$1"$2"$4')  // Fix missing commas
+        .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+        .replace(/([^"])\s*:\s*([^",{\[\s])/g, '$1: "$2"')  // Quote unquoted values
         .trim();
       
       console.log(`Cleaned JSON text: ${cleanedJson.substring(0, 500)}...`);
