@@ -261,6 +261,20 @@ export class AdvancedWebScraper {
         'h1 a',
         'h2 a',
         'h3 a'
+      ],
+      'Reddit': [
+        'a[href*="/r/"]',
+        '.post a',
+        'h3 a',
+        '.title a',
+        'a[data-click-id="body"]'
+      ],
+      'FreeCodeCamp': [
+        'article a[href*="/news/"]',
+        'a[href*="/news/"]',
+        '.post-card a',
+        'h2 a',
+        'h3 a'
       ]
     };
 
@@ -271,6 +285,8 @@ export class AdvancedWebScraper {
       'a[href*="/post"]',
       'a[href*="/blog"]'
     ];
+    
+    console.log(`Using selectors for ${sourceName}:`, selectors);
 
     const usedUrls = new Set<string>();
     let foundCount = 0;
@@ -287,17 +303,12 @@ export class AdvancedWebScraper {
         
         console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
         
-        // Very lenient filtering - accept ANY readable content
-        if (href && title && title.length > 5 && title.length < 200 && 
+        // Extremely lenient filtering - accept almost ANY content
+        if (href && title && title.length > 3 && title.length < 300 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
             !title.includes('Menu') && !title.includes('Search') &&
             !title.includes('{') && !title.includes('css-') &&
-            !title.includes('Jump to list') && !title.includes('Jump to') && // Filter out navigation
-            !title.includes('All articles') && !title.includes('Browse') &&
-            !title.includes('Categories') && !title.includes('Tags') &&
-            !title.includes('Archive') && !title.includes('More') &&
-            !title.includes('View all') && !title.includes('See all') &&
             !href.includes('#') && !href.includes('javascript:') && // Filter out anchors and JS
             !href.includes('youtube.com') && !href.includes('youtu.be') && // Filter out YouTube videos
             !href.includes('facebook.com') && !href.includes('twitter.com') && // Filter out social media
@@ -498,14 +509,14 @@ export class AdvancedWebScraper {
       const specificQuery = this.createSpecificQuery(query, goal);
       console.log(`Using specific query: "${specificQuery}"`);
       
-      // Search ANY website for articles - use Google search to find real articles
+      // Search ANY website for articles - try multiple approaches
       const articleSources = [
-        { name: 'Google Search', url: `https://www.google.com/search?q=${encodeURIComponent(specificQuery + ' article blog post')}`, type: 'search' },
         { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
         { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Substack', url: `https://substack.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
         { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
-        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
+        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'Reddit', url: `https://www.reddit.com/search/?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
       ];
 
       for (const source of articleSources.slice(0, 6)) {
@@ -533,6 +544,8 @@ export class AdvancedWebScraper {
             // Search results page
             const beforeCount = results.length;
             console.log(`Before extraction: ${beforeCount} articles`);
+            console.log(`Page content length: ${response.data.length} characters`);
+            console.log(`Page title: ${$('title').text()}`);
             this.extractArticlesFromPage($, source.name, query, results, globalUsedUrls);
             const afterCount = results.length;
             console.log(`After extraction: ${afterCount} articles`);
