@@ -286,6 +286,9 @@ export class AdvancedWebScraper {
         
         console.log(`Found link: ${href}, title: ${title.substring(0, 50)}`);
         
+        // Check if title is relevant to the query/goal
+        const isRelevant = this.isTitleRelevant(title, query);
+        
         if (href && title && title.length > 10 && title.length < 150 && 
             !title.includes('Sign in') && !title.includes('Subscribe') && 
             !title.includes('Login') && !title.includes('Register') &&
@@ -301,7 +304,11 @@ export class AdvancedWebScraper {
             !title.includes('Top ') && !title.includes('Best ') && !title.includes('Ways to') && // Filter out listicles
             !title.includes('10 ') && !title.includes('5 ') && !title.includes('7 ') && // Filter out numbered lists
             !title.includes('How to') && !title.includes('Guide to') && // Filter out generic guides
+            !title.includes('Become a Product Manager at Linkedin') && // Filter out specific unrelated titles
+            !title.includes('Mastering User Research for Professional Networking Platforms') && // Filter out specific unrelated titles
+            !title.includes('Command Line') && // Filter out unrelated topics
             !href.includes('#') && !href.includes('javascript:') && // Filter out anchors and JS
+            isRelevant && // Check relevance to query
             !usedUrls.has(href)) {
           
           // Build full URL
@@ -360,6 +367,45 @@ export class AdvancedWebScraper {
       'Stack Overflow': 'https://stackoverflow.com'
     };
     return baseUrls[sourceName] || 'https://example.com';
+  }
+
+  // Check if article title is relevant to the query/goal
+  private isTitleRelevant(title: string, query: string): boolean {
+    const titleLower = title.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    // Extract key terms from query
+    const queryTerms = queryLower.split(/\s+/).filter(term => 
+      term.length > 2 && 
+      !['the', 'and', 'or', 'but', 'for', 'with', 'about', 'learn', 'how', 'to'].includes(term)
+    );
+    
+    // Check if title contains any of the key terms
+    const hasRelevantTerm = queryTerms.some(term => titleLower.includes(term));
+    
+    // Also check for common variations
+    const commonVariations: { [key: string]: string[] } = {
+      'product': ['product', 'pm', 'management', 'manager'],
+      'design': ['design', 'ux', 'ui', 'user experience'],
+      'development': ['development', 'coding', 'programming', 'software'],
+      'marketing': ['marketing', 'growth', 'acquisition', 'conversion'],
+      'data': ['data', 'analytics', 'metrics', 'insights'],
+      'ai': ['ai', 'artificial intelligence', 'machine learning', 'ml'],
+      'chatbot': ['chatbot', 'chat', 'conversation', 'ai assistant']
+    };
+    
+    let hasVariation = false;
+    for (const [key, variations] of Object.entries(commonVariations)) {
+      if (queryLower.includes(key)) {
+        hasVariation = variations.some(variation => titleLower.includes(variation));
+        if (hasVariation) break;
+      }
+    }
+    
+    const isRelevant = hasRelevantTerm || hasVariation;
+    console.log(`Title relevance check: "${title.substring(0, 50)}" vs "${query}" = ${isRelevant}`);
+    
+    return isRelevant;
   }
 
   // Validate if URL is a real article (not navigation or generic page)
@@ -423,6 +469,31 @@ export class AdvancedWebScraper {
     }
   }
 
+  // Create more specific search query based on goal and day
+  private createSpecificQuery(query: string, goal?: string): string {
+    // Extract key terms from the query
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(term => 
+      term.length > 2 && 
+      !['the', 'and', 'or', 'but', 'for', 'with', 'about', 'learn', 'how', 'to', 'day'].includes(term)
+    );
+    
+    // If we have a goal, combine it with the query terms
+    if (goal) {
+      const goalTerms = goal.toLowerCase().split(/\s+/).filter(term => 
+        term.length > 2 && 
+        !['the', 'and', 'or', 'but', 'for', 'with', 'about', 'learn', 'how', 'to'].includes(term)
+      );
+      
+      // Combine goal and query terms, prioritizing the most specific ones
+      const allTerms = [...goalTerms, ...queryTerms];
+      const uniqueTerms = [...new Set(allTerms)]; // Remove duplicates
+      
+      return uniqueTerms.slice(0, 3).join(' '); // Use top 3 most relevant terms
+    }
+    
+    return queryTerms.slice(0, 3).join(' '); // Use top 3 terms from query
+  }
+
   // Search real websites for articles
   async searchArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
@@ -431,14 +502,18 @@ export class AdvancedWebScraper {
     try {
       console.log(`Searching ANY website for articles about: "${query}"`);
       
+      // Create more specific search queries
+      const specificQuery = this.createSpecificQuery(query, goal);
+      console.log(`Using specific query: "${specificQuery}"`);
+      
       // Focus on platforms with real articles - avoid listicles
       const articleSources = [
-        { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
-        { name: 'Substack', url: `https://substack.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
-        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(query)}`, type: 'search' },
-        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(query)}`, type: 'search' },
+        { name: 'Medium', url: `https://medium.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'Substack', url: `https://substack.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'Hashnode', url: `https://hashnode.com/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' },
+        { name: 'FreeCodeCamp', url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(specificQuery)}`, type: 'search' },
         { name: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`, type: 'direct' },
-        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(query)}`, type: 'search' }
+        { name: 'Dev.to', url: `https://dev.to/search?q=${encodeURIComponent(specificQuery)}`, type: 'search' }
       ];
 
       for (const source of articleSources.slice(0, 6)) {
