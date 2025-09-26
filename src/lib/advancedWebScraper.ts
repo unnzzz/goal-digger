@@ -509,23 +509,24 @@ export class AdvancedWebScraper {
       const searchQuery = goal ? `${goal} ${query}` : query;
       console.log(`Search query: "${searchQuery}"`);
       
-      // Use Google search to find the best rated articles
-      const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}&num=10`;
-      console.log(`Google search URL: ${googleSearchUrl}`);
+      // Use DuckDuckGo search to find the best rated articles
+      const duckDuckGoUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery + ' article blog tutorial guide')}`;
+      console.log(`DuckDuckGo search URL: ${duckDuckGoUrl}`);
       
-      const response = await this.makeRequest(googleSearchUrl);
+      const response = await this.makeRequest(duckDuckGoUrl);
       
       if (response.status === 200) {
         const $ = cheerio.load(response.data);
-        console.log(`Google search page loaded, content length: ${response.data.length}`);
+        console.log(`DuckDuckGo search page loaded, content length: ${response.data.length}`);
+        console.log(`Page title: ${$('title').text()}`);
         
-        // Extract search results - Google uses different selectors
+        // Extract search results - DuckDuckGo uses different selectors
         const searchResultSelectors = [
-          'div.g h3 a', // Standard Google results
-          '.g h3 a', // Alternative selector
-          'h3 a', // Generic h3 links
-          '.yuRUbf a', // Google's new layout
-          '.LC20lb' // Google's title class
+          '.result .result__title a', // DuckDuckGo results
+          '.result h2 a', // Alternative DuckDuckGo selector
+          '.result a', // Generic result links
+          'h2 a', // Generic h2 links
+          'a[href*="http"]' // Any external links
         ];
         
         for (const selector of searchResultSelectors) {
@@ -550,6 +551,7 @@ export class AdvancedWebScraper {
                 !url.includes('stackoverflow.com') && !url.includes('github.com') &&
                 !url.includes('google.com') && !url.includes('bing.com') &&
                 !url.includes('duckduckgo.com') && !url.includes('startpage.com') &&
+                !url.includes('yahoo.com') && !url.includes('ask.com') &&
                 !globalUsedUrls.has(url)) {
               
               // Extract domain name for source
@@ -579,14 +581,15 @@ export class AdvancedWebScraper {
           if (results.length >= 3) break;
         }
         
-        console.log(`Google search found ${results.length} articles`);
+        console.log(`DuckDuckGo search found ${results.length} articles`);
       } else {
-        console.log(`Google search failed with status ${response.status}`);
+        console.log(`DuckDuckGo search failed with status ${response.status}`);
       }
       
     } catch (error) {
       console.error('Web search failed:', error instanceof Error ? error.message : String(error));
     }
+    
     
     console.log(`Total articles found: ${results.length}`);
     return results;
