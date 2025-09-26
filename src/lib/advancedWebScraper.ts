@@ -77,7 +77,7 @@ export class AdvancedWebScraper {
       this.requestCount++;
       return response;
     } catch (error) {
-      console.error(`Request failed for ${url}:`, error.message);
+      console.error(`Request failed for ${url}:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -129,7 +129,7 @@ export class AdvancedWebScraper {
           
           if (results.length > 0) break;
         } catch (error) {
-          console.log(`YouTube search failed for "${searchTerm}":`, error.message);
+          console.log(`YouTube search failed for "${searchTerm}":`, error instanceof Error ? error.message : String(error));
           continue;
         }
       }
@@ -164,7 +164,7 @@ export class AdvancedWebScraper {
           });
         }
       } catch (error) {
-        console.log('Wikipedia search failed:', error.message);
+        console.log('Wikipedia search failed:', error instanceof Error ? error.message : String(error));
       }
 
       // Search Medium for articles
@@ -192,7 +192,7 @@ export class AdvancedWebScraper {
           }
         });
       } catch (error) {
-        console.log('Medium search failed:', error.message);
+        console.log('Medium search failed:', error instanceof Error ? error.message : String(error));
       }
 
       // Search Dev.to for programming articles
@@ -221,7 +221,7 @@ export class AdvancedWebScraper {
             }
           });
         } catch (error) {
-          console.log('Dev.to search failed:', error.message);
+          console.log('Dev.to search failed:', error instanceof Error ? error.message : String(error));
         }
       }
 
@@ -250,7 +250,7 @@ export class AdvancedWebScraper {
           }
         });
       } catch (error) {
-        console.log('Reddit search failed:', error.message);
+        console.log('Reddit search failed:', error instanceof Error ? error.message : String(error));
       }
 
     } catch (error) {
@@ -290,7 +290,7 @@ export class AdvancedWebScraper {
             break; // Only need one podcast source
           }
         } catch (error) {
-          console.log(`Podcast search failed for ${url}:`, error.message);
+          console.log(`Podcast search failed for ${url}:`, error instanceof Error ? error.message : String(error));
           continue;
         }
       }
