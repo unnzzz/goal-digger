@@ -593,19 +593,36 @@ export class AdvancedWebScraper {
                     if (href && title && title.length > 5 && !globalUsedUrls.has(href)) {
                       try {
                         // Ensure full URL
-                        const fullUrl = href.startsWith('http') ? href : `https://${platform.domain}${href}`;
+                        let fullUrl = href;
+                        if (!href.startsWith('http')) {
+                          fullUrl = href.startsWith('/') ? `https://${platform.domain}${href}` : `https://${platform.domain}/${href}`;
+                        }
+                        
                         const url = new URL(fullUrl);
                         
                         console.log(`🔗 Checking URL: ${fullUrl}`);
+                        console.log(`🔗 URL pathname: ${url.pathname}`);
                         
-                        // More lenient validation - just check it's not a search/nav page
-                        const isNotSearchPage = !fullUrl.includes('search') && 
-                                               !fullUrl.includes('results') && 
-                                               !fullUrl.includes('?q=') &&
-                                               !title.toLowerCase().includes('search') &&
-                                               !title.toLowerCase().includes('results');
+                        // Strict validation for real articles
+                        const isValidArticle = 
+                          !fullUrl.includes('search') && 
+                          !fullUrl.includes('results') && 
+                          !fullUrl.includes('?q=') &&
+                          !fullUrl.includes('sitemap') &&
+                          !fullUrl.includes('tag/') &&
+                          !fullUrl.includes('category/') &&
+                          !fullUrl.includes('/@') && // Skip Medium author pages
+                          !title.toLowerCase().includes('search') &&
+                          !title.toLowerCase().includes('results') &&
+                          !title.toLowerCase().includes('sitemap') &&
+                          !title.toLowerCase().includes('tag') &&
+                          !title.toLowerCase().includes('category') &&
+                          title.length > 10 &&
+                          url.pathname.length > 3 && // Must have meaningful path
+                          !url.pathname.endsWith('/') && // Not just a directory
+                          url.pathname.split('/').length > 2; // Must have article path
                         
-                        if (isNotSearchPage) {
+                        if (isValidArticle) {
                           results.push({
                             kind: 'read',
                             title: title.substring(0, 100),
@@ -618,8 +635,9 @@ export class AdvancedWebScraper {
                           
                           globalUsedUrls.add(fullUrl);
                           console.log(`✅ Added ${platform.name} article: ${title.substring(0, 50)}`);
+                          console.log(`✅ URL: ${fullUrl}`);
                         } else {
-                          console.log(`❌ Skipped search/nav page: ${title.substring(0, 30)}`);
+                          console.log(`❌ Skipped invalid article: ${title.substring(0, 30)} - ${fullUrl}`);
                         }
                       } catch (e) {
                         console.log(`❌ Invalid URL: ${href}`);
@@ -671,18 +689,32 @@ export class AdvancedWebScraper {
               
               console.log(`Element ${index}: href="${href}", title="${title.substring(0, 50)}"`);
               
-              if (href && title && title.length > 5 && !globalUsedUrls.has(href) && !href.includes('duckduckgo.com')) {
+              if (href && title && title.length > 10 && !globalUsedUrls.has(href) && !href.includes('duckduckgo.com')) {
                 try {
                   const url = new URL(href);
                   
-                  // Very lenient - accept any external link that looks like content
-                  const looksLikeContent = !href.includes('search') && 
-                                         !href.includes('results') && 
-                                         !title.toLowerCase().includes('search') &&
-                                         !title.toLowerCase().includes('results') &&
-                                         title.length > 5;
+                  console.log(`🔗 Checking DuckDuckGo result: ${href}`);
+                  console.log(`🔗 URL pathname: ${url.pathname}`);
                   
-                  if (looksLikeContent) {
+                  // Strict validation for real articles
+                  const isValidArticle = 
+                    !href.includes('search') && 
+                    !href.includes('results') && 
+                    !href.includes('?q=') &&
+                    !href.includes('sitemap') &&
+                    !href.includes('tag/') &&
+                    !href.includes('category/') &&
+                    !title.toLowerCase().includes('search') &&
+                    !title.toLowerCase().includes('results') &&
+                    !title.toLowerCase().includes('sitemap') &&
+                    !title.toLowerCase().includes('tag') &&
+                    !title.toLowerCase().includes('category') &&
+                    title.length > 10 &&
+                    url.pathname.length > 3 && // Must have meaningful path
+                    !url.pathname.endsWith('/') && // Not just a directory
+                    url.pathname.split('/').length > 2; // Must have article path
+                  
+                  if (isValidArticle) {
                     results.push({
                       kind: 'read',
                       title: title.substring(0, 100),
@@ -695,8 +727,9 @@ export class AdvancedWebScraper {
                     
                     globalUsedUrls.add(href);
                     console.log(`✅ Added web article: ${title.substring(0, 50)} from ${url.hostname}`);
+                    console.log(`✅ URL: ${href}`);
                   } else {
-                    console.log(`❌ Skipped: ${title.substring(0, 30)}`);
+                    console.log(`❌ Skipped invalid article: ${title.substring(0, 30)} - ${href}`);
                   }
                 } catch (e) {
                   console.log(`❌ Invalid URL: ${href}`);
