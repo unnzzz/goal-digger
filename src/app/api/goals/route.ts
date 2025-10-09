@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hashRoadmap } from "@/lib/hash";
-import { sendQuestReminderEmail } from "@/lib/quest-email-service";
+import { sendDailyQuestEmail } from "@/lib/daily-quest-email-service";
 
 export async function GET() {
   const s = await getServerSession(authOptions);
@@ -77,7 +77,8 @@ export async function POST(req: Request) {
       
       // Send daily quest email when goal is started
       try {
-        await sendQuestReminderEmail(u.id, existing.id, new Date().toLocaleDateString());
+        const today = new Date().toISOString().split('T')[0];
+        await sendDailyQuestEmail(u.id, today, true);
       } catch (error) {
         console.error('Failed to send quest reminder email:', error);
         // Don't fail the request if email fails
@@ -105,7 +106,8 @@ export async function POST(req: Request) {
   // Send daily quest email if goal is started immediately
   if (startGoal) {
     try {
-      await sendQuestReminderEmail(u.id, goal.id, new Date().toLocaleDateString());
+      const today = new Date().toISOString().split('T')[0];
+      await sendDailyQuestEmail(u.id, today, true);
     } catch (error) {
       console.error('Failed to send quest reminder email:', error);
       // Don't fail the request if email fails

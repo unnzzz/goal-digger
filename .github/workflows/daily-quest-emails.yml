@@ -1,0 +1,17 @@
+name: Daily Quest Emails
+
+on:
+  schedule:
+    # Send morning emails at 8 AM UTC (every day)
+    - cron: '0 8 * * *'
+    # Send evening emails at 6 PM UTC (every day)  
+    - cron: '0 18 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  send-quest-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Daily Quest Emails
+        run: |
+          curl -X GET "https://goal-digger.vercel.app/api/cron/daily-quest-emails?secret=${{ secrets.CRON_SECRET }}"
