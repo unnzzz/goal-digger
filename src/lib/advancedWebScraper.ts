@@ -548,11 +548,11 @@ export class AdvancedWebScraper {
         }
       ];
       
-      // Search each platform
+      // Search each platform - only need 1 article
       for (const platform of platforms) {
-        if (results.length >= 3) break;
+        if (results.length >= 1) break; // Only need 1 article
         
-        for (const searchQuery of searchQueries.slice(0, 2)) {
+        for (const searchQuery of searchQueries.slice(0, 1)) { // Only try first query
           try {
             const searchUrl = platform.searchUrl(searchQuery);
             console.log(`🔍 Searching ${platform.name}: ${searchQuery}`);
@@ -566,31 +566,32 @@ export class AdvancedWebScraper {
               const $ = cheerio.load(response.data);
               console.log(`📄 Page title: ${$('title').text()}`);
               
-              // Try ALL possible selectors for each platform
-              const allSelectors = [
-                'a[href*="/"]', 'a[href^="/"]', 'a[href^="http"]',
-                'article a', 'article h1 a', 'article h2 a', 'article h3 a',
-                '.post a', '.post-title a', '.article a', '.story a',
-                'h1 a', 'h2 a', 'h3 a', 'h4 a',
-                '.title a', '.headline a', '.content a'
-              ];
+              // Platform-specific selectors
+              const platformSelectors = {
+                'Medium': ['article h3 a', 'article h2 a', '.postArticle-content h3 a'],
+                'Dev.to': ['article h2 a', 'article h3 a', '.crayons-story__title a'],
+                'Substack': ['article h3 a', 'article h2 a', '.post-title a'],
+                'Hashnode': ['article h2 a', 'article h3 a', '.blog-title a'],
+                'FreeCodeCamp': ['article h2 a', 'article h3 a', '.post-title a']
+              };
               
-              console.log(`🔍 Trying ${allSelectors.length} selectors for ${platform.name}`);
+              const selectors = platformSelectors[platform.name] || ['article a', 'h2 a', 'h3 a'];
+              console.log(`🔍 Trying ${selectors.length} selectors for ${platform.name}`);
               
-              for (const selector of allSelectors) {
+              for (const selector of selectors) {
                 const elements = $(selector);
                 console.log(`${platform.name} selector "${selector}" found ${elements.length} elements`);
                 
                 if (elements.length > 0) {
                   elements.each((index, element) => {
-                    if (results.length >= 3) return false;
+                    if (results.length >= 1) return false; // Only need 1
                     
                     const href = $(element).attr('href');
                     let title = $(element).text().trim();
                     
                     console.log(`Element ${index}: href="${href}", title="${title.substring(0, 50)}"`);
                     
-                    if (href && title && title.length > 5 && !globalUsedUrls.has(href)) {
+                    if (href && title && title.length > 10 && !globalUsedUrls.has(href)) {
                       try {
                         // Ensure full URL
                         let fullUrl = href;
@@ -603,7 +604,7 @@ export class AdvancedWebScraper {
                         console.log(`🔗 Checking URL: ${fullUrl}`);
                         console.log(`🔗 URL pathname: ${url.pathname}`);
                         
-                        // Strict validation for real articles
+                        // Very strict validation for real articles
                         const isValidArticle = 
                           !fullUrl.includes('search') && 
                           !fullUrl.includes('results') && 
@@ -612,15 +613,20 @@ export class AdvancedWebScraper {
                           !fullUrl.includes('tag/') &&
                           !fullUrl.includes('category/') &&
                           !fullUrl.includes('/@') && // Skip Medium author pages
+                          !fullUrl.includes('gamers-forum') && // Skip dev.to forum
                           !title.toLowerCase().includes('search') &&
                           !title.toLowerCase().includes('results') &&
                           !title.toLowerCase().includes('sitemap') &&
                           !title.toLowerCase().includes('tag') &&
                           !title.toLowerCase().includes('category') &&
-                          title.length > 10 &&
-                          url.pathname.length > 3 && // Must have meaningful path
+                          !title.toLowerCase().includes('gamers forum') &&
+                          title.length > 15 &&
+                          url.pathname.length > 5 && // Must have meaningful path
                           !url.pathname.endsWith('/') && // Not just a directory
-                          url.pathname.split('/').length > 2; // Must have article path
+                          url.pathname.split('/').length > 2 && // Must have article path
+                          !url.pathname.includes('search') &&
+                          !url.pathname.includes('tag') &&
+                          !url.pathname.includes('category');
                         
                         if (isValidArticle) {
                           results.push({
@@ -636,6 +642,7 @@ export class AdvancedWebScraper {
                           globalUsedUrls.add(fullUrl);
                           console.log(`✅ Added ${platform.name} article: ${title.substring(0, 50)}`);
                           console.log(`✅ URL: ${fullUrl}`);
+                          return false; // Stop after finding one
                         } else {
                           console.log(`❌ Skipped invalid article: ${title.substring(0, 30)} - ${fullUrl}`);
                         }
@@ -682,7 +689,7 @@ export class AdvancedWebScraper {
             console.log(`DuckDuckGo selector "${selector}" found ${elements.length} elements`);
             
             elements.each((index, element) => {
-              if (results.length >= 3) return false;
+              if (results.length >= 1) return false; // Only need 1
               
               const href = $(element).attr('href');
               let title = $(element).text().trim();
