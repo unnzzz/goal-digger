@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendEmail } from "@/lib/mailer";
 import { dayNumberFrom, localNowParts, isValidTZ } from "@/lib/time";
 
 export interface DailyQuestData {
