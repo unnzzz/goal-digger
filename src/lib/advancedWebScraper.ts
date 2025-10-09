@@ -712,45 +712,6 @@ export class AdvancedWebScraper {
         }
       }
       
-      // LAST RESORT: If STILL no results, create some generic but relevant articles
-      if (results.length === 0) {
-        console.log(`🚨 NO ARTICLES FOUND! Creating fallback articles for: ${query}`);
-        
-        const fallbackArticles = [
-          {
-            title: `${query} - Complete Guide`,
-            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query.replace(/\s+/g, '_'))}`,
-            source: 'wikipedia.org'
-          },
-          {
-            title: `How to ${query} - Tutorial`,
-            url: `https://www.wikihow.com/${encodeURIComponent(query.replace(/\s+/g, '-'))}`,
-            source: 'wikihow.com'
-          },
-          {
-            title: `${query} - Learning Resources`,
-            url: `https://www.freecodecamp.org/news/search/?query=${encodeURIComponent(query)}`,
-            source: 'freecodecamp.org'
-          }
-        ];
-        
-        for (const article of fallbackArticles) {
-          if (results.length >= 3) break;
-          
-          results.push({
-            kind: 'read',
-            title: article.title,
-            url: article.url,
-            source: article.source,
-            duration_minutes: 10 + Math.floor(Math.random() * 8),
-            description: `Article about ${query}`,
-            split: null
-          });
-          
-          console.log(`✅ Added fallback article: ${article.title}`);
-        }
-      }
-      
     } catch (error) {
       console.error('Article search failed:', error instanceof Error ? error.message : String(error));
     }
