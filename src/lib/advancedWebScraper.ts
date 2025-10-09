@@ -567,15 +567,26 @@ export class AdvancedWebScraper {
               console.log(`📄 Page title: ${$('title').text()}`);
               
               // Platform-specific selectors
-              const platformSelectors = {
-                'Medium': ['article h3 a', 'article h2 a', '.postArticle-content h3 a'],
-                'Dev.to': ['article h2 a', 'article h3 a', '.crayons-story__title a'],
-                'Substack': ['article h3 a', 'article h2 a', '.post-title a'],
-                'Hashnode': ['article h2 a', 'article h3 a', '.blog-title a'],
-                'FreeCodeCamp': ['article h2 a', 'article h3 a', '.post-title a']
-              };
-              
-              const selectors = platformSelectors[platform.name] || ['article a', 'h2 a', 'h3 a'];
+              let selectors: string[];
+              switch (platform.name) {
+                case 'Medium':
+                  selectors = ['article h3 a', 'article h2 a', '.postArticle-content h3 a'];
+                  break;
+                case 'Dev.to':
+                  selectors = ['article h2 a', 'article h3 a', '.crayons-story__title a'];
+                  break;
+                case 'Substack':
+                  selectors = ['article h3 a', 'article h2 a', '.post-title a'];
+                  break;
+                case 'Hashnode':
+                  selectors = ['article h2 a', 'article h3 a', '.blog-title a'];
+                  break;
+                case 'FreeCodeCamp':
+                  selectors = ['article h2 a', 'article h3 a', '.post-title a'];
+                  break;
+                default:
+                  selectors = ['article a', 'h2 a', 'h3 a'];
+              }
               console.log(`🔍 Trying ${selectors.length} selectors for ${platform.name}`);
               
               for (const selector of selectors) {
