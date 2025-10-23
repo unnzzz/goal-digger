@@ -145,132 +145,113 @@ export class RealWebScraper {
     return results;
   }
 
-  // Scrape podcast search results and provide fallback
+  // Scrape podcast search results - find specific podcasts for the query
   private async scrapePodcastSearch(query: string, results: ResourceT[]): Promise<void> {
     try {
-      console.log(`🔍 [RealWebScraper] Trying to scrape podcasts for: "${query}"`);
+      console.log(`🔍 [RealWebScraper] Searching for specific podcasts about: "${query}"`);
       
-      // First try scraping for real podcast links
-      const podcastQuery = `${query} podcast episode site:spotify.com OR site:podcasts.apple.com`;
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(podcastQuery)}`;
+      // Create multiple specific podcast search queries
+      const podcastQueries = [
+        `"${query}" podcast episode`,
+        `${query} podcast interview`,
+        `${query} podcast discussion`,
+        `${query} podcast tutorial`
+      ];
       
-      const response = await this.makeRequest(searchUrl);
-      
-      if (response.status === 200) {
-        const $ = cheerio.load(response.data);
+      for (const podcastQuery of podcastQueries) {
+        if (results.length >= 2) break;
         
-        // Look for Spotify podcast links
-        $('.result').each((index, element) => {
-          if (results.length >= 1) return false;
+        try {
+          const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(podcastQuery)}`;
+          console.log(`🔍 [RealWebScraper] Searching: "${podcastQuery}"`);
           
-          const $result = $(element);
-          const titleElement = $result.find('.result__title a, h2 a, h3 a').first();
-          const href = titleElement.attr('href');
-          const title = titleElement.text().trim();
+          const response = await this.makeRequest(searchUrl);
           
-          console.log(`🔗 [RealWebScraper] Found podcast link: "${title}" -> ${href}`);
-          
-          if (href && title && (href.includes('spotify.com/show/') || href.includes('podcasts.apple.com'))) {
-            results.push({
-              kind: 'listen',
-              title: title.substring(0, 100),
-              url: href,
-              source: href.includes('spotify') ? 'Spotify' : 'Apple Podcasts',
-              duration_minutes: 30 + Math.floor(Math.random() * 30),
-              description: `Podcast about ${query.replace(/podcast/gi, '').trim()}`,
-              split: null
-            });
+          if (response.status === 200) {
+            const $ = cheerio.load(response.data);
             
-            console.log(`✅ [RealWebScraper] Found real podcast: ${title.substring(0, 50)}`);
+            // Look for any podcast-related links
+            $('.result').each((index, element) => {
+              if (results.length >= 2) return false;
+              
+              const $result = $(element);
+              const titleElement = $result.find('.result__title a, h2 a, h3 a').first();
+              const href = titleElement.attr('href');
+              const title = titleElement.text().trim();
+              
+              console.log(`🔗 [RealWebScraper] Found link: "${title}" -> ${href}`);
+              
+              // Accept any podcast-related URL (Spotify, Apple, Google, etc.)
+              if (href && title && this.isPodcastUrl(href) && this.isRelevantPodcast(title, query)) {
+                results.push({
+                  kind: 'listen',
+                  title: title.substring(0, 100),
+                  url: href,
+                  source: this.getPodcastSource(href),
+                  duration_minutes: 25 + Math.floor(Math.random() * 35),
+                  description: `Podcast episode about ${query}`,
+                  split: null
+                });
+                
+                console.log(`✅ [RealWebScraper] Found specific podcast: ${title.substring(0, 50)}`);
+                console.log(`✅ [RealWebScraper] URL: ${href}`);
+              }
+            });
           }
-        });
-      }
-      
-      // If scraping failed, provide topic-relevant fallback podcasts
-      if (results.length === 0) {
-        console.log(`🔄 [RealWebScraper] No podcasts found via scraping, using topic-relevant fallback`);
-        this.addTopicRelevantPodcast(query, results);
+          
+          if (results.length > 0) break; // Found some podcasts, stop searching
+          
+        } catch (error) {
+          console.error(`[RealWebScraper] Podcast query "${podcastQuery}" failed:`, error instanceof Error ? error.message : String(error));
+          continue;
+        }
       }
       
     } catch (error) {
       console.error('[RealWebScraper] Podcast scraping failed:', error instanceof Error ? error.message : String(error));
-      
-      // If scraping completely fails, provide topic-relevant fallback
-      console.log(`🔄 [RealWebScraper] Scraping failed, using topic-relevant fallback`);
-      this.addTopicRelevantPodcast(query, results);
     }
+    
+    console.log(`🎧 [RealWebScraper] Found ${results.length} specific podcasts for "${query}"`);
   }
 
-  // Add a topic-relevant podcast when scraping fails
-  private addTopicRelevantPodcast(query: string, results: ResourceT[]): void {
-    const lowerQuery = query.toLowerCase();
+  // Check if URL is a podcast URL
+  private isPodcastUrl(url: string): boolean {
+    const podcastDomains = [
+      'spotify.com/show/',
+      'spotify.com/episode/',
+      'podcasts.apple.com',
+      'podcasts.google.com',
+      'overcast.fm',
+      'pocketcasts.com',
+      'castbox.fm',
+      'anchor.fm',
+      'soundcloud.com'
+    ];
     
-    // Determine topic and provide relevant podcast
-    if (lowerQuery.includes('cooking') || lowerQuery.includes('food') || lowerQuery.includes('recipe')) {
-      results.push({
-        kind: 'listen',
-        title: 'The Splendid Table',
-        url: 'https://podcasts.apple.com/us/podcast/the-splendid-table/id275757274',
-        source: 'Apple Podcasts',
-        duration_minutes: 50,
-        description: 'Food and cooking podcast with techniques and recipes',
-        split: null
-      });
-    } else if (lowerQuery.includes('business') || lowerQuery.includes('entrepreneur') || lowerQuery.includes('startup')) {
-      results.push({
-        kind: 'listen',
-        title: 'How I Built This with Guy Raz',
-        url: 'https://podcasts.apple.com/us/podcast/how-i-built-this-with-guy-raz/id1150510297',
-        source: 'Apple Podcasts',
-        duration_minutes: 50,
-        description: 'Stories of entrepreneurs and how they built their companies',
-        split: null
-      });
-    } else if (lowerQuery.includes('programming') || lowerQuery.includes('coding') || lowerQuery.includes('javascript') || lowerQuery.includes('python')) {
-      results.push({
-        kind: 'listen',
-        title: 'Syntax - Tasty Web Development Treats',
-        url: 'https://podcasts.apple.com/us/podcast/syntax-tasty-web-development-treats/id1253186678',
-        source: 'Apple Podcasts',
-        duration_minutes: 45,
-        description: 'Web development podcast covering modern JavaScript and frameworks',
-        split: null
-      });
-    } else if (lowerQuery.includes('fitness') || lowerQuery.includes('health') || lowerQuery.includes('exercise')) {
-      results.push({
-        kind: 'listen',
-        title: 'The Model Health Show',
-        url: 'https://podcasts.apple.com/us/podcast/the-model-health-show/id640246378',
-        source: 'Apple Podcasts',
-        duration_minutes: 60,
-        description: 'Health, fitness, and nutrition insights from experts',
-        split: null
-      });
-    } else if (lowerQuery.includes('design') || lowerQuery.includes('creative') || lowerQuery.includes('art')) {
-      results.push({
-        kind: 'listen',
-        title: 'Design Better',
-        url: 'https://podcasts.apple.com/us/podcast/design-better/id1348582688',
-        source: 'Apple Podcasts',
-        duration_minutes: 35,
-        description: 'Design insights and conversations with industry leaders',
-        split: null
-      });
-    } else {
-      // Always provide a podcast - TED Talks Daily covers any educational topic
-      results.push({
-        kind: 'listen',
-        title: 'TED Talks Daily',
-        url: 'https://podcasts.apple.com/us/podcast/ted-talks-daily/id160904630',
-        source: 'Apple Podcasts',
-        duration_minutes: 20,
-        description: 'Daily TED talks covering a wide range of educational topics',
-        split: null
-      });
-    }
-    
-    console.log(`✅ [RealWebScraper] Added topic-relevant podcast fallback`);
+    return podcastDomains.some(domain => url.includes(domain));
   }
+
+  // Check if podcast title is relevant to the query
+  private isRelevantPodcast(title: string, query: string): boolean {
+    const titleLower = title.toLowerCase();
+    const queryWords = query.toLowerCase().split(' ').filter(word => word.length > 3);
+    
+    // Must contain at least one key word from the query
+    return queryWords.some(word => titleLower.includes(word));
+  }
+
+  // Get podcast source from URL
+  private getPodcastSource(url: string): string {
+    if (url.includes('spotify.com')) return 'Spotify';
+    if (url.includes('podcasts.apple.com')) return 'Apple Podcasts';
+    if (url.includes('podcasts.google.com')) return 'Google Podcasts';
+    if (url.includes('overcast.fm')) return 'Overcast';
+    if (url.includes('pocketcasts.com')) return 'Pocket Casts';
+    if (url.includes('anchor.fm')) return 'Anchor';
+    if (url.includes('soundcloud.com')) return 'SoundCloud';
+    return 'Podcast Platform';
+  }
+
 
 
 
