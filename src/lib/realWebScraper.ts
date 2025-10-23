@@ -127,6 +127,12 @@ export class RealWebScraper {
     console.log(`📚 [RealWebScraper] Total articles found: ${results.length}`);
     if (results.length === 0) {
       console.log(`❌ [RealWebScraper] No articles found for query: "${query}" with goal: "${goal}"`);
+      console.log(`🔄 [RealWebScraper] Falling back to curated articles...`);
+      
+      // Fallback to curated high-quality articles
+      const fallbackArticles = this.getFallbackArticles(query, goal);
+      results.push(...fallbackArticles);
+      console.log(`✅ [RealWebScraper] Added ${fallbackArticles.length} fallback articles`);
     }
     return results;
   }
@@ -350,6 +356,117 @@ export class RealWebScraper {
     }
     
     return baseTime + variation;
+  }
+
+  // Fallback curated articles when web scraping fails
+  private getFallbackArticles(query: string, goal?: string): ResourceT[] {
+    const articles: ResourceT[] = [];
+    const lowerQuery = query.toLowerCase();
+    const lowerGoal = goal?.toLowerCase() || '';
+
+    // Programming/Development articles
+    if (lowerQuery.includes('javascript') || lowerGoal.includes('javascript')) {
+      articles.push({
+        kind: 'read',
+        title: 'JavaScript Fundamentals: Variables, Functions, and Scope',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types',
+        source: 'MDN Web Docs',
+        duration_minutes: 15,
+        description: 'Comprehensive guide to JavaScript fundamentals from Mozilla Developer Network',
+        split: null
+      });
+    }
+
+    if (lowerQuery.includes('react') || lowerGoal.includes('react')) {
+      articles.push({
+        kind: 'read',
+        title: 'Getting Started with React: Components and JSX',
+        url: 'https://react.dev/learn/your-first-component',
+        source: 'React.dev',
+        duration_minutes: 12,
+        description: 'Official React documentation on creating your first component',
+        split: null
+      });
+    }
+
+    if (lowerQuery.includes('python') || lowerGoal.includes('python')) {
+      articles.push({
+        kind: 'read',
+        title: 'Python Basics: Syntax, Variables, and Data Types',
+        url: 'https://docs.python.org/3/tutorial/introduction.html',
+        source: 'Python.org',
+        duration_minutes: 18,
+        description: 'Official Python tutorial covering the basics',
+        split: null
+      });
+    }
+
+    // Data Science articles
+    if (lowerQuery.includes('data') || lowerQuery.includes('analytics') || lowerGoal.includes('data')) {
+      articles.push({
+        kind: 'read',
+        title: 'Introduction to Data Analysis with Pandas',
+        url: 'https://pandas.pydata.org/docs/getting_started/intro_tutorials/01_table_oriented.html',
+        source: 'Pandas Documentation',
+        duration_minutes: 20,
+        description: 'Official pandas tutorial for data manipulation',
+        split: null
+      });
+    }
+
+    // Web Development articles
+    if (lowerQuery.includes('html') || lowerQuery.includes('css') || lowerGoal.includes('web')) {
+      articles.push({
+        kind: 'read',
+        title: 'HTML Basics: Structure and Semantic Elements',
+        url: 'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML',
+        source: 'MDN Web Docs',
+        duration_minutes: 14,
+        description: 'Complete guide to HTML fundamentals',
+        split: null
+      });
+    }
+
+    // Machine Learning articles
+    if (lowerQuery.includes('machine learning') || lowerQuery.includes('ml') || lowerGoal.includes('ai')) {
+      articles.push({
+        kind: 'read',
+        title: 'Machine Learning Fundamentals: Supervised vs Unsupervised Learning',
+        url: 'https://scikit-learn.org/stable/user_guide.html',
+        source: 'Scikit-learn',
+        duration_minutes: 25,
+        description: 'Comprehensive machine learning guide from scikit-learn',
+        split: null
+      });
+    }
+
+    // Design articles
+    if (lowerQuery.includes('design') || lowerQuery.includes('ui') || lowerQuery.includes('ux')) {
+      articles.push({
+        kind: 'read',
+        title: 'UI/UX Design Principles: Layout, Typography, and Color',
+        url: 'https://www.interaction-design.org/literature/topics/ui-design',
+        source: 'Interaction Design Foundation',
+        duration_minutes: 16,
+        description: 'Fundamental principles of user interface design',
+        split: null
+      });
+    }
+
+    // Generic learning articles as final fallback
+    if (articles.length === 0) {
+      articles.push({
+        kind: 'read',
+        title: `Complete Guide to ${query}`,
+        url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(query.replace(/\s+/g, '_')),
+        source: 'Wikipedia',
+        duration_minutes: 12,
+        description: `Comprehensive overview of ${query} from Wikipedia`,
+        split: null
+      });
+    }
+
+    return articles.slice(0, 1); // Return max 1 fallback article
   }
 }
 
