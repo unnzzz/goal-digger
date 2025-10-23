@@ -117,7 +117,7 @@ export class RealWebScraper {
             if (results.length > 0) break; // Found results, no need to try other instances
           }
         } catch (error) {
-          console.log(`SearX instance ${instance} failed:`, error.message);
+          console.log(`SearX instance ${instance} failed:`, error instanceof Error ? error.message : String(error));
           continue;
         }
       }
