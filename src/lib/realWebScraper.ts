@@ -35,7 +35,7 @@ export class RealWebScraper {
     }
   }
 
-  // Search for real articles using DuckDuckGo (no rate limits, good results)
+  // Search for real articles using multiple search engines and approaches
   async searchRealArticles(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     const usedUrls = new Set<string>();
@@ -47,8 +47,9 @@ export class RealWebScraper {
       const searchQueries = this.createSearchQueries(query, goal);
       console.log(`🔍 [RealWebScraper] Created ${searchQueries.length} search queries:`, searchQueries);
       
-      for (const searchQuery of searchQueries.slice(0, 2)) { // Try max 2 queries
-        if (results.length >= 2) break; // Max 2 articles per day
+      // Try multiple search engines and approaches
+      for (const searchQuery of searchQueries.slice(0, 3)) { // Try max 3 queries
+        if (results.length >= 3) break; // Max 3 articles per day
         
         try {
           // Use DuckDuckGo HTML search (no JS required, reliable)
@@ -61,19 +62,21 @@ export class RealWebScraper {
           if (response.status === 200) {
             const $ = cheerio.load(response.data);
             
-            // DuckDuckGo result selectors
+            // DuckDuckGo result selectors - more comprehensive
             const resultSelectors = [
               '.result__title a',
-              '.result__url',
+              '.result__url a',
               '.result a[href^="http"]',
-              'a[href^="http"]:not([href*="duckduckgo"])'
+              'a[href^="http"]:not([href*="duckduckgo"])',
+              '.web-result a',
+              '.results a[href^="http"]'
             ];
             
             for (const selector of resultSelectors) {
-              if (results.length >= 2) break;
+              if (results.length >= 3) break;
               
               $(selector).each((index, element) => {
-                if (results.length >= 2) return false;
+                if (results.length >= 3) return false;
                 
                 const href = $(element).attr('href');
                 let title = $(element).text().trim();
@@ -107,16 +110,26 @@ export class RealWebScraper {
             }
           }
           
-          if (results.length >= 2) break;
+          if (results.length >= 3) break;
           
         } catch (error) {
           console.error(`Search failed for "${searchQuery}":`, error);
           continue;
         }
+        
+        // Also try Bing search for more results
+        if (results.length < 3) {
+          try {
+            await this.searchBing(searchQuery, results, usedUrls);
+          } catch (error) {
+            console.error(`Bing search failed for "${searchQuery}":`, error);
+          }
+        }
       }
       
       // If still no results, try specific high-quality sites
       if (results.length === 0) {
+        console.log(`🔍 [RealWebScraper] No results from general search, trying specific sites...`);
         await this.searchSpecificSites(query, goal, results, usedUrls);
       }
       
@@ -126,15 +139,70 @@ export class RealWebScraper {
     
     console.log(`📚 [RealWebScraper] Total articles found: ${results.length}`);
     if (results.length === 0) {
-      console.log(`❌ [RealWebScraper] No articles found for query: "${query}" with goal: "${goal}"`);
-      console.log(`🔄 [RealWebScraper] Falling back to curated articles...`);
-      
-      // Fallback to curated high-quality articles
-      const fallbackArticles = this.getFallbackArticles(query, goal);
-      results.push(...fallbackArticles);
-      console.log(`✅ [RealWebScraper] Added ${fallbackArticles.length} fallback articles`);
+      console.log(`❌ [RealWebScraper] No real articles found for query: "${query}" with goal: "${goal}"`);
     }
     return results;
+  }
+
+  // Search Bing for additional results
+  private async searchBing(query: string, results: ResourceT[], usedUrls: Set<string>): Promise<void> {
+    try {
+      const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query + ' article guide tutorial')}`;
+      console.log(`🔍 [RealWebScraper] Searching Bing: ${query}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        
+        // Bing result selectors
+        const selectors = [
+          '.b_algo h2 a',
+          '.b_title a',
+          '.b_algo a[href^="http"]',
+          'a[href^="http"]:not([href*="bing.com"]):not([href*="microsoft.com"])'
+        ];
+        
+        for (const selector of selectors) {
+          if (results.length >= 3) break;
+          
+          $(selector).each((index, element) => {
+            if (results.length >= 3) return false;
+            
+            const href = $(element).attr('href');
+            let title = $(element).text().trim();
+            
+            if (!title) {
+              title = $(element).closest('.b_algo').find('h2').text().trim();
+            }
+            
+            if (this.isValidArticle(href, title, usedUrls)) {
+              const cleanUrl = this.cleanUrl(href!);
+              const cleanTitle = this.cleanTitle(title);
+              
+              if (this.isRealArticleUrl(cleanUrl)) {
+                results.push({
+                  kind: 'read',
+                  title: cleanTitle,
+                  url: cleanUrl,
+                  source: this.extractDomain(cleanUrl),
+                  duration_minutes: this.estimateReadingTime(cleanTitle),
+                  description: `Learn about ${query.split(' ')[0]} with this comprehensive article`,
+                  split: null
+                });
+                
+                usedUrls.add(cleanUrl);
+                console.log(`✅ [RealWebScraper] Found Bing article: ${cleanTitle.substring(0, 50)}`);
+              }
+            }
+          });
+          
+          if (results.length > 0) break;
+        }
+      }
+    } catch (error) {
+      console.error('[RealWebScraper] Bing search failed:', error);
+    }
   }
 
   // Search specific high-quality sites directly
@@ -230,47 +298,51 @@ export class RealWebScraper {
       const mainGoal = goalWords[0] || goal.toLowerCase();
       
       queries.push(
-        `${cleanQuery} ${mainGoal} tutorial`,
-        `${cleanQuery} ${mainGoal} guide`,
-        `how to ${cleanQuery} ${mainGoal}`,
-        `${mainGoal} ${cleanQuery} beginner`,
-        `learn ${cleanQuery} ${mainGoal}`
+        `"${cleanQuery}" ${mainGoal} tutorial article`,
+        `${cleanQuery} ${mainGoal} complete guide`,
+        `how to ${cleanQuery} ${mainGoal} step by step`,
+        `${mainGoal} ${cleanQuery} beginner tutorial`,
+        `learn ${cleanQuery} ${mainGoal} comprehensive`,
+        `${cleanQuery} ${mainGoal} explained tutorial`,
+        `${cleanQuery} in ${mainGoal} guide article`
       );
     } else {
       queries.push(
-        `${cleanQuery} tutorial`,
-        `${cleanQuery} guide`,
-        `how to ${cleanQuery}`,
-        `learn ${cleanQuery}`,
-        `${cleanQuery} beginner guide`
+        `"${cleanQuery}" tutorial complete guide`,
+        `${cleanQuery} comprehensive tutorial`,
+        `how to ${cleanQuery} step by step`,
+        `learn ${cleanQuery} beginner guide`,
+        `${cleanQuery} explained tutorial`,
+        `${cleanQuery} complete course article`,
+        `${cleanQuery} fundamentals guide`
       );
     }
     
     return queries.filter(q => q.trim().length > 0);
   }
 
-  // Validate if this is a good article
+  // Validate if this is a good article - more lenient to capture real articles
   private isValidArticle(href: string | undefined, title: string, usedUrls: Set<string>): boolean {
     if (!href || !title) return false;
-    if (title.length < 10 || title.length > 200) return false;
+    if (title.length < 5 || title.length > 300) return false; // More lenient length
     if (usedUrls.has(href)) return false;
     
-    // Skip bad URLs
+    // Skip only obvious bad URLs
     const badPatterns = [
-      'search', 'results', '?q=', 'sitemap', 'tag/', 'category/',
-      'login', 'register', 'signup', 'auth', 'profile', 'settings',
+      'search?', 'results?', '?q=', 'sitemap', 
+      'login', 'register', 'signup', 'auth',
       'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com',
-      'duckduckgo.com', 'google.com', 'bing.com'
+      'duckduckgo.com', 'google.com', 'bing.com', 'pinterest.com'
     ];
     
     for (const pattern of badPatterns) {
       if (href.toLowerCase().includes(pattern)) return false;
     }
     
-    // Skip bad titles
+    // Skip only obvious bad titles - be more lenient
     const badTitlePatterns = [
-      'search', 'results', 'sitemap', 'login', 'register', 'signup',
-      'subscribe', 'newsletter', 'privacy', 'terms', 'cookie'
+      'search results', 'sitemap', 'login', 'register', 'signup',
+      'subscribe now', 'newsletter', 'privacy policy', 'terms of service'
     ];
     
     for (const pattern of badTitlePatterns) {
@@ -280,23 +352,18 @@ export class RealWebScraper {
     return true;
   }
 
-  // Check if URL points to a real article
+  // Check if URL points to a real article - more lenient
   private isRealArticleUrl(url: string): boolean {
     try {
       const urlObj = new URL(url);
       
-      // Must have meaningful path
-      if (urlObj.pathname.length < 5) return false;
-      if (urlObj.pathname === '/' || urlObj.pathname.endsWith('/')) return false;
+      // Must have some path (more lenient)
+      if (urlObj.pathname.length < 2) return false;
       
-      // Must have article-like path structure
-      const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
-      if (pathParts.length < 2) return false;
-      
-      // Skip obvious non-article paths
-      const badPaths = ['search', 'tag', 'category', 'archive', 'sitemap', 'feed'];
+      // Skip only obvious non-article paths
+      const badPaths = ['search?', 'tag?', 'category?', 'archive?', 'sitemap', 'feed.xml'];
       for (const badPath of badPaths) {
-        if (urlObj.pathname.includes(badPath)) return false;
+        if (urlObj.pathname.includes(badPath) || urlObj.search.includes(badPath)) return false;
       }
       
       return true;
@@ -358,116 +425,6 @@ export class RealWebScraper {
     return baseTime + variation;
   }
 
-  // Fallback curated articles when web scraping fails
-  private getFallbackArticles(query: string, goal?: string): ResourceT[] {
-    const articles: ResourceT[] = [];
-    const lowerQuery = query.toLowerCase();
-    const lowerGoal = goal?.toLowerCase() || '';
-
-    // Programming/Development articles
-    if (lowerQuery.includes('javascript') || lowerGoal.includes('javascript')) {
-      articles.push({
-        kind: 'read',
-        title: 'JavaScript Fundamentals: Variables, Functions, and Scope',
-        url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types',
-        source: 'MDN Web Docs',
-        duration_minutes: 15,
-        description: 'Comprehensive guide to JavaScript fundamentals from Mozilla Developer Network',
-        split: null
-      });
-    }
-
-    if (lowerQuery.includes('react') || lowerGoal.includes('react')) {
-      articles.push({
-        kind: 'read',
-        title: 'Getting Started with React: Components and JSX',
-        url: 'https://react.dev/learn/your-first-component',
-        source: 'React.dev',
-        duration_minutes: 12,
-        description: 'Official React documentation on creating your first component',
-        split: null
-      });
-    }
-
-    if (lowerQuery.includes('python') || lowerGoal.includes('python')) {
-      articles.push({
-        kind: 'read',
-        title: 'Python Basics: Syntax, Variables, and Data Types',
-        url: 'https://docs.python.org/3/tutorial/introduction.html',
-        source: 'Python.org',
-        duration_minutes: 18,
-        description: 'Official Python tutorial covering the basics',
-        split: null
-      });
-    }
-
-    // Data Science articles
-    if (lowerQuery.includes('data') || lowerQuery.includes('analytics') || lowerGoal.includes('data')) {
-      articles.push({
-        kind: 'read',
-        title: 'Introduction to Data Analysis with Pandas',
-        url: 'https://pandas.pydata.org/docs/getting_started/intro_tutorials/01_table_oriented.html',
-        source: 'Pandas Documentation',
-        duration_minutes: 20,
-        description: 'Official pandas tutorial for data manipulation',
-        split: null
-      });
-    }
-
-    // Web Development articles
-    if (lowerQuery.includes('html') || lowerQuery.includes('css') || lowerGoal.includes('web')) {
-      articles.push({
-        kind: 'read',
-        title: 'HTML Basics: Structure and Semantic Elements',
-        url: 'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML',
-        source: 'MDN Web Docs',
-        duration_minutes: 14,
-        description: 'Complete guide to HTML fundamentals',
-        split: null
-      });
-    }
-
-    // Machine Learning articles
-    if (lowerQuery.includes('machine learning') || lowerQuery.includes('ml') || lowerGoal.includes('ai')) {
-      articles.push({
-        kind: 'read',
-        title: 'Machine Learning Fundamentals: Supervised vs Unsupervised Learning',
-        url: 'https://scikit-learn.org/stable/user_guide.html',
-        source: 'Scikit-learn',
-        duration_minutes: 25,
-        description: 'Comprehensive machine learning guide from scikit-learn',
-        split: null
-      });
-    }
-
-    // Design articles
-    if (lowerQuery.includes('design') || lowerQuery.includes('ui') || lowerQuery.includes('ux')) {
-      articles.push({
-        kind: 'read',
-        title: 'UI/UX Design Principles: Layout, Typography, and Color',
-        url: 'https://www.interaction-design.org/literature/topics/ui-design',
-        source: 'Interaction Design Foundation',
-        duration_minutes: 16,
-        description: 'Fundamental principles of user interface design',
-        split: null
-      });
-    }
-
-    // Generic learning articles as final fallback
-    if (articles.length === 0) {
-      articles.push({
-        kind: 'read',
-        title: `Complete Guide to ${query}`,
-        url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(query.replace(/\s+/g, '_')),
-        source: 'Wikipedia',
-        duration_minutes: 12,
-        description: `Comprehensive overview of ${query} from Wikipedia`,
-        split: null
-      });
-    }
-
-    return articles.slice(0, 1); // Return max 1 fallback article
-  }
 }
 
 export const realWebScraper = new RealWebScraper();
