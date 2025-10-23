@@ -73,107 +73,151 @@ export class RealWebScraper {
     return results;
   }
 
-  // Search using Google proxy/alternative search
+  // Search using DuckDuckGo HTML scraping for real web results
   private async searchWithGoogleProxy(query: string, goal?: string, usedUrls?: Set<string>): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     
     try {
-      // Use a more reliable search approach - search for articles on specific educational domains
-      const searchQuery = `${query} ${goal || ''} site:medium.com OR site:dev.to OR site:freecodecamp.org OR site:stackoverflow.com OR site:github.io OR site:hashnode.com`;
+      const searchQuery = `${query} ${goal || ''} tutorial guide article`.trim();
+      console.log(`🔍 [RealWebScraper] Scraping DuckDuckGo HTML for: "${searchQuery}"`);
       
-      // Try SearXNG instances (open source search engine aggregator)
-      const searxInstances = [
-        'https://searx.be/search',
-        'https://search.sapti.me/search',
-        'https://searx.tiekoetter.com/search'
-      ];
+      // Use DuckDuckGo HTML (no JS required, reliable)
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
       
-      for (const instance of searxInstances) {
-        try {
-          const searchUrl = `${instance}?q=${encodeURIComponent(searchQuery)}&format=json&categories=general`;
-          console.log(`🔍 [RealWebScraper] Trying SearX: ${searchUrl}`);
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        console.log(`✅ [RealWebScraper] Successfully loaded DuckDuckGo page`);
+        
+        // More comprehensive selectors for DuckDuckGo results
+        const selectors = [
+          '.result__title a',
+          '.result__url',
+          '.result a[href^="http"]',
+          'a[href^="http"]:not([href*="duckduckgo"]):not([href*="javascript"])',
+          '.web-result a',
+          '.results a'
+        ];
+        
+        for (const selector of selectors) {
+          const elements = $(selector);
+          console.log(`🔍 [RealWebScraper] Selector "${selector}" found ${elements.length} elements`);
           
-          const response = await this.makeRequest(searchUrl);
-          
-          if (response.status === 200 && response.data.results) {
-            for (const result of response.data.results.slice(0, 2)) {
-              if (results.length >= 2) break;
-              
-              if (result.url && result.title && this.isValidArticle(result.url, result.title, usedUrls || new Set())) {
-                results.push({
-                  kind: 'read',
-                  title: this.cleanTitle(result.title),
-                  url: this.cleanUrl(result.url),
-                  source: this.extractDomain(result.url),
-                  duration_minutes: this.estimateReadingTime(result.title),
-                  description: result.content || `Learn about ${query}`,
-                  split: null
-                });
-                
-                console.log(`✅ [RealWebScraper] Found SearX article: ${result.title.substring(0, 50)}`);
-              }
+          elements.each((index, element) => {
+            if (results.length >= 2) return false;
+            
+            let href = $(element).attr('href');
+            let title = $(element).text().trim();
+            
+            // Get title from result container if not found
+            if (!title || title.length < 10) {
+              const resultContainer = $(element).closest('.result, .web-result');
+              title = resultContainer.find('.result__title, h3, h2').first().text().trim();
             }
             
-            if (results.length > 0) break; // Found results, no need to try other instances
-          }
-        } catch (error) {
-          console.log(`SearX instance ${instance} failed:`, error instanceof Error ? error.message : String(error));
-          continue;
+            console.log(`🔗 [RealWebScraper] Found link: href="${href}", title="${title?.substring(0, 50)}"`);
+            
+            if (href && title && this.isValidWebArticle(href, title, usedUrls || new Set())) {
+              const cleanUrl = this.cleanUrl(href);
+              const cleanTitle = this.cleanTitle(title);
+              
+              results.push({
+                kind: 'read',
+                title: cleanTitle,
+                url: cleanUrl,
+                source: this.extractDomain(cleanUrl),
+                duration_minutes: this.estimateReadingTime(cleanTitle),
+                description: `Learn about ${query}`,
+                split: null
+              });
+              
+              usedUrls?.add(cleanUrl);
+              console.log(`✅ [RealWebScraper] Added real article: ${cleanTitle.substring(0, 50)}`);
+              console.log(`✅ [RealWebScraper] URL: ${cleanUrl}`);
+            }
+          });
+          
+          if (results.length >= 2) break;
         }
       }
       
     } catch (error) {
-      console.error('[RealWebScraper] Google proxy search failed:', error);
+      console.error('[RealWebScraper] DuckDuckGo HTML scraping failed:', error instanceof Error ? error.message : String(error));
     }
     
     return results;
   }
 
-  // Search using DuckDuckGo
+  // Search using Bing HTML scraping for real web results
   private async searchWithDuckDuckGo(query: string, goal?: string, usedUrls?: Set<string>): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     
     try {
-      // Use DuckDuckGo instant answers API (more reliable than scraping HTML)
-      const searchQuery = `${query} ${goal || ''} tutorial guide article`;
-      const apiUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`;
+      const searchQuery = `${query} ${goal || ''} tutorial guide article blog`.trim();
+      console.log(`🔍 [RealWebScraper] Scraping Bing HTML for: "${searchQuery}"`);
       
-      console.log(`🔍 [RealWebScraper] Trying DuckDuckGo API: ${searchQuery}`);
+      // Use Bing search (often less restrictive than Google)
+      const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`;
       
-      const response = await this.makeRequest(apiUrl);
+      const response = await this.makeRequest(searchUrl);
       
-      if (response.status === 200 && response.data) {
-        const data = response.data;
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        console.log(`✅ [RealWebScraper] Successfully loaded Bing page`);
         
-        // Check RelatedTopics for article links
-        if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-          for (const topic of data.RelatedTopics.slice(0, 3)) {
-            if (results.length >= 2) break;
+        // Bing result selectors
+        const selectors = [
+          '.b_algo h2 a',
+          '.b_title a', 
+          '.b_algo a[href^="http"]',
+          'a[href^="http"]:not([href*="bing.com"]):not([href*="microsoft.com"])'
+        ];
+        
+        for (const selector of selectors) {
+          const elements = $(selector);
+          console.log(`🔍 [RealWebScraper] Bing selector "${selector}" found ${elements.length} elements`);
+          
+          elements.each((index, element) => {
+            if (results.length >= 2) return false;
             
-            if (topic.FirstURL && topic.Text) {
-              const url = topic.FirstURL;
-              const title = topic.Text.split(' - ')[0] || topic.Text; // Clean up title
-              
-              if (this.isValidArticle(url, title, usedUrls || new Set())) {
-                results.push({
-                  kind: 'read',
-                  title: this.cleanTitle(title),
-                  url: this.cleanUrl(url),
-                  source: this.extractDomain(url),
-                  duration_minutes: this.estimateReadingTime(title),
-                  description: `Learn about ${query}`,
-                  split: null
-                });
-                
-                console.log(`✅ [RealWebScraper] Found DuckDuckGo article: ${title.substring(0, 50)}`);
-              }
+            let href = $(element).attr('href');
+            let title = $(element).text().trim();
+            
+            // Get title from result container if not found
+            if (!title || title.length < 10) {
+              const resultContainer = $(element).closest('.b_algo');
+              title = resultContainer.find('h2, h3').first().text().trim();
             }
-          }
+            
+            console.log(`🔗 [RealWebScraper] Found Bing link: href="${href}", title="${title?.substring(0, 50)}"`);
+            
+            if (href && title && this.isValidWebArticle(href, title, usedUrls || new Set())) {
+              const cleanUrl = this.cleanUrl(href);
+              const cleanTitle = this.cleanTitle(title);
+              
+              results.push({
+                kind: 'read',
+                title: cleanTitle,
+                url: cleanUrl,
+                source: this.extractDomain(cleanUrl),
+                duration_minutes: this.estimateReadingTime(cleanTitle),
+                description: `Learn about ${query}`,
+                split: null
+              });
+              
+              usedUrls?.add(cleanUrl);
+              console.log(`✅ [RealWebScraper] Added Bing article: ${cleanTitle.substring(0, 50)}`);
+              console.log(`✅ [RealWebScraper] URL: ${cleanUrl}`);
+            }
+          });
+          
+          if (results.length >= 2) break;
         }
       }
       
     } catch (error) {
-      console.error('[RealWebScraper] DuckDuckGo search failed:', error);
+      console.error('[RealWebScraper] Bing HTML scraping failed:', error instanceof Error ? error.message : String(error));
     }
     
     return results;
@@ -217,11 +261,11 @@ export class RealWebScraper {
             const url = postData.url;
             
             // Only include external links, not reddit self-posts
-            if (!url.includes('reddit.com') && !usedUrls.has(url)) {
+            if (!url.includes('reddit.com') && !usedUrls.has(url) && this.isValidWebArticle(url, postData.title, usedUrls)) {
               results.push({
                 kind: 'read',
-                title: postData.title,
-                url: url,
+                title: this.cleanTitle(postData.title),
+                url: this.cleanUrl(url),
                 source: this.extractDomain(url),
                 duration_minutes: 10 + Math.floor(Math.random() * 10),
                 description: `Learn about ${query} - shared on Reddit`,
@@ -230,6 +274,7 @@ export class RealWebScraper {
               
               usedUrls.add(url);
               console.log(`✅ [RealWebScraper] Found Reddit-shared article: ${postData.title.substring(0, 50)}`);
+              console.log(`✅ [RealWebScraper] URL: ${url}`);
             }
           }
         }
@@ -241,7 +286,42 @@ export class RealWebScraper {
 
 
 
-  // Validate if this is a good article - more lenient to capture real articles
+  // Validate if this is a good web article - very lenient to capture real articles
+  private isValidWebArticle(href: string | undefined, title: string, usedUrls: Set<string>): boolean {
+    if (!href || !title) return false;
+    if (title.length < 5 || title.length > 300) return false;
+    if (usedUrls.has(href)) return false;
+    
+    // Skip only obvious bad URLs - be very lenient
+    const badPatterns = [
+      'search?', '?q=', 'duckduckgo.com', 'google.com', 'bing.com',
+      'facebook.com', 'twitter.com', 'instagram.com', 'tiktok.com',
+      'login', 'register', 'signup', 'auth'
+    ];
+    
+    for (const pattern of badPatterns) {
+      if (href.toLowerCase().includes(pattern)) return false;
+    }
+    
+    // Skip bad titles - be very lenient
+    const badTitlePatterns = [
+      'search results', 'login', 'register', 'signup', 'subscribe now'
+    ];
+    
+    for (const pattern of badTitlePatterns) {
+      if (title.toLowerCase().includes(pattern)) return false;
+    }
+    
+    // Must be a real URL
+    try {
+      new URL(href);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Validate if this is a good article - more lenient to capture real articles  
   private isValidArticle(href: string | undefined, title: string, usedUrls: Set<string>): boolean {
     if (!href || !title) return false;
     if (title.length < 5 || title.length > 300) return false; // More lenient length
