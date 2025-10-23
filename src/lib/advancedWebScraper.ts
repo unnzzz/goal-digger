@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { ResourceT } from './schema';
+import { realWebScraper } from './realWebScraper';
 
 // Real website scraper that gets actual URLs from real websites
 export class AdvancedWebScraper {
@@ -823,8 +824,13 @@ export class AdvancedWebScraper {
         results = await this.searchYouTube(query, goal);
         console.log(`YouTube search found ${results.length} results`);
       } else if (type === 'read') {
-        results = await this.searchArticles(query, goal);
-        console.log(`Article search found ${results.length} results`);
+        // Get both real web articles AND AI-generated articles
+        const realArticles = await realWebScraper.searchRealArticles(query, goal);
+        const aiArticles = await this.searchArticles(query, goal);
+        
+        // Combine both types - real articles first, then AI articles
+        results = [...realArticles, ...aiArticles];
+        console.log(`Combined read resources: ${realArticles.length} real articles + ${aiArticles.length} AI articles = ${results.length} total`);
       } else if (type === 'listen') {
         results = await this.searchPodcasts(query, goal);
         console.log(`Podcast search found ${results.length} results`);
