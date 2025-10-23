@@ -772,45 +772,117 @@ export class AdvancedWebScraper {
     return results;
   }
 
-  // Search for real podcasts
+  // Search for specific podcasts related to the exact goal and day topic
   async searchPodcasts(query: string, goal?: string): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     
     try {
-      console.log(`Searching for podcasts: "${query}"`);
+      console.log(`🔍 [PodcastSearch] Searching for specific podcasts about: "${query}" with goal: "${goal}"`);
       
-      // Create podcast search URLs
-      const podcastUrls = [
-        `https://www.spotify.com/search/${encodeURIComponent(query)}`,
-        `https://www.audible.com/search?keywords=${encodeURIComponent(query)}`,
-        `https://www.podcast.com/search?q=${encodeURIComponent(query)}`
+      // Create very specific search queries for podcasts
+      const specificQueries = [
+        `"${query}" podcast episode`,
+        `${query} ${goal || ''} podcast interview`,
+        `${query} podcast discussion`,
+        `${query} podcast tutorial audio`
       ];
-
-      for (const url of podcastUrls) {
+      
+      for (const specificQuery of specificQueries) {
+        if (results.length >= 2) break;
+        
         try {
-          const response = await this.makeRequest(url);
+          // Search DuckDuckGo for specific podcast episodes
+          const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(specificQuery)}`;
+          console.log(`🔍 [PodcastSearch] Searching: "${specificQuery}"`);
+          
+          const response = await this.makeRequest(searchUrl);
+          
           if (response.status === 200) {
-            results.push({
-              kind: 'listen',
-              title: `${query} Podcast`,
-              url: url,
-              source: url.includes('spotify') ? 'Spotify' : url.includes('audible') ? 'Audible' : 'Podcast.com',
-              duration_minutes: 30,
-              description: `Listen to podcasts about ${query}`,
-              split: null
+            const $ = cheerio.load(response.data);
+            
+            // Look for podcast-specific results
+            $('.result').each((index, element) => {
+              if (results.length >= 2) return false;
+              
+              const $result = $(element);
+              const titleElement = $result.find('.result__title a, h2 a, h3 a').first();
+              const href = titleElement.attr('href');
+              const title = titleElement.text().trim();
+              
+              console.log(`🔗 [PodcastSearch] Found: "${title}" -> ${href}`);
+              
+              // Check if this is a podcast-related URL and relevant to our query
+              if (href && title && this.isPodcastRelated(href, title, query)) {
+                results.push({
+                  kind: 'listen',
+                  title: title.substring(0, 100),
+                  url: href,
+                  source: this.getPodcastPlatform(href),
+                  duration_minutes: 25 + Math.floor(Math.random() * 35),
+                  description: `Podcast episode specifically about ${query}`,
+                  split: null
+                });
+                
+                console.log(`✅ [PodcastSearch] Found specific podcast: ${title.substring(0, 50)}`);
+                console.log(`✅ [PodcastSearch] URL: ${href}`);
+              }
             });
-            break; // Only need one podcast source
           }
+          
+          if (results.length > 0) break; // Found specific podcasts, stop searching
+          
         } catch (error) {
-          console.log(`Podcast search failed for ${url}:`, error instanceof Error ? error.message : String(error));
+          console.error(`[PodcastSearch] Query "${specificQuery}" failed:`, error instanceof Error ? error.message : String(error));
           continue;
         }
       }
+      
     } catch (error) {
-      console.error('Podcast search failed:', error);
+      console.error('[PodcastSearch] Specific podcast search failed:', error instanceof Error ? error.message : String(error));
     }
     
+    console.log(`🎧 [PodcastSearch] Found ${results.length} specific podcasts for "${query}"`);
     return results;
+  }
+
+  // Check if URL and title are podcast-related and relevant
+  private isPodcastRelated(url: string, title: string, query: string): boolean {
+    const titleLower = title.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    // Must be a podcast platform
+    const podcastPlatforms = [
+      'spotify.com/show/', 'spotify.com/episode/',
+      'podcasts.apple.com', 'podcasts.google.com',
+      'overcast.fm', 'pocketcasts.com', 'anchor.fm',
+      'soundcloud.com', 'castbox.fm', 'stitcher.com'
+    ];
+    
+    const isPodcastUrl = podcastPlatforms.some(platform => url.includes(platform));
+    if (!isPodcastUrl) return false;
+    
+    // Title must be relevant to the query
+    const queryWords = queryLower.split(' ').filter(word => word.length > 3);
+    const hasRelevantWord = queryWords.some(word => titleLower.includes(word));
+    
+    // Also check for podcast-specific terms
+    const podcastTerms = ['podcast', 'episode', 'interview', 'discussion', 'talk', 'show'];
+    const hasPodcastTerm = podcastTerms.some(term => titleLower.includes(term));
+    
+    return hasRelevantWord && hasPodcastTerm;
+  }
+
+  // Get podcast platform name from URL
+  private getPodcastPlatform(url: string): string {
+    if (url.includes('spotify.com')) return 'Spotify';
+    if (url.includes('podcasts.apple.com')) return 'Apple Podcasts';
+    if (url.includes('podcasts.google.com')) return 'Google Podcasts';
+    if (url.includes('overcast.fm')) return 'Overcast';
+    if (url.includes('pocketcasts.com')) return 'Pocket Casts';
+    if (url.includes('anchor.fm')) return 'Anchor';
+    if (url.includes('soundcloud.com')) return 'SoundCloud';
+    if (url.includes('stitcher.com')) return 'Stitcher';
+    return 'Podcast Platform';
   }
 
   // Main search function
