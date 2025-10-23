@@ -179,50 +179,22 @@ export class RealWebScraper {
     return results;
   }
 
-  // Search direct educational sites
+  // Search direct educational sites with REAL web scraping
   private async searchDirectSites(query: string, goal?: string, usedUrls?: Set<string>): Promise<ResourceT[]> {
     const results: ResourceT[] = [];
     
     try {
-      // Create articles based on known educational patterns
-      const searchTerms = `${query} ${goal || ''}`.toLowerCase();
+      console.log(`🔍 [RealWebScraper] Searching direct sites for: "${query}"`);
       
-      // Generate realistic educational articles from known good sources
-      const educationalSources = [
-        {
-          domain: 'freecodecamp.org',
-          titlePattern: `Complete Guide to ${query}`,
-          urlPattern: `https://www.freecodecamp.org/news/${query.toLowerCase().replace(/\s+/g, '-')}-complete-guide/`
-        },
-        {
-          domain: 'medium.com',
-          titlePattern: `Understanding ${query}: A Comprehensive Tutorial`,
-          urlPattern: `https://medium.com/@developer/${query.toLowerCase().replace(/\s+/g, '-')}-tutorial-${Math.random().toString(36).substr(2, 6)}`
-        },
-        {
-          domain: 'dev.to',
-          titlePattern: `${query} Explained: From Basics to Advanced`,
-          urlPattern: `https://dev.to/developer/${query.toLowerCase().replace(/\s+/g, '-')}-explained-${Math.random().toString(36).substr(2, 4)}`
-        }
-      ];
+      // Use a simple web search API that actually works
+      const searchQuery = `${query} ${goal || ''} tutorial guide how to`.trim();
       
-      for (const source of educationalSources) {
-        if (results.length >= 2) break;
-        
-        const article = {
-          kind: 'read' as const,
-          title: source.titlePattern,
-          url: source.urlPattern,
-          source: source.domain,
-          duration_minutes: 10 + Math.floor(Math.random() * 15),
-          description: `Learn ${query} with this comprehensive tutorial from ${source.domain}`,
-          split: null
-        };
-        
-        if (!usedUrls?.has(article.url)) {
-          results.push(article);
-          console.log(`✅ [RealWebScraper] Generated educational article: ${article.title}`);
-        }
+      // Try Wikipedia first for any topic
+      await this.searchWikipedia(searchQuery, results, usedUrls || new Set());
+      
+      // Try Reddit for real discussions and guides
+      if (results.length < 2) {
+        await this.searchReddit(searchQuery, results, usedUrls || new Set());
       }
       
     } catch (error) {
@@ -230,6 +202,80 @@ export class RealWebScraper {
     }
     
     return results;
+  }
+
+  // Search Wikipedia for real articles
+  private async searchWikipedia(query: string, results: ResourceT[], usedUrls: Set<string>): Promise<void> {
+    try {
+      const searchUrl = `https://en.wikipedia.org/api/rest_v1/page/search?q=${encodeURIComponent(query)}&limit=3`;
+      console.log(`🔍 [RealWebScraper] Searching Wikipedia: ${query}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200 && response.data.pages) {
+        for (const page of response.data.pages.slice(0, 1)) {
+          if (results.length >= 1) break;
+          
+          const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(page.key)}`;
+          
+          if (!usedUrls.has(url)) {
+            results.push({
+              kind: 'read',
+              title: page.title,
+              url: url,
+              source: 'Wikipedia',
+              duration_minutes: 8 + Math.floor(Math.random() * 7),
+              description: page.description || `Learn about ${query} from Wikipedia`,
+              split: null
+            });
+            
+            usedUrls.add(url);
+            console.log(`✅ [RealWebScraper] Found Wikipedia article: ${page.title}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[RealWebScraper] Wikipedia search failed:', error);
+    }
+  }
+
+  // Search Reddit for real discussions and guides  
+  private async searchReddit(query: string, results: ResourceT[], usedUrls: Set<string>): Promise<void> {
+    try {
+      const searchUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(query + ' guide tutorial')}&limit=5&sort=relevance`;
+      console.log(`🔍 [RealWebScraper] Searching Reddit: ${query}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200 && response.data.data && response.data.data.children) {
+        for (const post of response.data.data.children.slice(0, 1)) {
+          if (results.length >= 2) break;
+          
+          const postData = post.data;
+          if (postData.url && postData.title && !postData.is_self) {
+            const url = postData.url;
+            
+            // Only include external links, not reddit self-posts
+            if (!url.includes('reddit.com') && !usedUrls.has(url)) {
+              results.push({
+                kind: 'read',
+                title: postData.title,
+                url: url,
+                source: this.extractDomain(url),
+                duration_minutes: 10 + Math.floor(Math.random() * 10),
+                description: `Learn about ${query} - shared on Reddit`,
+                split: null
+              });
+              
+              usedUrls.add(url);
+              console.log(`✅ [RealWebScraper] Found Reddit-shared article: ${postData.title.substring(0, 50)}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[RealWebScraper] Reddit search failed:', error);
+    }
   }
 
 
