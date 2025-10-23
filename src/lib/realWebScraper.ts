@@ -210,8 +210,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'The Splendid Table',
-        url: 'https://open.spotify.com/show/4VKWKOKzGGKKGKKGKGKGKG',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/the-splendid-table/id275757274',
+        source: 'Apple Podcasts',
         duration_minutes: 50,
         description: 'Food and cooking podcast with techniques and recipes',
         split: null
@@ -220,8 +220,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'How I Built This with Guy Raz',
-        url: 'https://open.spotify.com/show/6E709HRH7XaiZrMfgtNCun',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/how-i-built-this-with-guy-raz/id1150510297',
+        source: 'Apple Podcasts',
         duration_minutes: 50,
         description: 'Stories of entrepreneurs and how they built their companies',
         split: null
@@ -230,8 +230,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'Syntax - Tasty Web Development Treats',
-        url: 'https://open.spotify.com/show/4kYCRYJ3yK5DQbP5tbfZby',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/syntax-tasty-web-development-treats/id1253186678',
+        source: 'Apple Podcasts',
         duration_minutes: 45,
         description: 'Web development podcast covering modern JavaScript and frameworks',
         split: null
@@ -240,8 +240,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'The Model Health Show',
-        url: 'https://open.spotify.com/show/3kKPKjGOLKGFIhDrNYNwCF',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/the-model-health-show/id640246378',
+        source: 'Apple Podcasts',
         duration_minutes: 60,
         description: 'Health, fitness, and nutrition insights from experts',
         split: null
@@ -250,8 +250,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'Design Better',
-        url: 'https://open.spotify.com/show/2wULKkKKrqZgqLPJqJBqwQ',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/design-better/id1348582688',
+        source: 'Apple Podcasts',
         duration_minutes: 35,
         description: 'Design insights and conversations with industry leaders',
         split: null
@@ -261,8 +261,8 @@ export class RealWebScraper {
       results.push({
         kind: 'listen',
         title: 'TED Talks Daily',
-        url: 'https://open.spotify.com/show/1VXcH8QHkjRcTCEd88U3ti',
-        source: 'Spotify',
+        url: 'https://podcasts.apple.com/us/podcast/ted-talks-daily/id160904630',
+        source: 'Apple Podcasts',
         duration_minutes: 20,
         description: 'Daily TED talks covering a wide range of educational topics',
         split: null
