@@ -837,8 +837,9 @@ export class AdvancedWebScraper {
         results = [...realArticles, ...aiArticles];
         console.log(`📚 [AdvancedWebScraper] Combined read resources: ${realArticles.length} real articles + ${aiArticles.length} AI articles = ${results.length} total`);
       } else if (type === 'listen') {
-        results = await this.searchPodcasts(query, goal);
-        console.log(`Podcast search found ${results.length} results`);
+        // Use the real web scraper for podcasts too
+        results = await realWebScraper.searchRealPodcasts(query, goal);
+        console.log(`Real podcast search found ${results.length} results`);
       }
     } catch (error) {
       console.error('Search failed:', error);
