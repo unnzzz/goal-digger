@@ -448,8 +448,9 @@ export class AdvancedWebScraper {
         console.log(`Medium validation: ${isValidMedium}`);
         return isValidMedium;
       case 'Substack':
-        const isValidSubstack = url.includes('/p/') || url.includes('substack.com');
-        console.log(`Substack validation: ${isValidSubstack}`);
+        const isValidSubstack = (url.includes('/p/') && url.includes('substack.com')) || 
+                               (url.includes('substack.com') && !url.includes('/search') && !url.includes('/discover'));
+        console.log(`Substack validation: ${isValidSubstack} for URL: ${url}`);
         return isValidSubstack;
       case 'Dev.to':
         const isValidDev = url.includes('/articles/') || url.includes('/@') || url.includes('dev.to');
@@ -532,7 +533,15 @@ export class AdvancedWebScraper {
         {
           name: 'Substack',
           searchUrl: (q: string) => `https://substack.com/search?q=${encodeURIComponent(q)}`,
-          selectors: ['article h3 a', 'article h2 a', '.post-title a'],
+          selectors: [
+            '.post-preview-title a',
+            '.post-title a', 
+            'article h2 a',
+            'article h3 a',
+            '.pencraft a[href*="/p/"]',
+            'a[href*=".substack.com/p/"]',
+            '.post-preview a'
+          ],
           domain: 'substack.com'
         },
         {
@@ -577,7 +586,15 @@ export class AdvancedWebScraper {
                   selectors = ['article h2 a', 'article h3 a', '.crayons-story__title a'];
                   break;
                 case 'Substack':
-                  selectors = ['article h3 a', 'article h2 a', '.post-title a'];
+                  selectors = [
+                    '.post-preview-title a',
+                    '.post-title a',
+                    'article h2 a', 
+                    'article h3 a',
+                    '.pencraft a[href*="/p/"]',
+                    'a[href*=".substack.com/p/"]',
+                    '.post-preview a'
+                  ];
                   break;
                 case 'Hashnode':
                   selectors = ['article h2 a', 'article h3 a', '.blog-title a'];
