@@ -189,13 +189,8 @@ export class RealWebScraper {
       // Use a simple web search API that actually works
       const searchQuery = `${query} ${goal || ''} tutorial guide how to`.trim();
       
-      // Try Wikipedia first for any topic
-      await this.searchWikipedia(searchQuery, results, usedUrls || new Set());
-      
       // Try Reddit for real discussions and guides
-      if (results.length < 2) {
-        await this.searchReddit(searchQuery, results, usedUrls || new Set());
-      }
+      await this.searchReddit(searchQuery, results, usedUrls || new Set());
       
     } catch (error) {
       console.error('[RealWebScraper] Direct sites search failed:', error);
@@ -204,40 +199,6 @@ export class RealWebScraper {
     return results;
   }
 
-  // Search Wikipedia for real articles
-  private async searchWikipedia(query: string, results: ResourceT[], usedUrls: Set<string>): Promise<void> {
-    try {
-      const searchUrl = `https://en.wikipedia.org/api/rest_v1/page/search?q=${encodeURIComponent(query)}&limit=3`;
-      console.log(`🔍 [RealWebScraper] Searching Wikipedia: ${query}`);
-      
-      const response = await this.makeRequest(searchUrl);
-      
-      if (response.status === 200 && response.data.pages) {
-        for (const page of response.data.pages.slice(0, 1)) {
-          if (results.length >= 1) break;
-          
-          const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(page.key)}`;
-          
-          if (!usedUrls.has(url)) {
-            results.push({
-              kind: 'read',
-              title: page.title,
-              url: url,
-              source: 'Wikipedia',
-              duration_minutes: 8 + Math.floor(Math.random() * 7),
-              description: page.description || `Learn about ${query} from Wikipedia`,
-              split: null
-            });
-            
-            usedUrls.add(url);
-            console.log(`✅ [RealWebScraper] Found Wikipedia article: ${page.title}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[RealWebScraper] Wikipedia search failed:', error);
-    }
-  }
 
   // Search Reddit for real discussions and guides  
   private async searchReddit(query: string, results: ResourceT[], usedUrls: Set<string>): Promise<void> {
