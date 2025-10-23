@@ -1,22 +1,45 @@
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { ResourceT } from './schema';
 
 // Real web scraper that finds actual articles from the internet
 export class RealWebScraper {
+  private userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  ];
 
-  // Search for real articles using a working web search service
+  private async makeRequest(url: string): Promise<any> {
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': this.userAgents[Math.floor(Math.random() * this.userAgents.length)],
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9'
+        },
+        timeout: 5000,
+        maxRedirects: 2,
+        validateStatus: (status) => status < 400
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Search for real articles by actually scraping search engines
   async searchRealArticles(query: string, goal?: string): Promise<ResourceT[]> {
     console.log(`🔍 [RealWebScraper] Searching real web articles for: "${query}" with goal: "${goal}"`);
     
     const results: ResourceT[] = [];
     
     try {
-      // Use Brave Search API (free tier available) or similar service
-      const searchQuery = `${query} ${goal || ''} tutorial guide article`.trim();
+      // Create specific search query
+      const searchQuery = `"${query}" tutorial guide article blog`.trim();
+      console.log(`🔍 [RealWebScraper] Search query: "${searchQuery}"`);
       
-      // For now, return some real educational articles that actually exist
-      // This is a temporary solution until we can implement proper API-based search
-      const realArticles = this.getRealEducationalArticles(query, goal);
-      results.push(...realArticles);
+      // Try DuckDuckGo HTML scraping (most reliable)
+      await this.scrapeDuckDuckGo(searchQuery, results);
       
     } catch (error) {
       console.error('[RealWebScraper] Article search failed:', error instanceof Error ? error.message : String(error));
@@ -26,129 +49,93 @@ export class RealWebScraper {
     return results;
   }
 
-  // Get real educational articles that actually exist on the web
-  private getRealEducationalArticles(query: string, goal?: string): ResourceT[] {
-    const articles: ResourceT[] = [];
-    const lowerQuery = query.toLowerCase();
-    const lowerGoal = goal?.toLowerCase() || '';
-    
-    // Programming topics
-    if (lowerQuery.includes('javascript') || lowerGoal.includes('javascript')) {
-      articles.push({
-        kind: 'read',
-        title: 'JavaScript Tutorial - W3Schools',
-        url: 'https://www.w3schools.com/js/',
-        source: 'W3Schools',
-        duration_minutes: 15,
-        description: 'Comprehensive JavaScript tutorial with examples',
-        split: null
-      });
+  // Actually scrape DuckDuckGo search results
+  private async scrapeDuckDuckGo(query: string, results: ResourceT[]): Promise<void> {
+    try {
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      console.log(`🔍 [RealWebScraper] Scraping: ${searchUrl}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        
+        // Extract real search results
+        $('.result').each((index, element) => {
+          if (results.length >= 2) return false;
+          
+          const $result = $(element);
+          const titleElement = $result.find('.result__title a, h2 a, h3 a').first();
+          const href = titleElement.attr('href');
+          const title = titleElement.text().trim();
+          
+          console.log(`🔗 [RealWebScraper] Found: "${title}" -> ${href}`);
+          
+          if (href && title && this.isValidRealArticle(href, title)) {
+            results.push({
+              kind: 'read',
+              title: title.substring(0, 100),
+              url: href,
+              source: this.extractDomain(href),
+              duration_minutes: 8 + Math.floor(Math.random() * 12),
+              description: `Learn about ${query.replace(/"/g, '')}`,
+              split: null
+            });
+            
+            console.log(`✅ [RealWebScraper] Added real article: ${title.substring(0, 50)}`);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[RealWebScraper] DuckDuckGo scraping failed:', error instanceof Error ? error.message : String(error));
     }
-    
-    if (lowerQuery.includes('python') || lowerGoal.includes('python')) {
-      articles.push({
-        kind: 'read', 
-        title: 'Python Tutorial - Real Python',
-        url: 'https://realpython.com/python-basics/',
-        source: 'Real Python',
-        duration_minutes: 20,
-        description: 'Python fundamentals and best practices',
-        split: null
-      });
-    }
-    
-    if (lowerQuery.includes('react') || lowerGoal.includes('react')) {
-      articles.push({
-        kind: 'read',
-        title: 'React Tutorial - React.dev',
-        url: 'https://react.dev/learn',
-        source: 'React.dev',
-        duration_minutes: 18,
-        description: 'Official React tutorial and documentation',
-        split: null
-      });
-    }
-    
-    // Cooking topics
-    if (lowerQuery.includes('cooking') || lowerQuery.includes('recipe') || lowerGoal.includes('cooking')) {
-      articles.push({
-        kind: 'read',
-        title: 'Essential Cooking Techniques - Serious Eats',
-        url: 'https://www.seriouseats.com/basic-cooking-techniques',
-        source: 'Serious Eats',
-        duration_minutes: 12,
-        description: 'Fundamental cooking techniques every home cook should know',
-        split: null
-      });
-    }
-    
-    // Fitness topics
-    if (lowerQuery.includes('fitness') || lowerQuery.includes('exercise') || lowerGoal.includes('fitness')) {
-      articles.push({
-        kind: 'read',
-        title: 'Beginner Fitness Guide - Healthline',
-        url: 'https://www.healthline.com/health/fitness/beginner-workout-plan',
-        source: 'Healthline',
-        duration_minutes: 14,
-        description: 'Complete beginner guide to starting a fitness routine',
-        split: null
-      });
-    }
-    
-    // Design topics
-    if (lowerQuery.includes('design') || lowerQuery.includes('ui') || lowerQuery.includes('ux')) {
-      articles.push({
-        kind: 'read',
-        title: 'UI Design Fundamentals - Figma',
-        url: 'https://www.figma.com/resource-library/ui-design-fundamentals/',
-        source: 'Figma',
-        duration_minutes: 16,
-        description: 'Essential principles of user interface design',
-        split: null
-      });
-    }
-    
-    // Business topics
-    if (lowerQuery.includes('business') || lowerQuery.includes('marketing') || lowerGoal.includes('business')) {
-      articles.push({
-        kind: 'read',
-        title: 'Small Business Guide - SBA.gov',
-        url: 'https://www.sba.gov/business-guide',
-        source: 'SBA.gov',
-        duration_minutes: 20,
-        description: 'Official small business administration guide',
-        split: null
-      });
-    }
-    
-    // Generic fallback - but still real URLs
-    if (articles.length === 0) {
-      articles.push({
-        kind: 'read',
-        title: `How to Learn ${query} Effectively`,
-        url: 'https://www.coursera.org/articles/how-to-learn',
-        source: 'Coursera',
-        duration_minutes: 10,
-        description: `General learning strategies for ${query}`,
-        split: null
-      });
-    }
-    
-    return articles.slice(0, 2);
   }
 
-  // Search for real podcasts that match the topic
+  // Validate real articles - very strict to ensure quality
+  private isValidRealArticle(href: string, title: string): boolean {
+    if (!href || !title || title.length < 10) return false;
+    
+    // Must be a real URL
+    try {
+      const url = new URL(href);
+      
+      // Skip search engines and social media
+      const badDomains = ['google.com', 'bing.com', 'duckduckgo.com', 'facebook.com', 'twitter.com', 'youtube.com'];
+      if (badDomains.some(domain => url.hostname.includes(domain))) return false;
+      
+      // Skip obvious non-articles
+      if (href.includes('search') || href.includes('?q=') || href.includes('login')) return false;
+      
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Extract domain name
+  private extractDomain(url: string): string {
+    try {
+      const domain = new URL(url).hostname.replace('www.', '');
+      return domain.charAt(0).toUpperCase() + domain.slice(1);
+    } catch {
+      return 'Web Article';
+    }
+  }
+
+
+  // Search for real podcasts by scraping podcast platforms
   async searchRealPodcasts(query: string, goal?: string): Promise<ResourceT[]> {
     console.log(`🔍 [RealWebScraper] Searching real podcasts for: "${query}" with goal: "${goal}"`);
     
     const results: ResourceT[] = [];
-    const lowerQuery = query.toLowerCase();
-    const lowerGoal = goal?.toLowerCase() || '';
     
     try {
-      // Get topic-relevant podcasts that actually exist
-      const podcasts = this.getTopicRelevantPodcasts(lowerQuery, lowerGoal);
-      results.push(...podcasts);
+      // Create topic-focused search query
+      const searchQuery = `${query} ${goal || ''} podcast`.trim();
+      console.log(`🔍 [RealWebScraper] Podcast search query: "${searchQuery}"`);
+      
+      // Try scraping podcast search results
+      await this.scrapePodcastSearch(searchQuery, results);
       
     } catch (error) {
       console.error('[RealWebScraper] Podcast search failed:', error instanceof Error ? error.message : String(error));
@@ -158,95 +145,49 @@ export class RealWebScraper {
     return results;
   }
 
-  // Get topic-relevant podcasts that actually exist
-  private getTopicRelevantPodcasts(query: string, goal: string): ResourceT[] {
-    const podcasts: ResourceT[] = [];
-    
-    // Programming/Tech podcasts
-    if (query.includes('programming') || query.includes('javascript') || query.includes('python') || 
-        query.includes('coding') || goal.includes('programming') || goal.includes('coding')) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'Syntax - Tasty Web Development Treats',
-        url: 'https://open.spotify.com/show/4kYCRYJ3yK5DQbP5tbfZby',
-        source: 'Spotify',
-        duration_minutes: 45,
-        description: 'Web development podcast covering JavaScript, React, and more',
-        split: null
-      });
+  // Scrape podcast search results from Listen Notes or similar
+  private async scrapePodcastSearch(query: string, results: ResourceT[]): Promise<void> {
+    try {
+      // Use DuckDuckGo to find podcast-related content
+      const podcastQuery = `${query} podcast episode site:spotify.com OR site:podcasts.apple.com OR site:podcasts.google.com`;
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(podcastQuery)}`;
+      
+      console.log(`🔍 [RealWebScraper] Searching for podcasts: ${searchUrl}`);
+      
+      const response = await this.makeRequest(searchUrl);
+      
+      if (response.status === 200) {
+        const $ = cheerio.load(response.data);
+        
+        // Look for Spotify podcast links
+        $('.result').each((index, element) => {
+          if (results.length >= 1) return false;
+          
+          const $result = $(element);
+          const titleElement = $result.find('.result__title a, h2 a, h3 a').first();
+          const href = titleElement.attr('href');
+          const title = titleElement.text().trim();
+          
+          if (href && title && (href.includes('spotify.com/show/') || href.includes('podcasts.apple.com'))) {
+            results.push({
+              kind: 'listen',
+              title: title.substring(0, 100),
+              url: href,
+              source: href.includes('spotify') ? 'Spotify' : 'Apple Podcasts',
+              duration_minutes: 30 + Math.floor(Math.random() * 30),
+              description: `Podcast about ${query.replace(/podcast/gi, '').trim()}`,
+              split: null
+            });
+            
+            console.log(`✅ [RealWebScraper] Found real podcast: ${title.substring(0, 50)}`);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[RealWebScraper] Podcast scraping failed:', error instanceof Error ? error.message : String(error));
     }
-    
-    // Business/Entrepreneurship podcasts
-    if (query.includes('business') || query.includes('marketing') || query.includes('entrepreneur') ||
-        goal.includes('business') || goal.includes('marketing')) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'How I Built This with Guy Raz',
-        url: 'https://open.spotify.com/show/6E709HRH7XaiZrMfgtNCun',
-        source: 'Spotify',
-        duration_minutes: 50,
-        description: 'Stories behind successful companies and entrepreneurs',
-        split: null
-      });
-    }
-    
-    // Health/Fitness podcasts
-    if (query.includes('fitness') || query.includes('health') || query.includes('nutrition') ||
-        goal.includes('fitness') || goal.includes('health')) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'The Model Health Show',
-        url: 'https://open.spotify.com/show/3kKPKjGOLKGFIhDrNYNwCF',
-        source: 'Spotify',
-        duration_minutes: 60,
-        description: 'Health, fitness, and nutrition insights from experts',
-        split: null
-      });
-    }
-    
-    // Design/Creative podcasts
-    if (query.includes('design') || query.includes('creative') || query.includes('art') ||
-        goal.includes('design') || goal.includes('creative')) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'Design Better',
-        url: 'https://open.spotify.com/show/2wULKkKKrqZgqLPJqJBqwQ',
-        source: 'Spotify',
-        duration_minutes: 35,
-        description: 'Design insights and conversations with industry leaders',
-        split: null
-      });
-    }
-    
-    // Cooking podcasts
-    if (query.includes('cooking') || query.includes('food') || query.includes('recipe') ||
-        goal.includes('cooking') || goal.includes('food')) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'The Splendid Table',
-        url: 'https://open.spotify.com/show/4VKWKOKzGGKKGKKGKGKGKG',
-        source: 'Spotify',
-        duration_minutes: 50,
-        description: 'Food, cooking techniques, and culinary culture',
-        split: null
-      });
-    }
-    
-    // Generic learning/education podcasts
-    if (podcasts.length === 0) {
-      podcasts.push({
-        kind: 'listen',
-        title: 'TED Talks Daily',
-        url: 'https://open.spotify.com/show/1VXcH8QHkjRcTCEd88U3ti',
-        source: 'Spotify',
-        duration_minutes: 20,
-        description: 'Daily TED talks on various educational topics',
-        split: null
-      });
-    }
-    
-    return podcasts.slice(0, 1);
   }
+
 
 
 }
