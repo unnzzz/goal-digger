@@ -41,10 +41,11 @@ export class RealWebScraper {
     const usedUrls = new Set<string>();
     
     try {
-      console.log(`🔍 Searching for real articles about: "${query}"`);
+      console.log(`🔍 [RealWebScraper] Searching for real articles about: "${query}" with goal: "${goal}"`);
       
       // Create focused search queries
       const searchQueries = this.createSearchQueries(query, goal);
+      console.log(`🔍 [RealWebScraper] Created ${searchQueries.length} search queries:`, searchQueries);
       
       for (const searchQuery of searchQueries.slice(0, 2)) { // Try max 2 queries
         if (results.length >= 2) break; // Max 2 articles per day
@@ -120,10 +121,13 @@ export class RealWebScraper {
       }
       
     } catch (error) {
-      console.error('Article search failed:', error);
+      console.error('[RealWebScraper] Article search failed:', error);
     }
     
-    console.log(`📚 Total articles found: ${results.length}`);
+    console.log(`📚 [RealWebScraper] Total articles found: ${results.length}`);
+    if (results.length === 0) {
+      console.log(`❌ [RealWebScraper] No articles found for query: "${query}" with goal: "${goal}"`);
+    }
     return results;
   }
 

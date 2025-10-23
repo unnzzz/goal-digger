@@ -824,13 +824,18 @@ export class AdvancedWebScraper {
         results = await this.searchYouTube(query, goal);
         console.log(`YouTube search found ${results.length} results`);
       } else if (type === 'read') {
+        console.log(`🔍 [AdvancedWebScraper] Starting read resource search for: "${query}" with goal: "${goal}"`);
+        
         // Get both real web articles AND AI-generated articles
         const realArticles = await realWebScraper.searchRealArticles(query, goal);
+        console.log(`✅ [AdvancedWebScraper] Real web scraper returned ${realArticles.length} articles`);
+        
         const aiArticles = await this.searchArticles(query, goal);
+        console.log(`✅ [AdvancedWebScraper] AI article search returned ${aiArticles.length} articles`);
         
         // Combine both types - real articles first, then AI articles
         results = [...realArticles, ...aiArticles];
-        console.log(`Combined read resources: ${realArticles.length} real articles + ${aiArticles.length} AI articles = ${results.length} total`);
+        console.log(`📚 [AdvancedWebScraper] Combined read resources: ${realArticles.length} real articles + ${aiArticles.length} AI articles = ${results.length} total`);
       } else if (type === 'listen') {
         results = await this.searchPodcasts(query, goal);
         console.log(`Podcast search found ${results.length} results`);
