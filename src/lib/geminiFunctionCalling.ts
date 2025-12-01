@@ -3,7 +3,7 @@ import { advancedScraper } from './advancedWebScraper';
 import { RoadmapT, ResourceT } from './schema';
 
 // Initialize Gemini with function calling support
-const genAI = new GoogleGenerativeAI('AIzaSyBQseIm2Zs6bBGeKeDkKvkjw4B4Q0X9Q6o');
+
 const model = genAI.getGenerativeModel({ 
   model: 'gemini-2.0-flash',
   generationConfig: {
